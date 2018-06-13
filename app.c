@@ -117,16 +117,15 @@ void palette_led(u8 p, u8 v) {
 
 u8 mode = 0;
 
-void mode_change(u8 x) {
-	mode = x;
+void mode_refresh() {
 	clear();
 	
-	switch (x) {
-		case 0:
+	switch (mode) {
+		case 0: // Performance mode
 			hal_plot_led(TYPEPAD, 98, 63, 0, 40); // User LED
 			break;
 		
-		case 1:
+		case 1: // Setup mode
 			hal_plot_led(TYPEPAD, 25, 4, 4, 7); // Select flash palette
 			hal_plot_led(TYPEPAD, 26, 7, 7, 7); // Select Novation palette
 			hal_plot_led(TYPEPAD, 27, 7, 7, 7); // Select mat1 palette
@@ -142,23 +141,31 @@ void mode_change(u8 x) {
 	}
 }
 
+void mode_update(u8 x) {
+	mode = x;
+	mode_refresh();
+}
+
 void app_timer_event() {
 	static u8 ms = 33;
-	static u8 i = 0;
+	static u8 i_setup = 0;
+	static u8 i_editor = 0;
 	
 	if (++ms >= 33) { // Runs at approximately 30.31 ticks per second
 		ms = 0;
 		switch (mode) {
-			case 0:
+			case 0: // Performance mode
 				// Anything timer-based for the Performance mode, likely unnecessary
 				break;
 			
-			case 1:
-				hal_plot_led(TYPESETUP, 0, rainbow[i][0], rainbow[i][1], rainbow[i][2]); // Mode LED animation
+			case 1: // Setup mode
+				hal_plot_led(TYPESETUP, 0, rainbow[i_setup][0], rainbow[i_setup][1], rainbow[i_setup][2]); // Mode LED indicator animation
+				i_setup++; i_setup %= 48;
+				
 				if (palette_selected == 0) {
-					hal_plot_led(TYPEPAD, 15, rainbow[i][0], rainbow[i][1], rainbow[i][2]);  // Enter palette editor
+					hal_plot_led(TYPEPAD, 15, rainbow[i_editor][0], rainbow[i_editor][1], rainbow[i_editor][2]);  // Enter palette editor
+					i_editor++; i_editor %= 48;
 				}
-				i++; i %= 48;
 				break;
 		}
 	}
@@ -176,7 +183,7 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 		case 0:
 			if (p == 0) {
 				if (av == 127)
-					mode_change(1);
+					mode_update(1);
 			} else {
 				hal_send_midi(USBMIDI, 0x90, xy_dr[p], av);
 			}
@@ -184,18 +191,18 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 		
 		case 1:
 			if (p == 0 && av == 127) {
-				mode_change(0);
+				mode_update(0);
 			} else if (25 <= p && p <= 28 && av == 127) {
 				palette_selected = p - 25;
 				palette_selected_write();
-				mode_change(1);
+				mode_refresh();
 			} else if (p == 15 && av == 127) {
 				if (palette_selected == 0) {
 					// TODO: Implement palette editor
-					// mode_change(2);
+					// mode_update(2);
 				} else {
 					palette_write();
-					mode_change(1);
+					mode_refresh();
 				}
 			}
 			break;
@@ -227,5 +234,5 @@ void app_cable_event(u8 t, u8 v) {}
 void app_init(const u16 *adc_raw) {
 	palette_read();
 	palette_selected_read();
-	mode_change(0);
+	mode_update(0);
 }
