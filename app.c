@@ -35,32 +35,26 @@
 /*   Includes and debugging   */
 /*----------------------------*/
 
-#include <string.h> // Required for memcpy
-#include "app.h"
+#include <string.h> // memcpy
+#include "app.h"    // HAL interface
 
-void debug_print(u8 b) {
-	for (u8 i = 0; i < 8; i++) {
-		u8 p = 1;
-		for (u8 j = 0; j < i; j++) {
-			p *= 2;
-		}
-		
-		u8 x = b & p;
-		x >>= i;
-		x *= 63;
-		hal_plot_led(TYPEPAD, 8-i, x, x, x);
+u8 math_pow(u8 x, u8 e) {
+	u8 y = 1;
+	for (u8 j = 0; j < e; j++) {
+		y *= x;
 	}
+	return y;
 }
 
-void clear() {
-	for (int i = 1; i < 99; i++) {
+/* Palette and LED management */
+/*----------------------------*/
+
+void clear_led() {
+	for (u8 i = 1; i < 99; i++) {
 		hal_plot_led(TYPEPAD, i, 0, 0, 0);
 	}
 	hal_plot_led(TYPESETUP, 0, 0, 0, 0);
 }
-
-/* Palette and other settings */
-/*----------------------------*/
 
 u8 palette[4][3][128] = {
 	{}, // User-defined flash-backed palette
@@ -87,6 +81,20 @@ void palette_led(u8 p, u8 v) {
 		hal_plot_led(TYPESETUP, 0, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
 	} else {
 		hal_plot_led(TYPEPAD, p, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
+	}
+}
+
+void display_u8(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
+	for (u8 i = 0; i < 8; i++) {
+		u8 w = ((v & math_pow(2, i)) >> i);
+		hal_plot_led(TYPEPAD, (d == 0)? (8 - i + x * 10) : (i * 10 + x), r * w, g * w, b * w);
+	}
+}
+
+void display_u6(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
+	for (u8 i = 0; i < 6; i++) {
+		u8 w = ((v & math_pow(2, i)) >> i);
+		hal_plot_led(TYPEPAD, (d == 0)? (7 - i + x * 10) : ((i + 2) * 10 + x), r * w, g * w, b * w);
 	}
 }
 
@@ -118,13 +126,78 @@ void flash_write() {
 	}
 }
 
+/*       Palette editor       */
+/*----------------------------*/
+
+u8 editor_selected = 1;
+
+u8 xy_v(u8 xy) {
+	return 64 - (xy / 10 * 8) + (xy - 1) % 10 + (editor_selected >> 6) * 64;
+}
+
+u8 v_xy(u8 v) {
+	return 81 - 10 * ((v % 64) >> 3) + v % 8;
+}
+
+void editor_refresh() {
+	palette_led(v_xy(editor_selected), editor_selected);
+	
+	display_u8(editor_selected, 0, 9, 63, 63, 63);
+	
+	display_u6(palette[0][0][editor_selected], 1, 0, 63, 0, 0);
+	
+	
+	display_u6(palette[0][1][editor_selected], 0, 0, 0, 63, 0);
+	
+	
+	display_u6(palette[0][2][editor_selected], 1, 9, 0, 0, 63);
+	
+}
+
+void editor_draw() {
+	for (u8 x = 1; x < 9; x++) {
+		for (u8 y = 1; y < 9; y++) {
+			u8 xy = x * 10 + y;
+			palette_led(xy, xy_v(xy));
+		}
+	}
+	editor_refresh();
+}
+
+void editor_select_xy(u8 xy) {
+	if (xy != 81 || (editor_selected >> 6) != 0) {
+		editor_selected = xy_v(xy);
+		editor_refresh();
+	}
+}
+
+void editor_select_v(u8 v) {
+	if (v != 0) {
+		editor_selected = v;
+		editor_refresh();
+	}
+}
+
+void editor_select_flip(u8 i) {
+	u8 v = editor_selected ^ math_pow(2, i);
+	
+	if (v != 0) {
+		editor_selected = v;
+		if (i == 6) {
+			editor_draw();
+		} else {
+			editor_refresh();
+		}
+	}
+}
+
 /*  Modes (states) and timer  */
 /*----------------------------*/
 
 u8 mode = 0;
 
 void mode_refresh() {
-	clear();
+	clear_led();
 	
 	switch (mode) {
 		case 0: // Performance mode
@@ -152,12 +225,15 @@ void mode_refresh() {
 			break;
 		
 		case 2: // Palette editor mode
-			// TODO: Implement Palette editor
+			editor_selected = 1;
+			editor_draw();
 			break;
 	}
 }
 
 void mode_update(u8 x) {
+	flash_write();
+	
 	mode = x;
 	mode_refresh();
 }
@@ -203,6 +279,9 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 	u8 av = (v == 0)? 0 : 127;
 	v = (vel_sensitive)? v : av;
 	
+	u8 x = p / 10;
+	u8 y = p % 10;
+	
 	switch (mode) {
 		case 0: // Performance mode
 			if (p == 0) { // Enter Setup mode
@@ -214,8 +293,7 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 			break;
 		
 		case 1: // Setup mode
-			if (p == 0 && av == 127) { // Exit Setup mode (enter Performance mode)
-				flash_write();
+			if (p == 0 && av == 127) { // Enter Performance mode
 				mode_update(0);
 			
 			} else if (25 <= p && p <= 28 && av == 127) { // Palette switch
@@ -224,9 +302,8 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 				mode_refresh();
 			
 			} else if (p == 15 && av == 127) {
-				if (palette_selected == 0) { // Enter Palette editor
-					// TODO: Implement Palette editor
-					// mode_update(2);
+				if (palette_selected == 0) { // Enter Palette editor mode
+					mode_update(2);
 				
 				} else { // Save current preset as custom palette
 					memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
@@ -243,7 +320,31 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 			break;
 		
 		case 2: // Palette editor mode
-			// TODO: Implement Palette editor
+
+			if (p == 0 && av == 127) { // Enter Setup mode
+				mode_update(1);
+			
+			} else if (2 <= x && x <= 7 && y == 0 && av == 127) { // Modify red bit
+				palette[0][0][editor_selected] ^= math_pow(2, x - 2);
+				editor_refresh();
+				dirty = 1;
+			
+			} else if (2 <= p && p <= 7 && av == 127) { // Modify green bit
+				palette[0][1][editor_selected] ^= math_pow(2, 7 - p);
+				editor_refresh();
+				dirty = 1;
+			
+			} else if (2 <= x && x <= 7 && y == 9 && av == 127) { // Modify blue bit
+				palette[0][2][editor_selected] ^= math_pow(2, x - 2);
+				editor_refresh();
+				dirty = 1;
+			
+			} else if (92 <= p && p <= 98 && av == 127) { // Modify velocity bit
+				editor_select_flip(98 - p);
+			
+			} else if (p != 1 && p != 8 && p != 10 && p != 19 && p != 80 && p != 89 && p != 91 && av == 127) { // Select velocity
+				editor_select_xy(p);
+			}
 			break;
 	}
 }
