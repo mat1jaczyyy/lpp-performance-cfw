@@ -191,7 +191,7 @@ void editor_select_flip(u8 i) {
 	}
 }
 
-/*  Modes (states) and timer  */
+/*  Modes (Launchpad states)  */
 /*----------------------------*/
 
 u8 mode = 0;
@@ -238,34 +238,38 @@ void mode_update(u8 x) {
 	mode_refresh();
 }
 
-u8 rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
+/*     Timer-based events     */
+/*----------------------------*/
+
+#define setup_tick 33
+u8 setup_elapsed = setup_tick;
+u8 setup_mode_led = 0;
+u8 setup_editor_button = 0;
+u8 setup_rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
 
 void app_timer_event() {
-	static u8 ms = 33;
-	static u8 i_setup = 0;
-	static u8 i_editor = 0;
-	
-	if (++ms >= 33) { // Runs at approximately 30.31 ticks per second
-		ms = 0;
-		switch (mode) {
-			case 0: // Performance mode
-				// Anything timer-based for the Performance mode, likely unnecessary
-				break;
+	switch (mode) {
+		case 0: // Performance mode
+			// Anything timer-based for the Performance mode, likely unnecessary
+			break;
 			
-			case 1: // Setup mode
-				hal_plot_led(TYPESETUP, 0, rainbow[i_setup][0], rainbow[i_setup][1], rainbow[i_setup][2]); // Mode LED indicator animation
-				i_setup++; i_setup %= 48;
+		case 1: // Setup mode
+			if (++setup_elapsed >= setup_tick) {
+				hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_led][0], setup_rainbow[setup_mode_led][1], setup_rainbow[setup_mode_led][2]); // Mode LED indicator animation
+				setup_mode_led++; setup_mode_led %= 48;
 				
 				if (palette_selected == 0) {
-					hal_plot_led(TYPEPAD, 15, rainbow[i_editor][0], rainbow[i_editor][1], rainbow[i_editor][2]);  // Enter palette editor
-					i_editor++; i_editor %= 48;
+					hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_button][0], setup_rainbow[setup_editor_button][1], setup_rainbow[setup_editor_button][2]);  // Enter palette editor button animation
+					setup_editor_button++; setup_editor_button %= 48;
 				}
-				break;
+				
+				setup_elapsed = 0;
+			}
+			break;
 			
-			case 2: // Palette editor mode
-				// Anything timer-based for the Palette editor mode, likely unnecessary
-				break;
-		}
+		case 2: // Palette editor mode
+			// Anything timer-based for the Palette editor mode, likely unnecessary
+			break;
 	}
 }
 
@@ -375,5 +379,9 @@ void app_cable_event(u8 t, u8 v) {}
 
 void app_init(const u16 *adc_raw) {
 	flash_read();
+	
+	// TODO: Implement boot animation
+	// mode_update(255);
+	
 	mode_update(0);
 }
