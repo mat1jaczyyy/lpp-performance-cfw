@@ -57,7 +57,11 @@ void clear_led() {
 }
 
 u8 palette[4][3][128] = {
-	{}, // User-defined flash-backed palette
+	{ // User-defined flash-backed palette
+		{0},
+		{0},
+		{0}
+	},
 	{ // Novation's default palette
 		{0, 7, 31, 63, 63, 63, 21, 6, 63, 63, 21, 9, 63, 63, 21, 6, 33, 20, 7, 4, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 33, 20, 6, 3, 63, 63, 21, 6, 63, 63, 21, 8, 63, 37, 29, 16, 0, 0, 0, 0, 0, 9, 31, 7, 63, 46, 43, 24, 3, 0, 0, 0, 15, 30, 43, 15, 63, 33, 28, 0, 14, 21, 13, 22, 12, 33, 52, 63, 63, 45, 35, 32, 14, 4, 3, 5, 5, 25, 41, 54, 53, 63, 39, 25, 7, 54, 31, 38, 35, 15, 28, 55, 39, 13, 6, 1, 45, 15, 44, 18},
 		{0, 7, 31, 63, 18, 0, 0, 0, 46, 20, 7, 6, 63, 63, 21, 6, 63, 63, 21, 10, 63, 63, 21, 6, 63, 63, 21, 6, 63, 63, 21, 7, 63, 63, 21, 6, 48, 41, 16, 3, 33, 21, 7, 1, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 18, 0, 0, 0, 5, 13, 20, 24, 14, 21, 20, 0, 17, 0, 31, 7, 0, 63, 58, 63, 34, 63, 41, 10, 0, 0, 6, 8, 18, 55, 63, 63, 63, 63, 63, 34, 20, 31, 7, 0, 31, 43, 63, 22, 10, 18, 19, 5, 7, 14, 0, 20, 26, 55, 55, 44, 7, 63, 63, 37, 25, 15, 28, 63, 0, 0, 51, 16, 43, 12, 23, 5},
@@ -103,7 +107,7 @@ u8 vel_sensitive = 0;
 /*  Flash storage management  */
 /*----------------------------*/
 
-u8 flash[1024] = {}; // [0, 383) = palette[0], {384} = palette_selected, {385} = vel_sensitive
+u8 flash[1024] = {0}; // [0, 383) = palette[0], {384} = palette_selected, {385} = vel_sensitive
 u8 dirty = 0;
 
 void flash_read() {
@@ -145,13 +149,8 @@ void editor_refresh() {
 	display_u8(editor_selected, 0, 9, 63, 63, 63);
 	
 	display_u6(palette[0][0][editor_selected], 1, 0, 63, 0, 0);
-	
-	
 	display_u6(palette[0][1][editor_selected], 0, 0, 0, 63, 0);
-	
-	
 	display_u6(palette[0][2][editor_selected], 1, 9, 0, 0, 63);
-	
 }
 
 void editor_draw() {
@@ -228,6 +227,10 @@ void mode_refresh() {
 			editor_selected = 1;
 			editor_draw();
 			break;
+		
+		case 255: // Boot animation
+			// Any initialization for the Boot animation, likely unnecessary
+			break;
 	}
 }
 
@@ -243,9 +246,20 @@ void mode_update(u8 x) {
 
 #define setup_tick 33
 u8 setup_elapsed = setup_tick;
-u8 setup_mode_led = 0;
-u8 setup_editor_button = 0;
 u8 setup_rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
+u8 setup_mode_counter = 0;
+u8 setup_editor_counter = 0;
+
+#define boot_note_tick 33
+u8 boot_note_elapsed = boot_note_tick;
+u8 boot_notes[49] = {45, 55, 56, 46, 36, 35, 65, 66, 67, 57, 47, 37, 27, 26, 25, 75, 76, 77, 78, 68, 58, 48, 38, 28, 18, 17, 16, 15, 85, 86, 87, 88, 89, 79, 69, 59, 49, 39, 29, 19, 9, 8, 7, 6, 5, 95, 96, 97, 98};
+u8 boot_note_floor = 0;
+u8 boot_note_ceil = 0;
+
+#define boot_fade_tick 5
+u8 boot_fade_elapsed = boot_fade_tick;
+u8 boot_fade_counter[49] = {0};
+u8 boot_colors[252][3] = {{0, 0, 1}, {0, 0, 2}, {0, 0, 3}, {0, 0, 4}, {0, 0, 5}, {0, 0, 6}, {0, 0, 7}, {0, 0, 8}, {0, 0, 9}, {0, 0, 10}, {0, 0, 11}, {0, 0, 12}, {0, 0, 13}, {0, 0, 14}, {0, 0, 15}, {0, 0, 16}, {0, 0, 17}, {0, 0, 18}, {0, 0, 19}, {0, 0, 20}, {0, 0, 21}, {0, 0, 22}, {0, 0, 23}, {0, 0, 24}, {0, 0, 25}, {0, 0, 26}, {0, 0, 27}, {0, 0, 28}, {0, 0, 29}, {0, 0, 30}, {0, 0, 31}, {0, 0, 32}, {0, 0, 33}, {0, 0, 34}, {0, 0, 35}, {0, 0, 36}, {0, 0, 37}, {0, 0, 38}, {0, 0, 39}, {0, 0, 40}, {0, 0, 41}, {0, 0, 42}, {0, 0, 43}, {0, 0, 44}, {0, 0, 45}, {0, 0, 46}, {0, 0, 47}, {0, 0, 48}, {0, 0, 49}, {0, 0, 50}, {0, 0, 51}, {0, 0, 52}, {0, 0, 53}, {0, 0, 54}, {0, 0, 55}, {0, 0, 56}, {0, 0, 57}, {0, 0, 58}, {0, 0, 59}, {0, 0, 60}, {0, 0, 61}, {0, 0, 62}, {0, 0, 63}, {1, 0, 63}, {2, 0, 63}, {3, 0, 63}, {4, 0, 63}, {5, 0, 63}, {6, 0, 63}, {7, 0, 63}, {8, 0, 63}, {9, 0, 63}, {10, 0, 63}, {11, 0, 63}, {12, 0, 63}, {13, 0, 63}, {14, 0, 63}, {15, 0, 63}, {16, 0, 63}, {17, 0, 63}, {18, 0, 63}, {19, 0, 63}, {20, 0, 63}, {21, 0, 63}, {22, 0, 63}, {23, 0, 63}, {24, 0, 63}, {25, 0, 63}, {26, 0, 63}, {27, 0, 63}, {28, 0, 63}, {29, 0, 63}, {30, 0, 63}, {31, 0, 63}, {32, 0, 63}, {33, 0, 63}, {34, 0, 63}, {35, 0, 63}, {36, 0, 63}, {37, 0, 63}, {38, 0, 63}, {39, 0, 63}, {40, 0, 63}, {41, 0, 63}, {42, 0, 63}, {43, 0, 63}, {44, 0, 63}, {45, 0, 63}, {46, 0, 63}, {47, 0, 63}, {48, 0, 63}, {49, 0, 63}, {50, 0, 63}, {51, 0, 63}, {52, 0, 63}, {53, 0, 63}, {54, 0, 63}, {55, 0, 63}, {56, 0, 63}, {57, 0, 63}, {58, 0, 63}, {59, 0, 63}, {60, 0, 63}, {61, 0, 63}, {62, 0, 63}, {63, 0, 63}, {63, 0, 62}, {63, 0, 61}, {63, 0, 60}, {63, 0, 59}, {63, 0, 58}, {63, 0, 57}, {63, 0, 56}, {63, 0, 55}, {63, 0, 54}, {63, 0, 53}, {63, 0, 52}, {63, 0, 51}, {63, 0, 50}, {63, 0, 49}, {63, 0, 48}, {63, 0, 47}, {63, 0, 46}, {63, 0, 45}, {63, 0, 44}, {63, 0, 43}, {63, 0, 42}, {63, 0, 41}, {63, 0, 40}, {63, 0, 39}, {63, 0, 38}, {63, 0, 37}, {63, 0, 36}, {63, 0, 35}, {63, 0, 34}, {63, 0, 33}, {63, 0, 32}, {63, 0, 31}, {63, 0, 30}, {63, 0, 29}, {63, 0, 28}, {63, 0, 27}, {63, 0, 26}, {63, 0, 25}, {63, 0, 24}, {63, 0, 23}, {63, 0, 22}, {63, 0, 21}, {63, 0, 20}, {63, 0, 19}, {63, 0, 18}, {63, 0, 17}, {63, 0, 16}, {63, 0, 15}, {63, 0, 14}, {63, 0, 13}, {63, 0, 12}, {63, 0, 11}, {63, 0, 10}, {63, 0, 9}, {63, 0, 8}, {63, 0, 7}, {63, 0, 6}, {63, 0, 5}, {63, 0, 4}, {63, 0, 3}, {63, 0, 2}, {63, 0, 1}, {63, 0, 0}, {62, 0, 0}, {61, 0, 0}, {60, 0, 0}, {59, 0, 0}, {58, 0, 0}, {57, 0, 0}, {56, 0, 0}, {55, 0, 0}, {54, 0, 0}, {53, 0, 0}, {52, 0, 0}, {51, 0, 0}, {50, 0, 0}, {49, 0, 0}, {48, 0, 0}, {47, 0, 0}, {46, 0, 0}, {45, 0, 0}, {44, 0, 0}, {43, 0, 0}, {42, 0, 0}, {41, 0, 0}, {40, 0, 0}, {39, 0, 0}, {38, 0, 0}, {37, 0, 0}, {36, 0, 0}, {35, 0, 0}, {34, 0, 0}, {33, 0, 0}, {32, 0, 0}, {31, 0, 0}, {30, 0, 0}, {29, 0, 0}, {28, 0, 0}, {27, 0, 0}, {26, 0, 0}, {25, 0, 0}, {24, 0, 0}, {23, 0, 0}, {22, 0, 0}, {21, 0, 0}, {20, 0, 0}, {19, 0, 0}, {18, 0, 0}, {17, 0, 0}, {16, 0, 0}, {15, 0, 0}, {14, 0, 0}, {13, 0, 0}, {12, 0, 0}, {11, 0, 0}, {10, 0, 0}, {9, 0, 0}, {8, 0, 0}, {7, 0, 0}, {6, 0, 0}, {5, 0, 0}, {4, 0, 0}, {3, 0, 0}, {2, 0, 0}, {1, 0, 0}, {0, 0, 0}};
 
 void app_timer_event() {
 	switch (mode) {
@@ -255,12 +269,12 @@ void app_timer_event() {
 			
 		case 1: // Setup mode
 			if (++setup_elapsed >= setup_tick) {
-				hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_led][0], setup_rainbow[setup_mode_led][1], setup_rainbow[setup_mode_led][2]); // Mode LED indicator animation
-				setup_mode_led++; setup_mode_led %= 48;
+				hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
+				setup_mode_counter++; setup_mode_counter %= 48;
 				
 				if (palette_selected == 0) {
-					hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_button][0], setup_rainbow[setup_editor_button][1], setup_rainbow[setup_editor_button][2]);  // Enter palette editor button animation
-					setup_editor_button++; setup_editor_button %= 48;
+					hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
+					setup_editor_counter++; setup_editor_counter %= 48;
 				}
 				
 				setup_elapsed = 0;
@@ -269,6 +283,43 @@ void app_timer_event() {
 			
 		case 2: // Palette editor mode
 			// Anything timer-based for the Palette editor mode, likely unnecessary
+			break;
+		
+		case 255: // Boot animation
+			if (++boot_note_elapsed >= boot_note_tick) { // Start fading next note
+				if (boot_note_ceil < 49) {
+					boot_note_ceil++;
+				}
+				
+				boot_note_elapsed = 0;
+			}
+			if (++boot_fade_elapsed >= boot_fade_tick) { // Redraw fades
+				if (boot_note_floor == 49) { // Enter Performance mode (end condition)
+					mode_update(0);
+				
+				} else {
+					for (u8 i = boot_note_floor; i < boot_note_ceil; i++) {
+						if (boot_fade_counter[i] < 251) { // Draw next fade for note
+							boot_fade_counter[i]++;
+							
+							if (boot_notes[i] != 98 || boot_fade_counter[i] <= 178) { // Check for leaving User LED on
+								hal_plot_led(TYPEPAD, boot_notes[i], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
+							}
+							
+							hal_plot_led(TYPEPAD, 99 - boot_notes[i], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]); // 180 degree rotation
+							
+							if (boot_notes[i] == 4 || 99 - boot_notes[i] == 4) { // Mode LED
+								hal_plot_led(TYPESETUP, 0, boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
+							}
+							
+						} else { // Stop fading a finished note
+							boot_note_floor++;
+						}
+					}
+				}
+				
+				boot_fade_elapsed = 0;
+			}
 			break;
 	}
 }
@@ -379,9 +430,5 @@ void app_cable_event(u8 t, u8 v) {}
 
 void app_init(const u16 *adc_raw) {
 	flash_read();
-	
-	// TODO: Implement boot animation
-	// mode_update(255);
-	
-	mode_update(0);
+	mode_update(255);
 }
