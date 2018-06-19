@@ -49,10 +49,7 @@ u8 math_pow(u8 x, u8 e) {
 u8 xy_dr[128] = {0, 116, 117, 118, 119, 120, 121, 122, 123, 0, 115, 36, 37, 38, 39, 68, 69, 70, 71, 107, 114, 40, 41, 42, 43, 72, 73, 74, 75, 106, 113, 44, 45, 46, 47, 76, 77, 78, 79, 105, 112, 48, 49, 50, 51, 80, 81, 82, 83, 104, 111, 52, 53, 54, 55, 84, 85, 86, 87, 103, 110, 56, 57, 58, 59, 88, 89, 90, 91, 102, 109, 60, 61, 62, 63, 92, 93, 94, 95, 101, 108, 64, 65, 66, 67, 96, 97, 98, 99, 100, 0, 28, 29, 30, 31, 32, 33, 34, 35, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 91, 92, 93, 94, 95, 96, 97, 98, 11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44, 51, 52, 53, 54, 61, 62, 63, 64, 71, 72, 73, 74, 81, 82, 83, 84, 15, 16, 17, 18, 25, 26, 27, 28, 35, 36, 37, 38, 45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 89, 79, 69, 59, 49, 39, 29, 19, 80, 70, 60, 50, 40, 30, 20, 10, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0};
 
-u8 vel_sensitive = 0;
-u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
-
-/* Palette and LED management */
+/*   Flash-backed variables   */
 /*----------------------------*/
 
 u8 palette[4][3][128] = {
@@ -77,7 +74,13 @@ u8 palette[4][3][128] = {
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	}
 };
+
 u8 palette_selected = 0;
+u8 vel_sensitive = 0;
+u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
+
+/*       LED management       */
+/*----------------------------*/
 
 void palette_led(u8 p, u8 v) {
 	if (p == 99) {
@@ -138,7 +141,7 @@ u8 mode = 0;
 void (*mode_init[256])();
 void (*mode_timer_event[256])();
 void (*mode_surface_event[256])(u8 p, u8 v, u8 x, u8 y);
-void (*mode_midi_event[256])(u8 t, u8 p, u8 v);
+void (*mode_midi_event[256])(u8 t, u8 ch, u8 p, u8 v);
 
 void mode_refresh() {
 	for (u8 i = 1; i < 99; i++) { // Clear all LEDs
@@ -167,16 +170,13 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 	if (!(vel_sensitive)) {
 		v = (v == 0)? 0 : 127;
 	}
-	
-	u8 x = p / 10;
-	u8 y = p % 10;
-	
-	(*mode_surface_event[mode])(p, v, x, y);
+
+	(*mode_surface_event[mode])(p, v, p / 10, p % 10);
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 	if (port == USBMIDI) {
-		(*mode_midi_event[mode])(t, p, v);
+		(*mode_midi_event[mode])(t >> 4, t % 16, p, v);
 	}
 }
 
@@ -239,7 +239,7 @@ void boot_timer_event() {
 
 void boot_surface_event(u8 p, u8 v, u8 x, u8 y) {}
 
-void boot_midi_event(u8 t, u8 p, u8 v) {}
+void boot_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 
 /*      Performance mode      */
@@ -260,15 +260,31 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void performance_midi_event(u8 t, u8 p, u8 v) {
-	switch (t) {
-		case 0x95: // Note on, Ch. 6
-			palette_led(dr_xy[p], v);
-			break;
-			
-		case 0x85: // Note off, Ch. 6
-			palette_led(dr_xy[p], 0);
-			break;
+void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
+	switch (ch) {
+		case 5: // Ch. 6
+			switch (t) {
+				case 8: // Note off
+					v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
+				
+				case 9: // Note on
+					if (top_lights_config != 0) {
+						if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
+							p += -80;
+						}
+						
+						if (top_lights_config > 1) { // Display additional LEDs
+							if (100 <= p && p <= 107) {
+								palette_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v);
+							} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
+								palette_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v);
+							}
+						}
+					}
+					
+					palette_led(dr_xy[p], v);
+					break;
+			}		
 	}
 }
 
@@ -282,22 +298,33 @@ u8 setup_mode_counter = 0;
 u8 setup_editor_counter = 0;
 
 void setup_init() {
-	hal_plot_led(TYPEPAD, 25, 4, 4, 7); // Select flash palette
-	hal_plot_led(TYPEPAD, 26, 7, 7, 7); // Select Novation palette
-	hal_plot_led(TYPEPAD, 27, 7, 7, 7); // Select mat1 palette
-	hal_plot_led(TYPEPAD, 28, 7, 7, 7); // Select LP S palette
+	hal_plot_led(TYPEPAD, 25, 11, 15, 15); // Select flash palette
+	hal_plot_led(TYPEPAD, 26, 11, 15, 11); // Select Novation palette
+	hal_plot_led(TYPEPAD, 27, 11, 15, 11); // Select mat1 palette
+	hal_plot_led(TYPEPAD, 28, 11, 15, 11); // Select LP S palette
 	
 	if (palette_selected == 0) {
-		hal_plot_led(TYPEPAD, 25, 19, 19, 31); // Draw selected palette
+		hal_plot_led(TYPEPAD, 25, 47, 63, 63); // Flash palette selected
 	} else {
-		hal_plot_led(TYPEPAD, palette_selected + 25, 31, 31, 31); // Enter palette editor
-		hal_plot_led(TYPEPAD, 15, 0, 7, 0); // Apply palette to custom
+		hal_plot_led(TYPEPAD, palette_selected + 25, 47, 63, 47); // Preset palette selected
+		hal_plot_led(TYPEPAD, 15, 0, 7, 0); // Apply preset palette to flash palette
 	}
 	
 	if (vel_sensitive) {
-		hal_plot_led(TYPEPAD, 21, 19, 31, 31); // Velocity sensitivity enabled
+		hal_plot_led(TYPEPAD, 18, 31, 63, 63); // Velocity sensitivity enabled
 	} else {
-		hal_plot_led(TYPEPAD, 21, 4, 7, 7); // Velocity sensitivity disabled
+		hal_plot_led(TYPEPAD, 18, 7, 15, 15); // Velocity sensitivity disabled
+	}
+	
+	hal_plot_led(TYPEPAD, 35, 15, 11, 15); // PRO Top Lights
+	hal_plot_led(TYPEPAD, 36, 11, 7, 15); // MK2 Top Lights
+	hal_plot_led(TYPEPAD, 37, 11, 7, 15); // MK2 Rotated Top Lights
+	hal_plot_led(TYPEPAD, 38, 11, 7, 15); // MK2 Mirrored Top Lights
+	
+	if (top_lights_config == 0) {
+		hal_plot_led(TYPEPAD, 35, 63, 47, 63); // PRO Top Lights selected
+	} else {
+		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
 	}
 }
 
@@ -336,15 +363,20 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				mode_refresh();
 			}
 		
-		} else if (p == 21) { // Toggle velocity sensitivity
+		} else if (p == 18) { // Toggle velocity sensitivity
 			vel_sensitive = (vel_sensitive)? 0 : 1;
+			dirty = 1;
+			mode_refresh();
+		
+		} else if (35 <= p && p <= 38) { // Change Top Lights configuration
+			top_lights_config = p - 35;
 			dirty = 1;
 			mode_refresh();
 		}
 	}
 }
 
-void setup_midi_event(u8 t, u8 p, u8 v) {}
+void setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*       Palette editor       */
 /*----------------------------*/
@@ -442,7 +474,7 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void editor_midi_event(u8 t, u8 p, u8 v) {}
+void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*  Initialize the Launchpad  */
 /*----------------------------*/
