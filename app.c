@@ -35,7 +35,7 @@
 /*    Includes and helpers    */
 /*----------------------------*/
 
-#include <string.h> // memcpy
+#include <string.h> // array operations
 #include "app.h"    // HAL interface
 
 u8 math_pow(u8 x, u8 e) {
@@ -45,6 +45,9 @@ u8 math_pow(u8 x, u8 e) {
 	}
 	return y;
 }
+
+#define arr_size(x) (sizeof(x) / sizeof((x)[0]))
+#define syx_cmp(x, y, n) (arr_size(y) == n && memcmp(x, &y[0], n) == 0)
 
 u8 xy_dr[128] = {0, 116, 117, 118, 119, 120, 121, 122, 123, 0, 115, 36, 37, 38, 39, 68, 69, 70, 71, 107, 114, 40, 41, 42, 43, 72, 73, 74, 75, 106, 113, 44, 45, 46, 47, 76, 77, 78, 79, 105, 112, 48, 49, 50, 51, 80, 81, 82, 83, 104, 111, 52, 53, 54, 55, 84, 85, 86, 87, 103, 110, 56, 57, 58, 59, 88, 89, 90, 91, 102, 109, 60, 61, 62, 63, 92, 93, 94, 95, 101, 108, 64, 65, 66, 67, 96, 97, 98, 99, 100, 0, 28, 29, 30, 31, 32, 33, 34, 35, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 91, 92, 93, 94, 95, 96, 97, 98, 11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44, 51, 52, 53, 54, 61, 62, 63, 64, 71, 72, 73, 74, 81, 82, 83, 84, 15, 16, 17, 18, 25, 26, 27, 28, 35, 36, 37, 38, 45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 89, 79, 69, 59, 49, 39, 29, 19, 80, 70, 60, 50, 40, 30, 20, 10, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0};
@@ -159,6 +162,35 @@ void mode_update(u8 x) {
 	mode_refresh();
 }
 
+/*       SysEx messages       */
+/*----------------------------*/
+
+u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
+u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
+                                    0x00,                                                      // Device ID
+                                    0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
+                                    0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
+                                    0xF7};
+
+u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, /*0x24, 0x61, 0x4A, 0x0D,*/ 0xF7};
+u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, /*0x4A, 0x14,*/ 0xF7, // Unknown message (constant?)
+                               0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0x00, 0xF7,           // Launchpad reports 00 = Ableton mode
+                               0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0x00, 0xF7};          // Launchpad reports 00 = Session mode;
+/* Known challenges:
+
+ 24 61 4A 0D -> 4A 14
+ 2D 47 05 11 -> 34 6E
+ 30 58 66 0E -> 51 7F
+ 52 69 26 15 -> 4D 20
+ 
+*/
+
+u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
+u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
+
+u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
+u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
+
 /*       Event handling       */
 /*----------------------------*/
 
@@ -167,7 +199,7 @@ void app_timer_event() {
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {
-	if (!(vel_sensitive)) {
+	if (!vel_sensitive) {
 		v = (v == 0)? 0 : 127;
 	}
 
@@ -180,7 +212,44 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 	}
 }
 
-void app_sysex_event(u8 port, u8 * d, u16 l) {} // Unused
+void app_sysex_event(u8 port, u8 * d, u16 l) {
+	// Device Inquiry - Read information about the connected device
+	if (syx_cmp(d, syx_device_inquiry, l)) {
+		hal_send_sysex(USBMIDI, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
+		return;
+	}
+	
+	// Unknown message - Likely a challenge from the control surface
+	if (syx_cmp(d, syx_challenge, l)) {
+		hal_send_sysex(USBMIDI, &syx_challenge_response[0], arr_size(syx_challenge_response));
+		return;
+	}
+	
+	// Mode selection - return the status
+	if (syx_cmp(d, syx_mode_selection, l - 2)) {
+		syx_mode_selection_response[7] = *(d + 7);
+		
+		if (syx_mode_selection_response[7] == 0) { // Go into Ableton mode
+			mode_update(3);
+		} else {
+			mode_update(0);
+		}
+		
+		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
+		return;
+	}
+	
+	// Live layout selection - return the status
+	if (syx_cmp(d, syx_live_layout_selection, l - 2)) {
+		syx_live_layout_selection_response[7] = *(d + 7);
+		
+		// For now, don't change layouts until we reverse-engineer the rest of Ableton communication
+		
+		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		return;
+	}
+}
+
 void app_aftertouch_event(u8 p, u8 v) {} // Unused
 void app_cable_event(u8 t, u8 v) {} // Unused
 
@@ -476,6 +545,54 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
+/*        Ableton mode        */
+/*----------------------------*/
+
+// TODO: Better understanding and implementation of how XY/DR layouts and CC/Note messages differ between Live layouts
+
+void ableton_led(u8 p, u8 v) {
+	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+}
+
+void ableton_CC(u8 c, u8 v) {
+	// Temporary fallback
+	ableton_led(c, v);
+}
+
+void ableton_init() {
+	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
+}
+
+void ableton_timer_event() {}
+
+void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {}
+
+void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
+	display_u8(p, 0, 0, 63, 63, 63);
+	switch (ch) {
+		case 0:
+			switch(t) {
+				case 11:
+					ableton_CC(p, v);
+					break;
+			}
+		
+		case 5: // Ch. 6
+			switch (t) {
+				case 8: // Note off
+					v = 0;
+				
+				case 9: // Note on
+					ableton_led(p, v);
+					break;
+				
+				case 11:
+					ableton_CC(p, v);
+					break;
+			}		
+	}
+}
+
 /*  Initialize the Launchpad  */
 /*----------------------------*/
 
@@ -501,6 +618,11 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[2] = editor_timer_event;
 	mode_surface_event[2] = editor_surface_event;
 	mode_midi_event[2] = editor_midi_event;
+	
+	mode_init[3] = ableton_init;
+	mode_timer_event[3] = ableton_timer_event;
+	mode_surface_event[3] = ableton_surface_event;
+	mode_midi_event[3] = ableton_midi_event;
 	
 	mode_update(255);
 }
