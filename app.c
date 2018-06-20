@@ -172,10 +172,8 @@ u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
                                     0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
                                     0xF7};
 
-u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, /*0x24, 0x61, 0x4A, 0x0D,*/ 0xF7};
-u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, /*0x4A, 0x14,*/ 0xF7, // Unknown message (constant?)
-                               0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0x00, 0xF7,           // Launchpad reports 00 = Ableton mode
-                               0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0x00, 0xF7};          // Launchpad reports 00 = Session mode;
+u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40};
+u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, 0xFF, 0xFF, 0xF7};    // Challenge solve
 /* Known challenges:
 
  24 61 4A 0D -> 4A 14
@@ -219,9 +217,24 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		return;
 	}
 	
-	// Unknown message - Likely a challenge from the control surface
-	if (syx_cmp(d, syx_challenge, l)) {
-		hal_send_sysex(USBMIDI, &syx_challenge_response[0], arr_size(syx_challenge_response));
+	// Challenge from the control surface
+	if (syx_cmp(d, syx_challenge, l - 5)) {
+		
+		for (u16 i = 0; i <= 255; i++) { // Brute force
+			syx_challenge_response[7] = i;
+			display_u8(i, 0, 0, 63, 0, 0);
+			for (u16 j = 0; j <= 255; j++) {
+				syx_challenge_response[8] = j;
+				display_u8(i, 0, 1, 0, 63, 0);
+				sendtest();
+			}
+		}
+		
+		syx_mode_selection_response[7] = 0;
+		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
+		
+		syx_live_layout_selection_response[7] = 0;
+		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
 		return;
 	}
 	
