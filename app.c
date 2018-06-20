@@ -262,7 +262,7 @@ void performance_timer_event() {}
 
 void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
-		if (v != 0) mode_update(1);
+		if (v != 0) mode_update(2);
 				
 	} else { // Send MIDI input to DAW
 		hal_send_midi(USBMIDI, 0x90, xy_dr[p], v);
@@ -316,7 +316,7 @@ void ableton_timer_event() {}
 
 void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
-		if (v != 0) mode_update(1);	
+		if (v != 0) mode_update(2);	
 	} else {
 		switch (ableton_layout) {
 			case 0x0: // Session mode
@@ -472,7 +472,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		
 		} else if (p == 15) {
 			if (palette_selected == 0) { // Enter Palette editor mode
-				mode_update(2);
+				mode_update(3);
 			
 			} else { // Save current preset as custom palette
 				memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
@@ -492,7 +492,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_refresh();
 		
 		} else if (p == 81 || p == 82) { // Switch Ableton mode and Performance mode
-			ableton_enabled = (p - 81) * 3;
+			ableton_enabled = p - 81;
 			mode_refresh();
 		}
 	}
@@ -570,7 +570,7 @@ void editor_timer_event() {}
 void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (v != 0) {
 		if (p == 0) { // Enter Setup mode
-			mode_update(1);
+			mode_update(2);
 		
 		} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
 			palette[0][0][editor_selected] ^= math_pow(2, x - 2);
@@ -605,7 +605,7 @@ u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
 u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
                                     0x00,                                                      // Device ID
                                     0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
-                                    0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
+                                    0x00, 0x01, 0x08, 0x02,                                    // Firmware rev. (4 bytes)
                                     0xF7};
 
 u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
@@ -625,7 +625,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (syx_cmp(d, syx_mode_selection, l - 2)) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
-		ableton_enabled = 3 * (1 - *(d + 7));
+		ableton_enabled = 1 - *(d + 7);
 		mode_update(ableton_enabled); // This will interrupt boot animation!
 		
 		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
@@ -662,20 +662,20 @@ void app_init(const u16 *adc_raw) {
 	mode_surface_event[0] = performance_surface_event;
 	mode_midi_event[0] = performance_midi_event;
 	
-	mode_init[1] = setup_init;
-	mode_timer_event[1] = setup_timer_event;
-	mode_surface_event[1] = setup_surface_event;
-	mode_midi_event[1] = setup_midi_event;
+	mode_init[1] = ableton_init;
+	mode_timer_event[1] = ableton_timer_event;
+	mode_surface_event[1] = ableton_surface_event;
+	mode_midi_event[1] = ableton_midi_event;
 	
-	mode_init[2] = editor_init;
-	mode_timer_event[2] = editor_timer_event;
-	mode_surface_event[2] = editor_surface_event;
-	mode_midi_event[2] = editor_midi_event;
+	mode_init[2] = setup_init;
+	mode_timer_event[2] = setup_timer_event;
+	mode_surface_event[2] = setup_surface_event;
+	mode_midi_event[2] = setup_midi_event;
 	
-	mode_init[3] = ableton_init;
-	mode_timer_event[3] = ableton_timer_event;
-	mode_surface_event[3] = ableton_surface_event;
-	mode_midi_event[3] = ableton_midi_event;
+	mode_init[3] = editor_init;
+	mode_timer_event[3] = editor_timer_event;
+	mode_surface_event[3] = editor_surface_event;
+	mode_midi_event[3] = editor_midi_event;
 	
 	mode_update(255);
 }
