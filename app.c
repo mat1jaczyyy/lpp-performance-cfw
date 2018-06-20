@@ -309,6 +309,7 @@ void ableton_led(u8 p, u8 v) {
 
 void ableton_init() {
 	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
+	if (ableton_layout == 0x3) hal_plot_led(TYPEPAD, 98, 20, 0, 63); // User LED
 }
 
 void ableton_timer_event() {}
@@ -376,19 +377,23 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	if (ch == 0x0 || (ch == 0x5 && ableton_layout == 0x3)) {
-		switch(t) {
-			case 0x8: // Note off
-				v = 0;
+	switch (t) {
+		case 0x8:
+			v = 0;
+		
+		case 0x9:
+			if (ableton_layout == 0x3) {
+				if (ch == 0x5) ableton_led(dr_xy[p], v);
+				break;
+			}
 			
-			case 0x9: // Note on
-				ableton_led((ch == 0x0)? p : dr_xy[p], v);
-				break;
-				
-			case 0xB:
-				ableton_led(p, v);
-				break;
-		}
+		case 0xB:
+			if (ableton_layout == 0x3) {
+				if (ch == 0x5) ableton_led(p, v);
+			} else {
+				if (ch == 0x0) ableton_led(p, v);
+			}
+			break;
 	}
 }
 
@@ -621,7 +626,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
 		ableton_enabled = 3 * (1 - *(d + 7));
-		mode_update(ableton_enabled);
+		mode_update(ableton_enabled); // This will interrupt boot animation!
 		
 		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
 		return;
@@ -632,6 +637,9 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		syx_live_layout_selection_response[7] = *(d + 7);
 		
 		ableton_layout = *(d + 7);
+		if (ableton_layout == 0x3) {
+			mode_refresh();
+		}
 		
 		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
 		return;
