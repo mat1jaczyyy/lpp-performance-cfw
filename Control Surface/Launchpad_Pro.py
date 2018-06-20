@@ -567,7 +567,7 @@ class Launchpad_Pro(IdentifiableControlSurface, OptimizedControlSurface):
         return
 
     def on_identified(self):
-        self._send_challenge()
+        self._on_handshake_successful()
 
     def _send_challenge(self):
         challenge_bytes = []

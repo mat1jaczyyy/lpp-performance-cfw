@@ -1,9 +1,9 @@
 /******************************************************************************
  
- Copyright (c) 2015, Focusrite Audio Engineering Ltd.
- All rights reserved.
+  Copyright (c) 2015, Focusrite Audio Engineering Ltd.
+  All rights reserved.
  
- Redistribution and use in source and binary forms, with or without
+  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
  
  * Redistributions of source code must retain the above copyright notice, this
@@ -17,7 +17,7 @@
  contributors may be used to endorse or promote products derived from
  this software without specific prior written permission.
  
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
@@ -31,6 +31,13 @@
     Performance-optimized Launchpad Pro Firmware modification by mat1jaczyyy
  
  ******************************************************************************/
+
+/*
+  NOTE: TO USE THIS FIRMWARE WITH ABLETON, YOU NEED TO PATCH THE LAUNCHPPAD PRO
+ CONTROL SURFACE. THIS IS DUE TO THE UMAC HASH CHECK (encrypt_challenge2) WHOSE
+ PURPOSE IS TO ENSURE THE DEVICE IS A LEGITIMATE LAUNCHPAD PRO DEVICE. ONLY THE
+ CLOSED-SOURCE STOCK FIRMWARE IS ABLE TO CORRECTLY RESPOND TO THIS MESSAGE.
+                                                                              */
 
 /*    Includes and helpers    */
 /*----------------------------*/
@@ -172,17 +179,6 @@ u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
                                     0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
                                     0xF7};
 
-u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40};
-u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, 0xFF, 0xFF, 0xF7};    // Challenge solve
-/* Known challenges:
-
- 24 61 4A 0D -> 4A 14
- 2D 47 05 11 -> 34 6E
- 30 58 66 0E -> 51 7F
- 52 69 26 15 -> 4D 20
- 
-*/
-
 u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
 u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
 
@@ -217,32 +213,11 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		return;
 	}
 	
-	// Challenge from the control surface
-	if (syx_cmp(d, syx_challenge, l - 5)) {
-		
-		for (u16 i = 0; i <= 255; i++) { // Brute force
-			syx_challenge_response[7] = i;
-			display_u8(i, 0, 0, 63, 0, 0);
-			for (u16 j = 0; j <= 255; j++) {
-				syx_challenge_response[8] = j;
-				display_u8(i, 0, 1, 0, 63, 0);
-				sendtest();
-			}
-		}
-		
-		syx_mode_selection_response[7] = 0;
-		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
-		
-		syx_live_layout_selection_response[7] = 0;
-		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
-		return;
-	}
-	
 	// Mode selection - return the status
 	if (syx_cmp(d, syx_mode_selection, l - 2)) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
-		if (syx_mode_selection_response[7] == 0) { // Go into Ableton mode
+		if (syx_mode_selection_response[7] == 0) { // Enter Ableton mode
 			mode_update(3);
 		} else {
 			mode_update(0);
@@ -581,7 +556,6 @@ void ableton_timer_event() {}
 void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {}
 
 void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	display_u8(p, 0, 0, 63, 63, 63);
 	switch (ch) {
 		case 0:
 			switch(t) {
