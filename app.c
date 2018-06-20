@@ -303,13 +303,8 @@ void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 u8 ableton_enabled = 0;
 u8 ableton_layout = 0x0;
 
-void ableton_note(u8 p, u8 v) {
+void ableton_led(u8 p, u8 v) {
 	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
-}
-
-void ableton_CC(u8 c, u8 v) {
-	// Temporary fallback
-	ableton_note(c, v);
 }
 
 void ableton_init() {
@@ -334,6 +329,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
 				}
+				break;
 			
 			case 0x1: // Note mode - Drum Rack layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
@@ -341,6 +337,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
 				}
+				break;
 			
 			case 0x2: // Note mode - Chromatic layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
@@ -348,11 +345,13 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				} else {
 					// TODO: Implement true Note mode
 				}
+				break;
 			
 			case 0x4: // Note mode - Blank layout (for Audio track)
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
 					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
 				}
+				break;
 			
 			case 0x5: // Fader - Device mode
 			case 0xA: // Fader - Volume
@@ -363,6 +362,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				} else {
 					// TODO: Implement true Device mode
 				}
+				break;
 			
 			case 0x3: // User mode
 				if (x == 9) {
@@ -370,34 +370,25 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
 				}
+				break;
 		}
 	}
 }
 
 void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	switch (ch) {
-		case 0x0:
-			switch(t) {
-				case 11:
-					ableton_CC(p, v);
-					break;
-			}
-		
-		case 0x5: // Ch. 6
-			if (ableton_layout == 0x3) { // User mode
-				switch (t) {
-					case 0x8: // Note off
-						v = 0;
-					
-					case 0x9: // Note on
-						ableton_note(p, v);
-						break;
-					
-					case 0xB:
-						ableton_CC(p, v);
-						break;
-				}
-			}
+	if (ch == 0x0 || (ch == 0x5 && ableton_layout == 0x3)) {
+		switch(t) {
+			case 0x8: // Note off
+				v = 0;
+			
+			case 0x9: // Note on
+				ableton_led((ch == 0x0)? p : dr_xy[p], v);
+				break;
+				
+			case 0xB:
+				ableton_led(p, v);
+				break;
+		}
 	}
 }
 
