@@ -345,6 +345,62 @@ void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
+/*        Ableton mode        */
+/*----------------------------*/
+
+// TODO: Better understanding and implementation of how XY/DR layouts and CC/Note messages differ between Live layouts
+
+u8 ableton_enabled = 0;
+
+void ableton_led(u8 p, u8 v) {
+	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+}
+
+void ableton_CC(u8 c, u8 v) {
+	// Temporary fallback
+	ableton_led(c, v);
+}
+
+void ableton_init() {
+	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
+}
+
+void ableton_timer_event() {}
+
+void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(1);	
+	} else {
+		// TODO: Implement MIDI input to DAW
+	}
+}
+
+void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
+	switch (ch) {
+		case 0:
+			switch(t) {
+				case 11:
+					ableton_CC(p, v);
+					break;
+			}
+		
+		case 5: // Ch. 6
+			switch (t) {
+				case 8: // Note off
+					v = 0;
+				
+				case 9: // Note on
+					ableton_led(p, v);
+					break;
+				
+				case 11:
+					ableton_CC(p, v);
+					break;
+			}		
+	}
+}
+
+
 /*         Setup mode         */
 /*----------------------------*/
 
@@ -383,6 +439,15 @@ void setup_init() {
 	} else {
 		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
 	}
+	
+	hal_plot_led(TYPEPAD, 81, 15, 0, 2); // Performance mode
+	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
+	
+	if (ableton_enabled) {
+		hal_plot_led(TYPEPAD, 82, 0, 63, 0); // Ableton mode selected
+	} else {
+		hal_plot_led(TYPEPAD, 81, 63, 0, 10); // Performance mode selected
+	}
 }
 
 void setup_timer_event() {
@@ -401,8 +466,8 @@ void setup_timer_event() {
 
 void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (v != 0) {
-		if (p == 0) { // Enter Performance mode
-			mode_update(0);
+		if (p == 0) { // Enter Performance/Ableton mode
+			mode_update(ableton_enabled);
 		
 		} else if (25 <= p && p <= 28) { // Palette switch
 			palette_selected = p - 25;
@@ -428,6 +493,10 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (35 <= p && p <= 38) { // Change Top Lights configuration
 			top_lights_config = p - 35;
 			dirty = 1;
+			mode_refresh();
+		
+		} else if (p == 81 || p == 82) { // Switch Ableton mode and Performance mode
+			ableton_enabled = (p - 81) * 3;
 			mode_refresh();
 		}
 	}
@@ -532,53 +601,6 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
-
-/*        Ableton mode        */
-/*----------------------------*/
-
-// TODO: Better understanding and implementation of how XY/DR layouts and CC/Note messages differ between Live layouts
-
-void ableton_led(u8 p, u8 v) {
-	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
-}
-
-void ableton_CC(u8 c, u8 v) {
-	// Temporary fallback
-	ableton_led(c, v);
-}
-
-void ableton_init() {
-	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
-}
-
-void ableton_timer_event() {}
-
-void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {}
-
-void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	switch (ch) {
-		case 0:
-			switch(t) {
-				case 11:
-					ableton_CC(p, v);
-					break;
-			}
-		
-		case 5: // Ch. 6
-			switch (t) {
-				case 8: // Note off
-					v = 0;
-				
-				case 9: // Note on
-					ableton_led(p, v);
-					break;
-				
-				case 11:
-					ableton_CC(p, v);
-					break;
-			}		
-	}
-}
 
 /*  Initialize the Launchpad  */
 /*----------------------------*/
