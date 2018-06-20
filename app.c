@@ -146,6 +146,7 @@ void flash_write() {
 /*----------------------------*/
 
 u8 mode = 0;
+u8 mode_default = 0;
 
 // Arrays of function pointers. Used to programmatically call the correct mode's function
 void (*mode_init[256])();
@@ -250,6 +251,215 @@ void boot_surface_event(u8 p, u8 v, u8 x, u8 y) {}
 
 void boot_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
+/*         Setup mode         */
+/*----------------------------*/
+
+#define setup_tick 33
+u8 setup_elapsed = setup_tick;
+u8 setup_rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
+u8 setup_mode_counter = 0;
+u8 setup_editor_counter = 0;
+
+void setup_init() {
+	hal_plot_led(TYPEPAD, 25, 11, 15, 15); // Select flash palette
+	hal_plot_led(TYPEPAD, 26, 11, 15, 11); // Select Novation palette
+	hal_plot_led(TYPEPAD, 27, 11, 15, 11); // Select mat1 palette
+	hal_plot_led(TYPEPAD, 28, 11, 15, 11); // Select LP S palette
+	
+	if (palette_selected == 0) {
+		hal_plot_led(TYPEPAD, 25, 47, 63, 63); // Flash palette selected
+	} else {
+		hal_plot_led(TYPEPAD, palette_selected + 25, 47, 63, 47); // Preset palette selected
+		hal_plot_led(TYPEPAD, 15, 0, 7, 0); // Apply preset palette to flash palette
+	}
+	
+	if (vel_sensitive) {
+		hal_plot_led(TYPEPAD, 18, 31, 63, 63); // Velocity sensitivity enabled
+	} else {
+		hal_plot_led(TYPEPAD, 18, 7, 15, 15); // Velocity sensitivity disabled
+	}
+	
+	hal_plot_led(TYPEPAD, 35, 15, 11, 15); // PRO Top Lights
+	hal_plot_led(TYPEPAD, 36, 11, 7, 15); // MK2 Top Lights
+	hal_plot_led(TYPEPAD, 37, 11, 7, 15); // MK2 Rotated Top Lights
+	hal_plot_led(TYPEPAD, 38, 11, 7, 15); // MK2 Mirrored Top Lights
+	
+	if (top_lights_config == 0) {
+		hal_plot_led(TYPEPAD, 35, 63, 47, 63); // PRO Top Lights selected
+	} else {
+		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
+	}
+	
+	hal_plot_led(TYPEPAD, 81, 15, 0, 2); // Performance mode
+	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
+	hal_plot_led(TYPEPAD, 83, 0, 15, 15); // Note mode
+	
+	switch (mode_default) {
+		case 0:
+			hal_plot_led(TYPEPAD, 81, 63, 0, 10); // Performance mode selected
+			break;
+		
+		case 1:
+			hal_plot_led(TYPEPAD, 82, 0, 63, 0); // Ableton mode selected
+			break;
+		
+		case 2:
+			hal_plot_led(TYPEPAD, 83, 0, 63, 63); // Note mode selected
+			break;
+	}
+}
+
+void setup_timer_event() {
+	if (++setup_elapsed >= setup_tick) {
+		hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
+		setup_mode_counter++; setup_mode_counter %= 48;
+		
+		if (palette_selected == 0) {
+			hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
+			setup_editor_counter++; setup_editor_counter %= 48;
+		}
+		
+		setup_elapsed = 0;
+	}
+}
+
+void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (v != 0) {
+		if (p == 0) { // Enter selected main mode
+			mode_update(mode_default);
+		
+		} else if (25 <= p && p <= 28) { // Palette switch
+			palette_selected = p - 25;
+			dirty = 1;
+			mode_refresh();
+		
+		} else if (p == 15) {
+			if (palette_selected == 0) { // Enter Palette editor mode
+				mode_update(253);
+			
+			} else { // Save current preset as custom palette
+				memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
+				palette_selected = 0;
+				dirty = 1;
+				mode_refresh();
+			}
+		
+		} else if (p == 18) { // Toggle velocity sensitivity
+			vel_sensitive = (vel_sensitive)? 0 : 1;
+			dirty = 1;
+			mode_refresh();
+		
+		} else if (35 <= p && p <= 38) { // Change Top Lights configuration
+			top_lights_config = p - 35;
+			dirty = 1;
+			mode_refresh();
+		
+		} else if (81 <= p && p <= 83) { // Switch default mode
+			mode_default = p - 81;
+			mode_refresh();
+		}
+	}
+}
+
+void setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+
+/*       Palette editor       */
+/*----------------------------*/
+
+u8 editor_selected = 1;
+
+u8 editor_xy_v(u8 xy) {
+	return 64 - (xy / 10 * 8) + (xy - 1) % 10 + (editor_selected >> 6) * 64;
+}
+
+u8 editor_v_xy(u8 v) {
+	return 81 - 10 * ((v % 64) >> 3) + v % 8;
+}
+
+void editor_refresh() {
+	palette_led(editor_v_xy(editor_selected), editor_selected);
+	
+	display_u8(editor_selected, 0, 9, 63, 63, 63);
+	
+	display_u6(palette[0][0][editor_selected], 1, 0, 63, 0, 0);
+	display_u6(palette[0][1][editor_selected], 0, 0, 0, 63, 0);
+	display_u6(palette[0][2][editor_selected], 1, 9, 0, 0, 63);
+}
+
+void editor_draw() {
+	for (u8 x = 1; x < 9; x++) {
+		for (u8 y = 1; y < 9; y++) {
+			u8 xy = x * 10 + y;
+			palette_led(xy, editor_xy_v(xy));
+		}
+	}
+	editor_refresh();
+}
+
+void editor_select_xy(u8 xy) {
+	if (xy != 81 || (editor_selected >> 6) != 0) {
+		editor_selected = editor_xy_v(xy);
+		editor_refresh();
+	}
+}
+
+void editor_select_v(u8 v) {
+	if (v != 0) {
+		editor_selected = v;
+		editor_refresh();
+	}
+}
+
+void editor_select_flip(u8 i) {
+	u8 v = editor_selected ^ math_pow(2, i);
+	
+	if (v != 0) {
+		editor_selected = v;
+		if (i == 6) {
+			editor_draw();
+		} else {
+			editor_refresh();
+		}
+	}
+}
+
+void editor_init() {
+	editor_selected = 1;
+	editor_draw();
+}
+
+void editor_timer_event() {}
+
+void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (v != 0) {
+		if (p == 0) { // Enter Setup mode
+			mode_update(254);
+		
+		} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
+			palette[0][0][editor_selected] ^= math_pow(2, x - 2);
+			editor_refresh();
+			dirty = 1;
+		
+		} else if (2 <= p && p <= 7) { // Modify green bit
+			palette[0][1][editor_selected] ^= math_pow(2, 7 - p);
+			editor_refresh();
+			dirty = 1;
+		
+		} else if (2 <= x && x <= 7 && y == 9) { // Modify blue bit
+			palette[0][2][editor_selected] ^= math_pow(2, x - 2);
+			editor_refresh();
+			dirty = 1;
+		
+		} else if (92 <= p && p <= 98) { // Modify velocity bit
+			editor_select_flip(98 - p);
+		
+		} else if (p != 1 && p != 8 && p != 10 && p != 19 && p != 80 && p != 89 && p != 91) { // Select velocity on grid
+			editor_select_xy(p);
+		}
+	}
+}
+
+void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*      Performance mode      */
 /*----------------------------*/
@@ -262,7 +472,7 @@ void performance_timer_event() {}
 
 void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
-		if (v != 0) mode_update(2);
+		if (v != 0) mode_update(254);
 				
 	} else { // Send MIDI input to DAW
 		hal_send_midi(USBMIDI, 0x90, xy_dr[p], v);
@@ -300,7 +510,6 @@ void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 /*        Ableton mode        */
 /*----------------------------*/
 
-u8 ableton_enabled = 0;
 u8 ableton_layout = 0x0;
 
 void ableton_led(u8 p, u8 v) {
@@ -316,7 +525,7 @@ void ableton_timer_event() {}
 
 void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
-		if (v != 0) mode_update(2);	
+		if (v != 0) mode_update(254);	
 	} else {
 		switch (ableton_layout) {
 			case 0x0: // Session mode
@@ -397,206 +606,84 @@ void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
-/*         Setup mode         */
+/*   Note mode (Standalone)   */
 /*----------------------------*/
 
-#define setup_tick 33
-u8 setup_elapsed = setup_tick;
-u8 setup_rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
-u8 setup_mode_counter = 0;
-u8 setup_editor_counter = 0;
+s8 note_c = 36;
+s8 note_offset = 0;
 
-void setup_init() {
-	hal_plot_led(TYPEPAD, 25, 11, 15, 15); // Select flash palette
-	hal_plot_led(TYPEPAD, 26, 11, 15, 11); // Select Novation palette
-	hal_plot_led(TYPEPAD, 27, 11, 15, 11); // Select mat1 palette
-	hal_plot_led(TYPEPAD, 28, 11, 15, 11); // Select LP S palette
+u8 note_led(u8 x, u8 y, u8 v) {
+	u8 e = 0, f = 0; // Extra LED
 	
-	if (palette_selected == 0) {
-		hal_plot_led(TYPEPAD, 25, 47, 63, 63); // Flash palette selected
-	} else {
-		hal_plot_led(TYPEPAD, palette_selected + 25, 47, 63, 47); // Preset palette selected
-		hal_plot_led(TYPEPAD, 15, 0, 7, 0); // Apply preset palette to flash palette
-	}
-	
-	if (vel_sensitive) {
-		hal_plot_led(TYPEPAD, 18, 31, 63, 63); // Velocity sensitivity enabled
-	} else {
-		hal_plot_led(TYPEPAD, 18, 7, 15, 15); // Velocity sensitivity disabled
-	}
-	
-	hal_plot_led(TYPEPAD, 35, 15, 11, 15); // PRO Top Lights
-	hal_plot_led(TYPEPAD, 36, 11, 7, 15); // MK2 Top Lights
-	hal_plot_led(TYPEPAD, 37, 11, 7, 15); // MK2 Rotated Top Lights
-	hal_plot_led(TYPEPAD, 38, 11, 7, 15); // MK2 Mirrored Top Lights
-	
-	if (top_lights_config == 0) {
-		hal_plot_led(TYPEPAD, 35, 63, 47, 63); // PRO Top Lights selected
-	} else {
-		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
-	}
-	
-	hal_plot_led(TYPEPAD, 81, 15, 0, 2); // Performance mode
-	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
-	
-	if (ableton_enabled) {
-		hal_plot_led(TYPEPAD, 82, 0, 63, 0); // Ableton mode selected
-	} else {
-		hal_plot_led(TYPEPAD, 81, 63, 0, 10); // Performance mode selected
-	}
-}
-
-void setup_timer_event() {
-	if (++setup_elapsed >= setup_tick) {
-		hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
-		setup_mode_counter++; setup_mode_counter %= 48;
-		
-		if (palette_selected == 0) {
-			hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
-			setup_editor_counter++; setup_editor_counter %= 48;
+	if (y < 4) {
+		if (x > 1) {
+			e = x - 1; f = y + 5;
 		}
-		
-		setup_elapsed = 0;
+	} else if (y > 5) {
+		if (x < 8) {
+			e = x + 1; f = y - 5;
+		}
 	}
-}
-
-void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	if (v != 0) {
-		if (p == 0) { // Enter Performance/Ableton mode
-			mode_update(ableton_enabled);
-		
-		} else if (25 <= p && p <= 28) { // Palette switch
-			palette_selected = p - 25;
-			dirty = 1;
-			mode_refresh();
-		
-		} else if (p == 15) {
-			if (palette_selected == 0) { // Enter Palette editor mode
-				mode_update(3);
+	
+	u8 n = note_c + (x - 1) * 5 + (y - 1);
+	
+	if (v == 0) { // Note released
+		switch (n % 12) {
+			case 0: // Starting note of octave
+				hal_plot_led(TYPEPAD, x * 10 + y, 63, 0, 63);
+				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 63, 0, 63);
+				break;
 			
-			} else { // Save current preset as custom palette
-				memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
-				palette_selected = 0;
-				dirty = 1;
-				mode_refresh();
-			}
-		
-		} else if (p == 18) { // Toggle velocity sensitivity
-			vel_sensitive = (vel_sensitive)? 0 : 1;
-			dirty = 1;
-			mode_refresh();
-		
-		} else if (35 <= p && p <= 38) { // Change Top Lights configuration
-			top_lights_config = p - 35;
-			dirty = 1;
-			mode_refresh();
-		
-		} else if (p == 81 || p == 82) { // Switch Ableton mode and Performance mode
-			ableton_enabled = p - 81;
-			mode_refresh();
+			case 2:
+			case 4:
+			case 5:
+			case 7:
+			case 9:
+			case 11: // White note
+				hal_plot_led(TYPEPAD, x * 10 + y, 0, 63, 63);
+				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 63, 63);
+				break;
+			
+			default: // Black note
+				hal_plot_led(TYPEPAD, x * 10 + y, 0, 0, 0);
+				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 0, 0);
+				break;	
 		}
+	} else { // Note pressed
+		hal_plot_led(TYPEPAD, x * 10 + y, 0, 63, 0);
+		if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 63, 0);
 	}
-}
-
-void setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
-
-/*       Palette editor       */
-/*----------------------------*/
-
-u8 editor_selected = 1;
-
-u8 editor_xy_v(u8 xy) {
-	return 64 - (xy / 10 * 8) + (xy - 1) % 10 + (editor_selected >> 6) * 64;
-}
-
-u8 editor_v_xy(u8 v) {
-	return 81 - 10 * ((v % 64) >> 3) + v % 8;
-}
-
-void editor_refresh() {
-	palette_led(editor_v_xy(editor_selected), editor_selected);
 	
-	display_u8(editor_selected, 0, 9, 63, 63, 63);
-	
-	display_u6(palette[0][0][editor_selected], 1, 0, 63, 0, 0);
-	display_u6(palette[0][1][editor_selected], 0, 0, 0, 63, 0);
-	display_u6(palette[0][2][editor_selected], 1, 9, 0, 0, 63);
+	return n;
 }
 
-void editor_draw() {
+void note_draw() {
 	for (u8 x = 1; x < 9; x++) {
 		for (u8 y = 1; y < 9; y++) {
-			u8 xy = x * 10 + y;
-			palette_led(xy, editor_xy_v(xy));
+			note_led(x, y, 0);
 		}
 	}
-	editor_refresh();
 }
 
-void editor_select_xy(u8 xy) {
-	if (xy != 81 || (editor_selected >> 6) != 0) {
-		editor_selected = editor_xy_v(xy);
-		editor_refresh();
-	}
+void note_init() {
+	note_draw();
+	hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
 }
 
-void editor_select_v(u8 v) {
-	if (v != 0) {
-		editor_selected = v;
-		editor_refresh();
-	}
-}
+void note_timer_event() {}
 
-void editor_select_flip(u8 i) {
-	u8 v = editor_selected ^ math_pow(2, i);
+void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);
+	} else if (x == 0 || x == 9 || y == 0 || y == 9) {
+		// TODO: Implement side button behavior
 	
-	if (v != 0) {
-		editor_selected = v;
-		if (i == 6) {
-			editor_draw();
-		} else {
-			editor_refresh();
-		}
+	} else { // Regular note
+		hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, note_led(x, y, v), v);
 	}
-}
+};
 
-void editor_init() {
-	editor_selected = 1;
-	editor_draw();
-}
-
-void editor_timer_event() {}
-
-void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	if (v != 0) {
-		if (p == 0) { // Enter Setup mode
-			mode_update(2);
-		
-		} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
-			palette[0][0][editor_selected] ^= math_pow(2, x - 2);
-			editor_refresh();
-			dirty = 1;
-		
-		} else if (2 <= p && p <= 7) { // Modify green bit
-			palette[0][1][editor_selected] ^= math_pow(2, 7 - p);
-			editor_refresh();
-			dirty = 1;
-		
-		} else if (2 <= x && x <= 7 && y == 9) { // Modify blue bit
-			palette[0][2][editor_selected] ^= math_pow(2, x - 2);
-			editor_refresh();
-			dirty = 1;
-		
-		} else if (92 <= p && p <= 98) { // Modify velocity bit
-			editor_select_flip(98 - p);
-		
-		} else if (p != 1 && p != 8 && p != 10 && p != 19 && p != 80 && p != 89 && p != 91) { // Select velocity on grid
-			editor_select_xy(p);
-		}
-	}
-}
-
-void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void note_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*    SysEx event handling    */
 /*----------------------------*/
@@ -625,8 +712,8 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (syx_cmp(d, syx_mode_selection, l - 2)) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
-		ableton_enabled = 1 - *(d + 7);
-		mode_update(ableton_enabled); // This will interrupt boot animation!
+		mode_default = 1 - *(d + 7);
+		mode_update(mode_default); // This will interrupt boot animation!
 		
 		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
 		return;
@@ -657,6 +744,16 @@ void app_init(const u16 *adc_raw) {
 	mode_surface_event[255] = boot_surface_event;
 	mode_midi_event[255] = boot_midi_event;
 	
+	mode_init[254] = setup_init;
+	mode_timer_event[254] = setup_timer_event;
+	mode_surface_event[254] = setup_surface_event;
+	mode_midi_event[254] = setup_midi_event;
+	
+	mode_init[253] = editor_init;
+	mode_timer_event[253] = editor_timer_event;
+	mode_surface_event[253] = editor_surface_event;
+	mode_midi_event[253] = editor_midi_event;
+	
 	mode_init[0] = performance_init;
 	mode_timer_event[0] = performance_timer_event;
 	mode_surface_event[0] = performance_surface_event;
@@ -666,16 +763,11 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[1] = ableton_timer_event;
 	mode_surface_event[1] = ableton_surface_event;
 	mode_midi_event[1] = ableton_midi_event;
-	
-	mode_init[2] = setup_init;
-	mode_timer_event[2] = setup_timer_event;
-	mode_surface_event[2] = setup_surface_event;
-	mode_midi_event[2] = setup_midi_event;
-	
-	mode_init[3] = editor_init;
-	mode_timer_event[3] = editor_timer_event;
-	mode_surface_event[3] = editor_surface_event;
-	mode_midi_event[3] = editor_midi_event;
+
+	mode_init[2] = note_init;
+	mode_timer_event[2] = note_timer_event;
+	mode_surface_event[2] = note_surface_event;
+	mode_midi_event[2] = note_midi_event;
 	
 	mode_update(255);
 }
