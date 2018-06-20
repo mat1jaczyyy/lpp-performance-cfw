@@ -169,22 +169,6 @@ void mode_update(u8 x) {
 	mode_refresh();
 }
 
-/*       SysEx messages       */
-/*----------------------------*/
-
-u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
-u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
-                                    0x00,                                                      // Device ID
-                                    0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
-                                    0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
-                                    0xF7};
-
-u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
-u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
-
-u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
-u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
-
 /*       Event handling       */
 /*----------------------------*/
 
@@ -203,38 +187,6 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 	if (port == USBMIDI) {
 		(*mode_midi_event[mode])(t >> 4, t % 16, p, v);
-	}
-}
-
-void app_sysex_event(u8 port, u8 * d, u16 l) {
-	// Device Inquiry - Read information about the connected device
-	if (syx_cmp(d, syx_device_inquiry, l)) {
-		hal_send_sysex(USBMIDI, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
-		return;
-	}
-	
-	// Mode selection - return the status
-	if (syx_cmp(d, syx_mode_selection, l - 2)) {
-		syx_mode_selection_response[7] = *(d + 7);
-		
-		if (syx_mode_selection_response[7] == 0) { // Enter Ableton mode
-			mode_update(3);
-		} else {
-			mode_update(0);
-		}
-		
-		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
-		return;
-	}
-	
-	// Live layout selection - return the status
-	if (syx_cmp(d, syx_live_layout_selection, l - 2)) {
-		syx_live_layout_selection_response[7] = *(d + 7);
-		
-		// For now, don't change layouts until we reverse-engineer the rest of Ableton communication
-		
-		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
-		return;
 	}
 }
 
@@ -319,12 +271,12 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 	switch (ch) {
-		case 5: // Ch. 6
+		case 0x5: // Ch. 6
 			switch (t) {
-				case 8: // Note off
+				case 0x8: // Note off
 					v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
 				
-				case 9: // Note on
+				case 0x9: // Note on
 					if (top_lights_config != 0) {
 						if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
 							p += -80;
@@ -348,17 +300,16 @@ void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 /*        Ableton mode        */
 /*----------------------------*/
 
-// TODO: Better understanding and implementation of how XY/DR layouts and CC/Note messages differ between Live layouts
-
 u8 ableton_enabled = 0;
+u8 ableton_layout = 0x0;
 
-void ableton_led(u8 p, u8 v) {
+void ableton_note(u8 p, u8 v) {
 	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
 }
 
 void ableton_CC(u8 c, u8 v) {
 	// Temporary fallback
-	ableton_led(c, v);
+	ableton_note(c, v);
 }
 
 void ableton_init() {
@@ -371,35 +322,84 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(1);	
 	} else {
-		// TODO: Implement MIDI input to DAW
+		switch (ableton_layout) {
+			case 0x0: // Session mode
+			case 0x6: // Session mode - Record Arm
+			case 0x7: // Session mode - Track Select
+			case 0x8: // Session mode - Mute
+			case 0x9: // Session mode - Solo
+			case 0xD: // Session mode - Stop Clip
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
+				}
+			
+			case 0x1: // Note mode - Drum Rack layout
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
+				}
+			
+			case 0x2: // Note mode - Chromatic layout
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+				} else {
+					// TODO: Implement true Note mode
+				}
+			
+			case 0x4: // Note mode - Blank layout (for Audio track)
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+				}
+			
+			case 0x5: // Fader - Device mode
+			case 0xA: // Fader - Volume
+			case 0xB: // Fader - Pan
+			case 0xC: // Fader - Sends
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+				} else {
+					// TODO: Implement true Device mode
+				}
+			
+			case 0x3: // User mode
+				if (x == 9) {
+					hal_send_midi(USBMIDI, 0xB5, p, (v == 0)? 0 : 127);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+				}
+		}
 	}
 }
 
 void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 	switch (ch) {
-		case 0:
+		case 0x0:
 			switch(t) {
 				case 11:
 					ableton_CC(p, v);
 					break;
 			}
 		
-		case 5: // Ch. 6
-			switch (t) {
-				case 8: // Note off
-					v = 0;
-				
-				case 9: // Note on
-					ableton_led(p, v);
-					break;
-				
-				case 11:
-					ableton_CC(p, v);
-					break;
-			}		
+		case 0x5: // Ch. 6
+			if (ableton_layout == 0x3) { // User mode
+				switch (t) {
+					case 0x8: // Note off
+						v = 0;
+					
+					case 0x9: // Note on
+						ableton_note(p, v);
+						break;
+					
+					case 0xB:
+						ableton_CC(p, v);
+						break;
+				}
+			}
 	}
 }
-
 
 /*         Setup mode         */
 /*----------------------------*/
@@ -601,6 +601,51 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+
+/*    SysEx event handling    */
+/*----------------------------*/
+
+u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
+u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
+                                    0x00,                                                      // Device ID
+                                    0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
+                                    0x00, 0x01, 0x05, 0x04,                                    // Firmware rev. (4 bytes)
+                                    0xF7};
+
+u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
+u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
+
+u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
+u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
+
+void app_sysex_event(u8 port, u8 * d, u16 l) {
+	// Device Inquiry - Read information about the connected device
+	if (syx_cmp(d, syx_device_inquiry, l)) {
+		hal_send_sysex(USBMIDI, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
+		return;
+	}
+	
+	// Mode selection - return the status
+	if (syx_cmp(d, syx_mode_selection, l - 2)) {
+		syx_mode_selection_response[7] = *(d + 7);
+		
+		ableton_enabled = 3 * (1 - *(d + 7));
+		mode_update(ableton_enabled);
+		
+		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
+		return;
+	}
+	
+	// Live layout selection - return the status
+	if (syx_cmp(d, syx_live_layout_selection, l - 2)) {
+		syx_live_layout_selection_response[7] = *(d + 7);
+		
+		ableton_layout = *(d + 7);
+		
+		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		return;
+	}
+}
 
 /*  Initialize the Launchpad  */
 /*----------------------------*/
