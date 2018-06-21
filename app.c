@@ -53,6 +53,7 @@ u8 math_pow(u8 x, u8 e) {
 	return y;
 }
 
+#define modulo(x, y) ((x % y + y) % y)
 #define arr_size(x) (sizeof(x) / sizeof((x)[0]))
 #define syx_cmp(x, y, n) (arr_size(y) == n && memcmp(x, &y[0], n) == 0)
 
@@ -535,7 +536,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			case 0x9: // Session mode - Solo
 			case 0xD: // Session mode - Stop Clip
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
 				}
@@ -543,7 +544,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case 0x1: // Note mode - Drum Rack layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
 				}
@@ -551,7 +552,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case 0x2: // Note mode - Chromatic layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					// TODO: Implement true Note mode
 				}
@@ -559,7 +560,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case 0x4: // Note mode - Blank layout (for Audio track)
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB0, p, v);
 				}
 				break;
 			
@@ -568,7 +569,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			case 0xB: // Fader - Pan
 			case 0xC: // Fader - Sends
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					// TODO: Implement true Device mode
 				}
@@ -576,7 +577,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case 0x3: // User mode
 				if (x == 9) {
-					hal_send_midi(USBMIDI, 0xB5, p, (v == 0)? 0 : 127);
+					hal_send_midi(USBMIDI, 0xB5, p, v);
 				} else {
 					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
 				}
@@ -609,10 +610,20 @@ void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 /*   Note mode (Standalone)   */
 /*----------------------------*/
 
-s8 note_c = 36;
-s8 note_offset = 0;
+s8 note_octave = 3;
+u8 note_octave_colors[10][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}, {0, 0, 31}, {0, 0, 63}, {20, 0, 63}, {40, 0, 63}, {63, 0, 63}};
 
-u8 note_led(u8 x, u8 y, u8 v) {
+s8 note_transpose = 0;
+u8 note_transpose_colors[13][3] = {{0, 7, 0}, {0, 21, 0}, {0, 31, 0}, {0, 42, 0}, {0, 52, 0}, {0, 63, 0}, {15, 63, 0}, {23, 63, 0}, {31, 63, 0}, {39, 63, 0}, {47, 63, 0}, {55, 63, 0}, {63, 63, 0}};
+
+u8 note_shift = 0;
+
+void note_rgb(u8 p, u8 d, u8 r, u8 g, u8 b) {
+	hal_plot_led(TYPEPAD, p, r, g, b);
+	if (d != 0) hal_plot_led(TYPEPAD, d, r, g, b);
+}
+
+s8 note_led(u8 x, u8 y, u8 v) {
 	u8 e = 0, f = 0; // Extra LED
 	
 	if (y < 4) {
@@ -625,48 +636,91 @@ u8 note_led(u8 x, u8 y, u8 v) {
 		}
 	}
 	
-	u8 n = note_c + (x - 1) * 5 + (y - 1);
+	s8 n = note_octave * 12 + (x - 1) * 5 + (y - 1);
+	u8 p = x * 10 + y; u8 d = e * 10 + f;
+	s8 t = n + note_transpose;
 	
-	if (v == 0) { // Note released
-		switch (n % 12) {
-			case 0: // Starting note of octave
-				hal_plot_led(TYPEPAD, x * 10 + y, 63, 0, 63);
-				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 63, 0, 63);
-				break;
+	if (t < 0) { // Invalid note
+		note_rgb(p, d, 7, 0, 0);
+		return -1;
+		
+	} else { // Valid note
+		if (v == 0) { // Note released
+			u8 m = modulo(n, 12); // Note without octave
+			u8 b = modulo(note_transpose, 12); // Base note of scale
 			
-			case 2:
-			case 4:
-			case 5:
-			case 7:
-			case 9:
-			case 11: // White note
-				hal_plot_led(TYPEPAD, x * 10 + y, 0, 63, 63);
-				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 63, 63);
-				break;
+			switch (m) {
+				case 0: // C base note
+					note_rgb(p, d, 63, 0, 63);
+					break;
+				
+				case 2:
+				case 4:
+				case 5:
+				case 7:
+				case 9:
+				case 11: // White note
+					note_rgb(p, d, 0, 63, 63);
+					break;
+				
+				default: // Black note
+					note_rgb(p, d, 0, 0, 0);
+					break;	
+			}
 			
-			default: // Black note
-				hal_plot_led(TYPEPAD, x * 10 + y, 0, 0, 0);
-				if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 0, 0);
-				break;	
+			if (b != 0 && b == m) note_rgb(p, d, 20, 0, 63); // Scale base note
+			
+		} else { // Note pressed
+			note_rgb(p, d, 0, 63, 0);
 		}
-	} else { // Note pressed
-		hal_plot_led(TYPEPAD, x * 10 + y, 0, 63, 0);
-		if (e != 0 || f != 0) hal_plot_led(TYPEPAD, e * 10 + f, 0, 63, 0);
-	}
 	
-	return n;
+		return t;
+	}
+}
+
+void note_scale_button() {
+	if (note_shift) { // Shift button pressed
+		hal_plot_led(TYPEPAD, 80, 63, 63, 63);
+		hal_plot_led(TYPEPAD, 96, 7, 7, 7);
+	
+	} else { // Shift button released
+		hal_plot_led(TYPEPAD, 80, 7, 7, 7);
+		hal_plot_led(TYPEPAD, 96, 0, 0, 0);
+	}
 }
 
 void note_draw() {
-	for (u8 x = 1; x < 9; x++) {
+	for (u8 x = 1; x < 9; x++) { // Regular notes
 		for (u8 y = 1; y < 9; y++) {
 			note_led(x, y, 0);
 		}
+	}
+	
+	for (u8 i = 0; i < 128; i++) { // Turn off all notes
+		hal_send_midi(USBMIDI, 0x80, i, 0);
+	}
+	
+	u8 o = note_octave + 1; // Octave navigation
+	if (o < 5) {
+		hal_plot_led(TYPEPAD, 91, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+		hal_plot_led(TYPEPAD, 92, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+	} else {
+		hal_plot_led(TYPEPAD, 91, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+		hal_plot_led(TYPEPAD, 92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+	}
+	
+	if (note_transpose > 0) { // Transpose navigation
+		hal_plot_led(TYPEPAD, 93, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
+		hal_plot_led(TYPEPAD, 94, note_transpose_colors[note_transpose][0], note_transpose_colors[note_transpose][1], note_transpose_colors[note_transpose][2]);
+	} else {
+		hal_plot_led(TYPEPAD, 93, note_transpose_colors[-note_transpose][0], note_transpose_colors[-note_transpose][1], note_transpose_colors[-note_transpose][2]);
+		hal_plot_led(TYPEPAD, 94, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
 	}
 }
 
 void note_init() {
 	note_draw();
+	note_scale_button();
 	hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
 }
 
@@ -675,13 +729,49 @@ void note_timer_event() {}
 void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(254);
-	} else if (x == 0 || x == 9 || y == 0 || y == 9) {
-		// TODO: Implement side button behavior
+	
+	} else if (p == 96 && note_shift) { // Shift+Note button
+		if (v != 0) {
+			// TODO: Implement Scale mode
+			hal_plot_led(TYPEPAD, p, 63, 63, 63);
+		}
+	
+	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
+		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+	
+	} else if (p == 80) { // Shift button
+		hal_send_midi(USBMIDI, 0xB0, p, v);
+		note_shift = v;
+		note_scale_button();
+	
+	} else if (x == 9 && y < 5) { // Navigation buttons
+		if (v != 0) {
+			switch (p) {
+				case 91: // Octave up
+					if (note_octave < 8) note_octave++;
+					break;
+				
+				case 92: // Octave down
+					if (note_octave > -1) note_octave--;
+					break;
+				
+				case 93: // Transpose down
+					if (note_transpose > -12) note_transpose--;
+					break;
+				
+				case 94: // Transpose up
+					if (note_transpose < 12) note_transpose++;
+					break;
+			}
+			note_draw();
+		}
 	
 	} else { // Regular note
-		hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, note_led(x, y, v), v);
+		s8 n = note_led(x, y, v);
+		if (n >= 0) hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, n, v);
 	}
-};
+}
 
 void note_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
