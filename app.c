@@ -476,7 +476,7 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 				
 	} else { // Send MIDI input to DAW
-		hal_send_midi(USBMIDI, 0x90, xy_dr[p], v);
+		hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
 	}
 }
 
@@ -607,7 +607,7 @@ void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
-/*   Note mode (Standalone)   */
+/*    Note and Scale modes    */
 /*----------------------------*/
 
 s8 note_octave = 3;
@@ -617,6 +617,48 @@ s8 note_transpose = 0;
 u8 note_transpose_colors[13][3] = {{0, 7, 0}, {0, 21, 0}, {0, 31, 0}, {0, 42, 0}, {0, 52, 0}, {0, 63, 0}, {15, 63, 0}, {23, 63, 0}, {31, 63, 0}, {39, 63, 0}, {47, 63, 0}, {55, 63, 0}, {63, 63, 0}};
 
 u8 note_shift = 0;
+
+u8 scales[32][13] = {
+	{5, 0, 1, 5, 7, 10}, // In Sen
+	{5, 0, 2, 5, 7, 9}, // Yo scale
+	{5, 0, 1, 5, 6, 10}, // Iwato
+	{8, 0, 2, 3, 5, 6, 8, 9, 11}, // Whole Half
+	{8, 0, 2, 3, 5, 7, 8, 10, 11}, // BeBop Minor
+	{6, 0, 2, 3, 4, 7, 9}, // Major blues
+	{5, 0, 2, 3, 7, 9}, // Kumoi
+	{8, 0, 2, 4, 5, 7, 8, 9, 11}, // BeBop Major
+	{7, 0, 2, 4, 6, 7, 9, 11}, // Lydian
+	{7, 0, 1, 3, 5, 6, 8, 10}, // Locrian
+	{5, 0, 2, 4, 7, 9}, // Major Pentatonic
+	{7, 0, 1, 4, 5, 7, 8, 10}, // Phyrigian Dominant
+	{8, 0, 1, 3, 4, 6, 7, 9, 10}, // Half-Whole Diminished
+	{8, 0, 2, 4, 5, 7, 9, 10, 11}, // Mixolydian BeBop
+	{7, 0, 1, 3, 4, 6, 8, 10}, // Super Locrian
+	{5, 0, 2, 3, 6, 7}, // Hirajoshi
+	{6, 0, 3, 5, 6, 7, 10}, // Blues
+	{5, 0, 3, 5, 7, 10}, // Minor Pentatonic
+	{7, 0, 2, 3, 6, 7, 8, 11}, // Hungarian Minor
+	{7, 0, 2, 3, 6, 7, 9, 10}, // Ukrainian Dorian
+	{7, 0, 1, 4, 6, 7, 9, 11}, // Marva
+	{7, 0, 1, 3, 5, 6, 7, 11}, // Todi
+	{6, 0, 2, 4, 6, 8, 10}, // Whole Tone
+	{12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, // Chromatic
+	{7, 0, 2, 3, 5, 7, 8, 10}, // Minor
+	{7, 0, 2, 4, 5, 7, 9, 11}, // Major
+	{7, 0, 2, 3, 5, 7, 9, 10}, // Dorian
+	{7, 0, 1, 3, 5, 7, 8, 10}, // Phrygian
+	{7, 0, 2, 4, 5, 7, 9, 10}, // Mixolydian
+	{7, 0, 2, 3, 5, 7, 9, 11}, // Melodic Minor (ascending)
+	{7, 0, 2, 3, 5, 7, 8, 11}, // Harmonic Minor
+	{8, 0, 2, 3, 4, 5, 7, 9, 10} // BeBop Dorian
+};
+
+u8 scale_keys[12] = {51, 62, 52, 63, 53, 54, 65, 55, 66, 56, 67, 57};
+
+u8 scale_enabled = 0;
+u8 scale_segment = 7;
+u8 scale_selected = 25;
+u8 scale_root = 0;
 
 void note_rgb(u8 p, u8 d, u8 r, u8 g, u8 b) {
 	hal_plot_led(TYPEPAD, p, r, g, b);
@@ -730,11 +772,12 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(254);
 	
-	} else if (p == 96 && note_shift) { // Shift+Note button
-		if (v != 0) {
-			// TODO: Implement Scale mode
-			hal_plot_led(TYPEPAD, p, 63, 63, 63);
-		}
+	} else if (p == 96 && note_shift && v != 0) { // Shift+Note button
+		mode_update(252); // Enter Setup for Scale mode
+		hal_plot_led(TYPEPAD, p, 63, 63, 63);
+	
+	} else if (p == 96 && v == 0) {
+		note_scale_button();
 	
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
 		hal_send_midi(USBMIDI, 0xB0, p, v);
@@ -774,6 +817,83 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void note_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+
+void scale_setup_init() {
+	hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
+	
+	if (scale_enabled) {
+		hal_plot_led(TYPEPAD, 88, 20, 63, 0); // Scale mode enabled
+	} else {
+		hal_plot_led(TYPEPAD, 88, 4, 10, 0); // Scale mode disabled
+	}
+	
+	for (u8 i = 81; i < 88; i++) {
+		hal_plot_led(TYPEPAD, i, 21, 7, 0); // Segment length options
+	}
+	hal_plot_led(TYPEPAD, 88 - scale_segment, 63, 20, 0); // Selected segment
+	
+	for (u8 i = 0; i < 12; i++) {
+		hal_plot_led(TYPEPAD, scale_keys[i], 0, 7, 7); // Root note selector and scale preview
+	}	
+	for (u8 i = 2; i <= scales[scale_selected][0]; i++) {
+		hal_plot_led(TYPEPAD, scale_keys[modulo(scales[scale_selected][i] + scale_root, 12)], 0, 63, 63); // Notes in current scale
+	}
+	hal_plot_led(TYPEPAD, scale_keys[scale_root], 0, 0, 63); // Scale root note
+	
+	for (u8 x = 1; x < 5; x++) {
+		for (u8 y = 1; y < 9; y++) {
+			hal_plot_led(TYPEPAD, x * 10 + y, 63, 0, 63); // Select scale
+		}
+	}
+	hal_plot_led(TYPEPAD, ((scale_selected >> 3) + 1) * 10 + (scale_selected % 8) + 1, 20, 0, 63); // Selected scale
+}
+
+void scale_setup_timer_event() {}
+
+void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);
+	
+	} else if (p == 96) {
+		if (v == 0) {
+			hal_plot_led(TYPEPAD, 96, 0, 7, 7);
+		} else {
+			mode_update(2); // Enter Note mode
+			hal_plot_led(TYPEPAD, 96, 0, 63, 0);
+		}
+	
+	} else if (p == 80) { // Shift button
+		hal_send_midi(USBMIDI, 0xB0, p, v);
+		note_shift = v;
+	
+	} else if (v != 0) {
+		if (p == 88) { // Enable or disable Scale mode
+			scale_enabled = 1 - scale_enabled;
+			scale_setup_init();
+		
+		} else if (81 <= p && p <= 87) { // Select segment length
+			scale_segment = 88 - p;
+			scale_setup_init();
+		
+		} else if (1 <= x && x <= 4 && 1 <= y && y <= 8) { // Select scale
+			scale_selected = (x - 1) * 8 + (y - 1);
+			scale_setup_init();
+		
+		} else {
+			u8 i = 0;
+			do {
+				if (scale_keys[i] == p) break;
+			} while (++i < 12);
+			
+			if (i < 12) {
+				scale_root = i;
+				scale_setup_init();
+			}
+		}
+	}
+}
+
+void scale_setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*    SysEx event handling    */
 /*----------------------------*/
@@ -843,6 +963,11 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[253] = editor_timer_event;
 	mode_surface_event[253] = editor_surface_event;
 	mode_midi_event[253] = editor_midi_event;
+	
+	mode_init[252] = scale_setup_init;
+	mode_timer_event[252] = scale_setup_timer_event;
+	mode_surface_event[252] = scale_setup_surface_event;
+	mode_midi_event[252] = scale_setup_midi_event;
 	
 	mode_init[0] = performance_init;
 	mode_timer_event[0] = performance_timer_event;
