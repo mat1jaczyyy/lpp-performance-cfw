@@ -616,6 +616,8 @@ u8 note_octave_colors[10][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}
 s8 note_transpose = 0;
 u8 note_transpose_colors[13][3] = {{0, 7, 0}, {0, 21, 0}, {0, 31, 0}, {0, 42, 0}, {0, 52, 0}, {0, 63, 0}, {15, 63, 0}, {23, 63, 0}, {31, 63, 0}, {39, 63, 0}, {47, 63, 0}, {55, 63, 0}, {63, 63, 0}};
 
+#define note_length 12
+#define note_segment 5
 u8 note_shift = 0;
 
 u8 scales[32][13] = {
@@ -652,7 +654,6 @@ u8 scales[32][13] = {
 	{7, 0, 2, 3, 5, 7, 8, 11}, // Harmonic Minor
 	{8, 0, 2, 3, 4, 5, 7, 9, 10} // BeBop Dorian
 };
-
 u8 scale_keys[12] = {51, 62, 52, 63, 53, 54, 65, 55, 66, 56, 67, 57};
 
 u8 scale_enabled = 0;
@@ -660,64 +661,90 @@ u8 scale_segment = 7;
 u8 scale_selected = 25;
 u8 scale_root = 0;
 
-void note_rgb(u8 p, u8 d, u8 r, u8 g, u8 b) {
-	hal_plot_led(TYPEPAD, p, r, g, b);
-	if (d != 0) hal_plot_led(TYPEPAD, d, r, g, b);
+void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
+	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
+		hal_plot_led(TYPEPAD, *(p+i), r, g, b);
+	}
 }
 
-s8 note_led(u8 x, u8 y, u8 v) {
-	u8 e = 0, f = 0; // Extra LED
+s8 note_press(u8 x, u8 y, u8 v) {
+	u8 length = (scale_enabled)? scales[scale_selected][0] : note_length;
+	u8 segment = (scale_enabled)? scale_segment : note_segment;
 	
-	if (y < 4) {
-		if (x > 1) {
-			e = x - 1; f = y + 5;
-		}
-	} else if (y > 5) {
-		if (x < 8) {
-			e = x + 1; f = y - 5;
+	u8 offset = (x - 1) * segment + (y - 1); // Note pressed in relation to lowest
+	u8 up = offset / length; // Octaves above lowest
+	
+	offset %= length; // Note pressed in relation to its octave
+	if (scale_enabled) offset = scales[scale_selected][1 + offset]; // Translate for Scale mode
+	
+	s8 c = (note_octave + up) * 12 + offset; // Note in relation to C
+	s8 n = c + note_transpose + ((scale_enabled)? scale_root : 0); // Actual note (transposition applied)
+	
+	u8 p[8] = {x * 10 + y}; // Pitches to update on the Launchpad
+	u8 l = 1;
+	
+	for (u8 i = 0; i < 7; i++) { // Add pitches above
+		s8 e = x + i;
+		s8 f = y - segment * i;
+		
+		if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
+			p[l++] = e * 10 + f; // Append to array
+		} else {
+			break;
 		}
 	}
 	
-	s8 n = note_octave * 12 + (x - 1) * 5 + (y - 1);
-	u8 p = x * 10 + y; u8 d = e * 10 + f;
-	s8 t = n + note_transpose;
+	for (u8 i = 0; i < 7; i++) { // Add pitches below
+		s8 e = x - i;
+		s8 f = y + segment * i;
+		
+		if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
+			p[l++] = e * 10 + f;
+		} else {
+			break;
+		}
+	}
 	
-	if (t < 0) { // Invalid note
-		note_rgb(p, d, 7, 0, 0);
-		return -1;
+	if (n < 0) { // Invalid note - also affects notes larger than 127 due to overflow!
+		note_single(&p[0], l, 7, 0, 0);
 		
 	} else { // Valid note
 		if (v == 0) { // Note released
-			u8 m = modulo(n, 12); // Note without octave
-			u8 b = modulo(note_transpose, 12); // Base note of scale
+			u8 m = modulo(c, 12); // Note without octave
 			
-			switch (m) {
-				case 0: // C base note
-					note_rgb(p, d, 63, 0, 63);
-					break;
+			if (scale_enabled) {
+				note_single(&p[0], l, (m == 0) ? 20 : 63, 0, 63);
+
+			} else {
+				switch (m) {
+					case 0: // C base note
+						note_single(&p[0], l, 63, 0, 63);
+						break;
+					
+					case 2:
+					case 4:
+					case 5:
+					case 7:
+					case 9:
+					case 11: // White note
+						note_single(&p[0], l, 0, 63, 63);
+						break;
+					
+					default: // Black note
+						note_single(&p[0], l, 0, 0, 0);
+						break;	
+				}
 				
-				case 2:
-				case 4:
-				case 5:
-				case 7:
-				case 9:
-				case 11: // White note
-					note_rgb(p, d, 0, 63, 63);
-					break;
-				
-				default: // Black note
-					note_rgb(p, d, 0, 0, 0);
-					break;	
+				u8 b = modulo(note_transpose, length); // Base note of scale
+				if (b != 0 && b == m) note_single(&p[0], l, 20, 0, 63); // Scale base note
 			}
 			
-			if (b != 0 && b == m) note_rgb(p, d, 20, 0, 63); // Scale base note
-			
 		} else { // Note pressed
-			note_rgb(p, d, 0, 63, 0);
+			note_single(&p[0], l, 0, 63, 0);
 		}
-	
-		return t;
 	}
+	
+	return n;
 }
 
 void note_scale_button() {
@@ -734,7 +761,7 @@ void note_scale_button() {
 void note_draw() {
 	for (u8 x = 1; x < 9; x++) { // Regular notes
 		for (u8 y = 1; y < 9; y++) {
-			note_led(x, y, 0);
+			note_press(x, y, 0);
 		}
 	}
 	
@@ -811,7 +838,7 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		}
 	
 	} else { // Regular note
-		s8 n = note_led(x, y, v);
+		s8 n = note_press(x, y, v);
 		if (n >= 0) hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, n, v);
 	}
 }
