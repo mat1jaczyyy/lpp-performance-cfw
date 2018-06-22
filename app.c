@@ -294,6 +294,7 @@ void setup_init() {
 	hal_plot_led(TYPEPAD, 81, 15, 0, 2); // Performance mode
 	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
 	hal_plot_led(TYPEPAD, 83, 0, 15, 15); // Note mode
+	hal_plot_led(TYPEPAD, 84, 15, 15, 0); // Drum mode
 	
 	switch (mode_default) {
 		case 0:
@@ -306,6 +307,10 @@ void setup_init() {
 		
 		case 2:
 			hal_plot_led(TYPEPAD, 83, 0, 63, 63); // Note mode selected
+			break;
+		
+		case 3:
+			hal_plot_led(TYPEPAD, 84, 63, 63, 0); // Note mode selected
 			break;
 	}
 }
@@ -355,7 +360,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (81 <= p && p <= 83) { // Switch default mode
+		} else if (81 <= p && p <= 84) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
 		}
@@ -727,7 +732,7 @@ s8 note_press(u8 x, u8 y, u8 v) {
 					case 7:
 					case 9:
 					case 11: // White note
-						note_single(&p[0], l, 0, 63, 63);
+						note_single(&p[0], l, 0, 41, 63);
 						break;
 					
 					default: // Black note
@@ -837,7 +842,7 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			note_draw();
 		}
 	
-	} else { // Regular note
+	} else { // Main grid
 		s8 n = note_press(x, y, v);
 		if (n >= 0) hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, n, v);
 	}
@@ -921,6 +926,96 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void scale_setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+
+/*    Standalone Drum mode    */
+/*----------------------------*/
+
+u8 drum_offset = 9;
+u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
+u8 drum_nav_pressed[4] = {};
+u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
+
+s8 drum_press(u8 x, u8 y, u8 v) {
+	u8 n = (drum_offset + x - 1) * 4 + (y - 1) % 4;
+	if (y >= 5) n += 32;
+	
+	u8 p = x * 10 + y;
+	
+	if (v == 0) { // Note released
+		u8 i = (n + 12) / 16;
+		hal_plot_led(TYPEPAD, p, drum_colors[i][0], drum_colors[i][1], drum_colors[i][2]);
+	
+	} else { // Note pressed
+		hal_plot_led(TYPEPAD, p, 0, 63, 0);
+	}
+	
+	return n;
+}
+
+void drum_init() {
+	for (u8 x = 1; x < 9; x++) { // Regular notes
+		for (u8 y = 1; y < 9; y++) {
+			drum_press(x, y, 0);
+		}
+	}
+	
+	for (u8 i = 0; i < 128; i++) { // Turn off all notes
+		hal_send_midi(USBMIDI, 0x80, i, 0);
+	}
+	
+	hal_plot_led(TYPEPAD, 91, 0, 0, (drum_offset < 13)? (drum_nav_pressed[0]? 63 : 31) : 0); // Navigation buttons
+	hal_plot_led(TYPEPAD, 92, 0, 0, (drum_offset > 3)? (drum_nav_pressed[1]? 63 : 31) : 0);
+	hal_plot_led(TYPEPAD, 93, 0, 0, (drum_offset < 16)? (drum_nav_pressed[2]? 63 : 31) : 0);
+	hal_plot_led(TYPEPAD, 94, 0, 0, (drum_offset > 0)? (drum_nav_pressed[3]? 63 : 31) : 0);
+	
+	hal_plot_led(TYPESETUP, 0, 63, 63, 0); // Note mode LED
+}
+
+void drum_timer_event() {}
+
+void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);
+	
+	} else if (x == 0 || (x == 9 && y >= 5) || y == 0 || y == 9) { // Unused side buttons
+		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+	
+	} else if (x == 9 && y <= 4) { // Navigation buttons
+		if (v != 0) {
+			switch (p) {
+				case 91:
+					drum_offset += 4 * (drum_offset < 13);
+					break;
+				
+				case 92:
+					drum_offset -= 4 * (drum_offset > 3);
+					break;
+				
+				case 93:
+					drum_offset += drum_offset < 16;
+					break;
+				
+				case 94:
+					drum_offset -= drum_offset > 0;
+					break;
+			}
+		}
+		drum_nav_pressed[p - 91] = v;
+		
+		if (drum_nav_pressed[0] && drum_nav_pressed[1]) { // Reset offset. Note: Undocumented in Programmer's reference
+			drum_offset = 9;
+		} else if (drum_nav_pressed[2] && drum_nav_pressed[3]) { // Align offset
+			drum_offset = drum_align[drum_offset];
+		}
+		drum_init(); // Redraw grid
+	
+	} else { // Main grid
+		hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, drum_press(x, y, v), v);
+	}
+}
+
+void drum_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*    SysEx event handling    */
 /*----------------------------*/
@@ -1010,6 +1105,11 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[2] = note_timer_event;
 	mode_surface_event[2] = note_surface_event;
 	mode_midi_event[2] = note_midi_event;
+	
+	mode_init[3] = drum_init;
+	mode_timer_event[3] = drum_timer_event;
+	mode_surface_event[3] = drum_surface_event;
+	mode_midi_event[3] = drum_midi_event;
 	
 	mode_update(255);
 }
