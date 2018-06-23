@@ -248,7 +248,9 @@ void boot_timer_event() {
 	}
 }
 
-void boot_surface_event(u8 p, u8 v, u8 x, u8 y) {}
+void boot_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0 && v != 0) mode_update(0); // Manually interrupt boot animation
+}
 
 void boot_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
@@ -295,6 +297,8 @@ void setup_init() {
 	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
 	hal_plot_led(TYPEPAD, 83, 0, 15, 15); // Note mode
 	hal_plot_led(TYPEPAD, 84, 15, 15, 0); // Drum mode
+	hal_plot_led(TYPEPAD, 85, 15, 0, 15); // Fader mode
+	hal_plot_led(TYPEPAD, 86, 15, 5, 0); // Programmer mode
 	
 	switch (mode_default) {
 		case 0:
@@ -310,7 +314,15 @@ void setup_init() {
 			break;
 		
 		case 3:
-			hal_plot_led(TYPEPAD, 84, 63, 63, 0); // Note mode selected
+			hal_plot_led(TYPEPAD, 84, 63, 63, 0); // Drum mode selected
+			break;
+		
+		case 4:
+			hal_plot_led(TYPEPAD, 85, 63, 0, 63); // Fader mode selected
+			break;
+		
+		case 5:
+			hal_plot_led(TYPEPAD, 86, 63, 18, 0); // Programmer mode selected
 			break;
 	}
 }
@@ -360,7 +372,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (81 <= p && p <= 84) { // Switch default mode
+		} else if (81 <= p && p <= 86) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
 		}
@@ -968,7 +980,7 @@ void drum_init() {
 	hal_plot_led(TYPEPAD, 93, 0, 0, (drum_offset < 16)? (drum_nav_pressed[2]? 63 : 31) : 0);
 	hal_plot_led(TYPEPAD, 94, 0, 0, (drum_offset > 0)? (drum_nav_pressed[3]? 63 : 31) : 0);
 	
-	hal_plot_led(TYPESETUP, 0, 63, 63, 0); // Note mode LED
+	hal_plot_led(TYPESETUP, 0, 63, 63, 0); // Drum mode LED
 }
 
 void drum_timer_event() {}
@@ -1017,6 +1029,52 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 void drum_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
+/*         Fader mode         */
+/*----------------------------*/
+// TODO: Implement Fader mode
+
+void fader_init() {
+	hal_plot_led(TYPESETUP, 0, 63, 0, 63); // Fader mode LED
+}
+
+void fader_timer_event() {}
+
+void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {}
+
+void fader_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+
+/*   Programmer mode (MIDI)   */
+/*----------------------------*/
+
+void programmer_init() {
+	hal_plot_led(TYPESETUP, 0, 63, 18, 0); // Programmer mode LED
+}
+
+void programmer_timer_event() {}
+
+void programmer_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);
+	
+	} else {
+		hal_send_midi(USBMIDI, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB0 : ((v == 0)? 0x80 : 0x90), p, v);
+	}
+}
+
+void programmer_midi_event(u8 t, u8 ch, u8 p, u8 v) {
+	if (t == 0x8) {
+		v = 0; // Note off
+		t = 0x9;
+	}
+	
+	u8 x = p / 10;
+	u8 y = p % 10;
+	
+	if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
+		hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+	}
+}
+
 /*    SysEx event handling    */
 /*----------------------------*/
 
@@ -1033,15 +1091,26 @@ u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0x
 u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
 u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
 
+u8 syx_standalone_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2C};
+u8 syx_standalone_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2F, 0xFF, 0xF7};
+
+u8 syx_led_single[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0A};
+u8 syx_led_column[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0C};
+u8 syx_led_row[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0D};
+u8 syx_led_all[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
+
+u8 syx_led_rgb[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
+u8 syx_led_grid[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
+
 void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Device Inquiry - Read information about the connected device
-	if (syx_cmp(d, syx_device_inquiry, l)) {
+	if (syx_cmp(d, syx_device_inquiry, 6)) {
 		hal_send_sysex(USBMIDI, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
 		return;
 	}
 	
 	// Mode selection - return the status
-	if (syx_cmp(d, syx_mode_selection, l - 2)) {
+	if (syx_cmp(d, syx_mode_selection, 7)) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
 		mode_default = 1 - *(d + 7);
@@ -1052,7 +1121,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	}
 	
 	// Live layout selection - return the status
-	if (syx_cmp(d, syx_live_layout_selection, l - 2)) {
+	if (syx_cmp(d, syx_live_layout_selection, 7)) {
 		syx_live_layout_selection_response[7] = *(d + 7);
 		
 		ableton_layout = *(d + 7);
@@ -1061,6 +1130,108 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		}
 		
 		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		return;
+	}
+	
+	// Standalone layout selection - return the status
+	if (syx_cmp(d, syx_standalone_layout_selection, 7)) {
+		if (mode_default != 1) { // If not in Ableton mode
+			syx_standalone_layout_selection_response[7] = *(d + 7);
+			mode_default = (syx_standalone_layout_selection_response[7] < 4)? (syx_standalone_layout_selection_response[7] + 2) : 0; // 4 for Performance mode (unavailable on stock)
+			
+			hal_send_sysex(USBMIDI, &syx_standalone_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		}
+		return;
+	}
+	
+	// Light LED using SysEx
+	if (syx_cmp(d, syx_led_single, 7)) {
+		for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
+			u8 p = *(d + i);
+			u8 v = *(d + i + 1);
+			
+			if (p == 99) {
+				hal_plot_led(TYPESETUP, 0, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			} else {
+				hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			}
+		}
+		return;
+	}
+	
+	// Light a column of LEDs using SysEx
+	if (syx_cmp(d, syx_led_column, 7)) {
+		u8 y = *(d + 7);
+		
+		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
+			u8 v = *(d + i);
+			hal_plot_led(TYPEPAD, (i - 8) * 10 + y, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+		}
+		return;
+	}
+	
+	// Light a row of LEDs using SysEx
+	if (syx_cmp(d, syx_led_row, 7)) {
+		u8 x = *(d + 7) * 10;
+		
+		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
+			u8 v = *(d + i);
+			hal_plot_led(TYPEPAD, x + i - 8, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+		}
+		return;
+	}
+	
+	// Light all LEDs using SysEx
+	if (syx_cmp(d, syx_led_all, 7)) {
+		u8 v = *(d + 7);
+		
+		for (u8 p = 1; p < 99; p++) {
+			hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+		}
+		return;
+	}
+	
+	// Light LED using SysEx (RGB mode)
+	if (syx_cmp(d, syx_led_rgb, 7)) {
+		for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) {
+			u8 p = *(d + i);
+			u8 r = *(d + i + 1);
+			u8 g = *(d + i + 2);
+			u8 b = *(d + i + 3);
+			
+			if (p == 99) {
+				hal_plot_led(TYPESETUP, 0, r, g, b);
+			} else {
+				hal_plot_led(TYPEPAD, p, r, g, b);
+			}
+		}
+		return;
+	}
+	
+	// Light LED grid using SysEx (RGB mode)
+	if (syx_cmp(d, syx_led_grid, 7)) {
+		u8 t = *(d + 7);
+		
+		u16 ceil; u8 p;
+		if (t) {
+			ceil = 197;
+			p = 11;
+		} else {
+			ceil = 305;
+			p = 0;
+		}
+		
+		for (u16 i = 8; i <= l - 4 && i <= ceil; i += 3) {
+			u8 r = *(d + i);
+			u8 g = *(d + i + 1);
+			u8 b = *(d + i + 2);
+			
+			hal_plot_led(TYPEPAD, p, r, g, b);
+			
+			if (++p % 10 == 9 && t) {
+				p += 2;
+			}
+		}
 		return;
 	}
 }
@@ -1110,6 +1281,16 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[3] = drum_timer_event;
 	mode_surface_event[3] = drum_surface_event;
 	mode_midi_event[3] = drum_midi_event;
+	
+	mode_init[4] = fader_init;
+	mode_timer_event[4] = fader_timer_event;
+	mode_surface_event[4] = fader_surface_event;
+	mode_midi_event[4] = fader_midi_event;
+	
+	mode_init[5] = programmer_init;
+	mode_timer_event[5] = programmer_timer_event;
+	mode_surface_event[5] = programmer_surface_event;
+	mode_midi_event[5] = programmer_midi_event;
 	
 	mode_update(255);
 }
