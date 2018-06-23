@@ -262,6 +262,7 @@ u8 setup_elapsed = setup_tick;
 u8 setup_rainbow[48][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
 u8 setup_mode_counter = 0;
 u8 setup_editor_counter = 0;
+u8 setup_jump = 0;
 
 void setup_init() {
 	hal_plot_led(TYPEPAD, 25, 11, 15, 15); // Select flash palette
@@ -342,9 +343,12 @@ void setup_timer_event() {
 }
 
 void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	if (v != 0) {
+	if (v) {
+		setup_jump = 1;
+		
 		if (p == 0) { // Enter selected main mode
 			mode_update(mode_default);
+			setup_jump = 0;
 		
 		} else if (25 <= p && p <= 28) { // Palette switch
 			palette_selected = p - 25;
@@ -354,6 +358,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (p == 15) {
 			if (palette_selected == 0) { // Enter Palette editor mode
 				mode_update(253);
+				setup_jump = 0;
 			
 			} else { // Save current preset as custom palette
 				memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
@@ -375,6 +380,12 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (81 <= p && p <= 86) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
+		}
+	
+	} else { // Note released
+		if (p == 0 && setup_jump) { // Quickly jump back to main mode
+			mode_update(mode_default);
+			setup_jump = 0;
 		}
 	}
 }
