@@ -509,30 +509,29 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	switch (ch) {
-		case 0x5: // Ch. 6
-			switch (t) {
-				case 0x8: // Note off
-					v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
-				
-				case 0x9: // Note on
-					if (top_lights_config != 0) {
-						if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
-							p += -80;
-						}
-						
-						if (top_lights_config > 1) { // Display additional LEDs
-							if (100 <= p && p <= 107) {
-								palette_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v);
-							} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
-								palette_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v);
-							}
-						}
+	if (ch == 0x5) {
+		switch (t) {
+			case 0x8: // Note off
+				v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
+			
+			case 0x9: // Note on
+				if (top_lights_config != 0) {
+					if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
+						p += -80;
 					}
 					
-					palette_led(dr_xy[p], v);
-					break;
-			}		
+					if (top_lights_config > 1) { // Display additional LEDs
+						if (100 <= p && p <= 107) {
+							palette_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v);
+						} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
+							palette_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v);
+						}
+					}
+				}
+				
+				palette_led(dr_xy[p], v);
+				break;
+		}		
 	}
 }
 
@@ -983,7 +982,7 @@ void drum_init() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(USBMIDI, 0x80, i, 0);
+		hal_send_midi(USBMIDI, 0x81, i, 0);
 	}
 	
 	hal_plot_led(TYPEPAD, 91, 0, 0, (drum_offset < 13)? (drum_nav_pressed[0]? 63 : 31) : 0); // Navigation buttons
@@ -1001,7 +1000,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 	
 	} else if (x == 0 || (x == 9 && y >= 5) || y == 0 || y == 9) { // Unused side buttons
-		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_send_midi(USBMIDI, 0xB1, p, v);
 		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y <= 4) { // Navigation buttons
@@ -1034,7 +1033,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		drum_init(); // Redraw grid
 	
 	} else { // Main grid
-		hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, drum_press(x, y, v), v);
+		hal_send_midi(USBMIDI, (v == 0)? 0x81 : 0x91, drum_press(x, y, v), v);
 	}
 }
 
@@ -1068,21 +1067,23 @@ void programmer_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 	
 	} else {
-		hal_send_midi(USBMIDI, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB0 : ((v == 0)? 0x80 : 0x90), p, v);
+		hal_send_midi(USBMIDI, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB3 : ((v == 0)? 0x83 : 0x93), p, v);
 	}
 }
 
 void programmer_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	if (t == 0x8) {
-		v = 0; // Note off
-		t = 0x9;
-	}
-	
-	u8 x = p / 10;
-	u8 y = p % 10;
-	
-	if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
-		hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+	if (ch == 0x3) {
+		if (t == 0x8) {
+			v = 0; // Note off
+			t = 0x9;
+		}
+		
+		u8 x = p / 10;
+		u8 y = p % 10;
+		
+		if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
+			hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+		}
 	}
 }
 
