@@ -228,7 +228,7 @@ void boot_timer_event() {
 				if (boot_fade_counter[i] < 251) { // Draw next fade for note
 					boot_fade_counter[i]++;
 					
-					if (boot_notes[i] != 98 || boot_fade_counter[i] <= 178) { // Check for leaving User LED on
+					if (boot_notes[i] != 98 || boot_fade_counter[i] <= 188) { // Check for leaving User LED on
 						hal_plot_led(TYPEPAD, boot_notes[i], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
 					}
 					
@@ -294,16 +294,16 @@ void setup_init() {
 		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
 	}
 	
-	hal_plot_led(TYPEPAD, 81, 15, 0, 2); // Performance mode
+	hal_plot_led(TYPEPAD, 81, 15, 0, 0); // Performance mode
 	hal_plot_led(TYPEPAD, 82, 0, 15, 0); // Ableton mode
 	hal_plot_led(TYPEPAD, 83, 0, 15, 15); // Note mode
-	hal_plot_led(TYPEPAD, 84, 15, 15, 0); // Drum mode
-	hal_plot_led(TYPEPAD, 85, 15, 0, 15); // Fader mode
-	hal_plot_led(TYPEPAD, 86, 15, 5, 0); // Programmer mode
+	hal_plot_led(TYPEPAD, 71, 15, 15, 0); // Drum mode
+	hal_plot_led(TYPEPAD, 72, 15, 0, 15); // Fader mode
+	hal_plot_led(TYPEPAD, 73, 15, 5, 0); // Programmer mode
 	
 	switch (mode_default) {
 		case 0:
-			hal_plot_led(TYPEPAD, 81, 63, 0, 10); // Performance mode selected
+			hal_plot_led(TYPEPAD, 81, 63, 0, 0); // Performance mode selected
 			break;
 		
 		case 1:
@@ -315,15 +315,15 @@ void setup_init() {
 			break;
 		
 		case 3:
-			hal_plot_led(TYPEPAD, 84, 63, 63, 0); // Drum mode selected
+			hal_plot_led(TYPEPAD, 71, 63, 63, 0); // Drum mode selected
 			break;
 		
 		case 4:
-			hal_plot_led(TYPEPAD, 85, 63, 0, 63); // Fader mode selected
+			hal_plot_led(TYPEPAD, 72, 63, 0, 63); // Fader mode selected
 			break;
 		
 		case 5:
-			hal_plot_led(TYPEPAD, 86, 63, 18, 0); // Programmer mode selected
+			hal_plot_led(TYPEPAD, 73, 63, 18, 0); // Programmer mode selected
 			break;
 	}
 }
@@ -377,9 +377,14 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (81 <= p && p <= 86) { // Switch default mode
+		} else if (81 <= p && p <= 83) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
+		
+		} else if (71 <= p && p <= 73) {
+			mode_default = p - 68;
+			mode_refresh();
+		
 		}
 	
 	} else { // Note released
@@ -494,7 +499,7 @@ void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 /*----------------------------*/
 
 void performance_init() {
-	hal_plot_led(TYPEPAD, 98, 63, 0, 10); // User LED
+	hal_plot_led(TYPEPAD, 98, 63, 0, 0); // User LED
 }
 
 void performance_timer_event() {}
@@ -1041,15 +1046,82 @@ void drum_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
 /*         Fader mode         */
 /*----------------------------*/
-// TODO: Implement Fader mode
+
+u8 faders[8] = {};
+u8 fader_stops[8] = {0, 17, 34, 52, 70, 89, 108, 127};
+u8 fader_levels[8] = {1, 17, 34, 52, 70, 89, 108, 127};
+
+u16 fader_tick[8] = {};
+u16 fader_elapsed[8] = {};
+u8 fader_counter[8] = {};
+u8 fader_final[8] = {};
+
+s8 fader_change[8] = {};
 
 void fader_init() {
 	hal_plot_led(TYPESETUP, 0, 63, 0, 63); // Fader mode LED
 }
 
-void fader_timer_event() {}
+void fader_timer_event() {
+	for (u8 y = 0; y < 8; y++) {
+		if (fader_counter[y]) {
+			if (++fader_elapsed[y] >= fader_tick[y]) {
+				faders[y] += fader_change[y]; // Update fader line
+				
+				fader_counter[y]--; // 
+				if (!fader_counter[y]) {
+					faders[y] = fader_final[y]; // Set fader to supposed final value
+				}
+				
+				hal_send_midi(USBMIDI, 0xB2, 21 + y, faders[y]); // Send fader
+				
+				for (u8 x = 0; x < 8; x++) { // Update fader LEDs
+					if (faders[y] >= fader_levels[x]) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), 63, 0, 63);
+					} else {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), 0, 0, 0);
+					}
+				}
+				
+				fader_elapsed[y] = 0;
+			}
+		}
+	}
+}
 
-void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {}
+void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);
+	
+	} else {
+		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
+			hal_send_midi(USBMIDI, 0xB2, p, v);
+			hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+		
+		} else if (v != 0) { // Main grid
+			x--; y--;
+			u16 time = (128 - v) * 25; // Time it takes to do the line
+						
+			fader_final[y] = fader_stops[x]; // Save final value of the line
+			
+			s8 direction = 2 * (faders[y] < fader_final[y]) - 1; // Direction of line - {-1} = down, {1} = up
+			u16 diff = (direction > 0)? (fader_final[y] - faders[y]) : (faders[y] - fader_final[y]); // Difference between current value and new value
+			
+			fader_elapsed[y] = 0; // Stop current line
+			
+			if (time >= diff) { // Enough time to do line smoothly
+				fader_tick[y] = time / diff;
+				fader_counter[y] = diff;
+				fader_change[y] = direction;
+				
+			} else { // Not enough time - compensate with smaller steps (not always accurate - find a better way? - maybe floats)
+				fader_tick[y] = 1;
+				fader_counter[y] = time;
+				fader_change[y] = direction * (diff / time);
+			}
+		}
+	}
+}
 
 void fader_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
 
