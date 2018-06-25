@@ -118,35 +118,52 @@ void display_u6(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 /*  Flash storage management  */
 /*----------------------------*/
 
-u8 flash[1024] = {0}; // [0, 383) = palette[0], {384} = palette_selected, {385} = vel_sensitive, {386} = top_lights_config
+u8 flash[1024] = {0}; // [0, 287) = palette[0], {288} = palette_selected, {289} = vel_sensitive, {290} = top_lights_config
 u8 dirty = 0;
 
 void flash_read() {
 	hal_read_flash(0, &flash[0], 1024);
+	u16 fp = 0;
 	
-	memcpy(&palette[0][0][0], &flash[0], 384);
 	for (u8 i = 0; i < 3; i++) {
-		for (u8 j = 0; j < 128; j++) {
-			if (palette[0][i][j] >> 6) palette[0][i][j] = 0;
+		for (u8 j = 0; j < 128; j += 4) {
+			palette[0][i][j] = flash[fp] >> 2;
+			palette[0][i][j + 1] = ((flash[fp] << 4) + (flash[fp + 1] >> 4)) & 63;
+			palette[0][i][j + 2] = ((flash[fp + 1] << 2) + (flash[fp + 2] >> 6)) & 63;
+			palette[0][i][j + 3] = flash[fp + 2] & 63;
+			
+			fp += 3;
 		}
 	}
 	
-	palette_selected = flash[384];
+	// Doesn't need to check palette for 0xFF
+	
+	palette_selected = flash[fp++];
 	if (palette_selected >> 2) palette_selected = 1;
 	
-	vel_sensitive = flash[385];
+	vel_sensitive = flash[fp++];
 	if (vel_sensitive >> 1) vel_sensitive = 0;
 	
-	top_lights_config = flash[386];
+	top_lights_config = flash[fp++];
 	if (top_lights_config >> 2) top_lights_config = 0;
 }
 
 void flash_write() {
 	if (dirty) {
-		memcpy(&flash[0], &palette[0][0][0], 384);
-		flash[384] = palette_selected;
-		flash[385] = vel_sensitive;
-		flash[386] = top_lights_config;
+		u16 fp = 0;
+		
+		// Compress 4 color values into 3 bytes. 6 bits * 4 values = 24 bits = 3 bytes
+		for (u8 i = 0; i < 3; i++) {
+			for (u8 j = 0; j < 128; j += 4) {
+				flash[fp++] = (palette[0][i][j] << 2) + (palette[0][i][j + 1] >> 4);
+				flash[fp++] = (palette[0][i][j + 1] << 4) + (palette[0][i][j + 2] >> 2);
+				flash[fp++] = (palette[0][i][j + 2] << 6) + palette[0][i][j + 3];
+			}
+		}
+		
+		flash[fp++] = palette_selected;
+		flash[fp++] = vel_sensitive;
+		flash[fp++] = top_lights_config;
 		
 		hal_write_flash(0, &flash[0], 1024);
 		
