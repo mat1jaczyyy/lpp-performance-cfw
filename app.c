@@ -63,8 +63,18 @@ u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 /*   Flash-backed variables   */
 /*----------------------------*/
 
-u8 palette[4][3][128] = {
-	{ // User-defined flash-backed palette
+u8 palette[6][3][128] = {
+	{ // User-defined flash-backed palette 1
+		{0},
+		{0},
+		{0}
+	},
+	{ // User-defined flash-backed palette 2
+		{0},
+		{0},
+		{0}
+	},
+	{ // User-defined flash-backed palette 3
 		{0},
 		{0},
 		{0}
@@ -118,21 +128,23 @@ void display_u6(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 /*  Flash storage management  */
 /*----------------------------*/
 
-u8 flash[1024] = {0}; // [0, 287) = palette[0], {288} = palette_selected, {289} = vel_sensitive, {290} = top_lights_config
+u8 flash[1024] = {0}; // [0, 287) = palette[0], [288, 575) = palette[1], [576, 863) = palette[2], {864} = palette_selected, {865} = vel_sensitive, {866} = top_lights_config
 u8 dirty = 0;
 
 void flash_read() {
 	hal_read_flash(0, &flash[0], 1024);
 	u16 fp = 0;
 	
-	for (u8 i = 0; i < 3; i++) {
-		for (u8 j = 0; j < 128; j += 4) {
-			palette[0][i][j] = flash[fp] >> 2;
-			palette[0][i][j + 1] = ((flash[fp] << 4) + (flash[fp + 1] >> 4)) & 63;
-			palette[0][i][j + 2] = ((flash[fp + 1] << 2) + (flash[fp + 2] >> 6)) & 63;
-			palette[0][i][j + 3] = flash[fp + 2] & 63;
-			
-			fp += 3;
+	for (u8 p = 0; p < 3; p++) {
+		for (u8 i = 0; i < 3; i++) {
+			for (u8 j = 0; j < 128; j += 4) {
+				palette[p][i][j] = flash[fp] >> 2;
+				palette[p][i][j + 1] = ((flash[fp] << 4) + (flash[fp + 1] >> 4)) & 63;
+				palette[p][i][j + 2] = ((flash[fp + 1] << 2) + (flash[fp + 2] >> 6)) & 63;
+				palette[p][i][j + 3] = flash[fp + 2] & 63;
+				
+				fp += 3;
+			}
 		}
 	}
 	
@@ -150,14 +162,17 @@ void flash_read() {
 
 void flash_write() {
 	if (dirty) {
+		hal_plot_led(TYPESETUP, 0, 3, 0, 0); // Writing indicator
 		u16 fp = 0;
 		
 		// Compress 4 color values into 3 bytes. 6 bits * 4 values = 24 bits = 3 bytes
-		for (u8 i = 0; i < 3; i++) {
-			for (u8 j = 0; j < 128; j += 4) {
-				flash[fp++] = (palette[0][i][j] << 2) + (palette[0][i][j + 1] >> 4);
-				flash[fp++] = (palette[0][i][j + 1] << 4) + (palette[0][i][j + 2] >> 2);
-				flash[fp++] = (palette[0][i][j + 2] << 6) + palette[0][i][j + 3];
+		for (u8 p = 0; p < 3; p++) {
+			for (u8 i = 0; i < 3; i++) {
+				for (u8 j = 0; j < 128; j += 4) {
+					flash[fp++] = (palette[p][i][j] << 2) + (palette[p][i][j + 1] >> 4);
+					flash[fp++] = (palette[p][i][j + 1] << 4) + (palette[p][i][j + 2] >> 2);
+					flash[fp++] = (palette[p][i][j + 2] << 6) + palette[p][i][j + 3];
+				}
 			}
 		}
 		
@@ -167,6 +182,7 @@ void flash_write() {
 		
 		hal_write_flash(0, &flash[0], 1024);
 		
+		hal_plot_led(TYPESETUP, 0, 0, 0, 0);
 		dirty = 0;
 	}
 }
@@ -293,33 +309,35 @@ u8 setup_editor_counter = 0;
 u8 setup_jump = 0;
 
 void setup_init() {
-	hal_plot_led(TYPEPAD, 25, 11, 15, 15); // Select flash palette
-	hal_plot_led(TYPEPAD, 26, 11, 15, 11); // Select Novation palette
-	hal_plot_led(TYPEPAD, 27, 11, 15, 11); // Select mat1 palette
-	hal_plot_led(TYPEPAD, 28, 11, 15, 11); // Select LP S palette
+	for (u8 i = 16; i < 19; i++) {
+		hal_plot_led(TYPEPAD, i, 11, 15, 11); // Select preset palette
+	}
 	
-	if (palette_selected == 0) {
-		hal_plot_led(TYPEPAD, 25, 47, 63, 63); // Flash palette selected
+	for (u8 i = 26; i < 29; i++) {
+		hal_plot_led(TYPEPAD, i, 11, 15, 15); // Select flash (custom) palette
+	}
+	
+	if (palette_selected < 3) {
+		hal_plot_led(TYPEPAD, palette_selected + 26, 47, 63, 63); // Flash palette selected
 	} else {
-		hal_plot_led(TYPEPAD, palette_selected + 25, 47, 63, 47); // Preset palette selected
-		hal_plot_led(TYPEPAD, 15, 0, 7, 0); // Apply preset palette to flash palette
+		hal_plot_led(TYPEPAD, palette_selected + 13, 47, 63, 47); // Preset palette selected
 	}
 	
 	if (vel_sensitive) {
-		hal_plot_led(TYPEPAD, 18, 31, 63, 63); // Velocity sensitivity enabled
+		hal_plot_led(TYPEPAD, 11, 31, 63, 63); // Velocity sensitivity enabled
 	} else {
-		hal_plot_led(TYPEPAD, 18, 7, 15, 15); // Velocity sensitivity disabled
+		hal_plot_led(TYPEPAD, 11, 7, 15, 15); // Velocity sensitivity disabled
 	}
 	
-	hal_plot_led(TYPEPAD, 35, 15, 11, 15); // PRO Top Lights
-	hal_plot_led(TYPEPAD, 36, 11, 7, 15); // MK2 Top Lights
-	hal_plot_led(TYPEPAD, 37, 11, 7, 15); // MK2 Rotated Top Lights
-	hal_plot_led(TYPEPAD, 38, 11, 7, 15); // MK2 Mirrored Top Lights
+	hal_plot_led(TYPEPAD, 85, 15, 11, 15); // PRO Top Lights
+	for (u8 i = 86; i < 89; i++) {
+		hal_plot_led(TYPEPAD, i, 11, 7, 15); // MK2 Top Lights
+	}
 	
-	if (top_lights_config == 0) {
-		hal_plot_led(TYPEPAD, 35, 63, 47, 63); // PRO Top Lights selected
+	if (!top_lights_config) {
+		hal_plot_led(TYPEPAD, 85, 63, 47, 63); // PRO Top Lights selected
 	} else {
-		hal_plot_led(TYPEPAD, top_lights_config + 35, 47, 31, 63); // MK2 Top Lights selected
+		hal_plot_led(TYPEPAD, top_lights_config + 85, 47, 31, 63); // MK2 Top Lights selected
 	}
 	
 	hal_plot_led(TYPEPAD, 81, 15, 0, 0); // Performance mode
@@ -354,6 +372,8 @@ void setup_init() {
 			hal_plot_led(TYPEPAD, 73, 63, 18, 0); // Programmer mode selected
 			break;
 	}
+	
+	setup_elapsed = setup_tick;
 }
 
 void setup_timer_event() {
@@ -361,8 +381,8 @@ void setup_timer_event() {
 		hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
 		setup_mode_counter++; setup_mode_counter %= 48;
 		
-		if (palette_selected == 0) {
-			hal_plot_led(TYPEPAD, 15, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
+		if (palette_selected < 3) {
+			hal_plot_led(TYPEPAD, 25, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= 48;
 		}
 		
@@ -378,30 +398,24 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_update(mode_default);
 			setup_jump = 0;
 		
-		} else if (25 <= p && p <= 28) { // Palette switch
-			palette_selected = p - 25;
+		} else if (1 <= x && x <= 2 && 6 <= y && y <= 8) { // Palette switch
+			palette_selected = (2 - x) * 3 + y - 6;
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (p == 15) {
-			if (palette_selected == 0) { // Enter Palette editor mode
+		} else if (p == 25) {
+			if (palette_selected < 3) { // Enter Palette editor mode
 				mode_update(253);
 				setup_jump = 0;
-			
-			} else { // Save current preset as custom palette
-				memcpy(&palette[0][0][0], &palette[palette_selected][0][0], 384);
-				palette_selected = 0;
-				dirty = 1;
-				mode_refresh();
 			}
 		
-		} else if (p == 18) { // Toggle velocity sensitivity
+		} else if (p == 11) { // Toggle velocity sensitivity
 			vel_sensitive = (vel_sensitive)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (35 <= p && p <= 38) { // Change Top Lights configuration
-			top_lights_config = p - 35;
+		} else if (85 <= p && p <= 88) { // Change Top Lights configuration
+			top_lights_config = p - 85;
 			dirty = 1;
 			mode_refresh();
 		
@@ -412,7 +426,6 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (71 <= p && p <= 73) {
 			mode_default = p - 68;
 			mode_refresh();
-		
 		}
 	
 	} else { // Note released
@@ -443,9 +456,9 @@ void editor_refresh() {
 	
 	display_u8(editor_selected, 0, 9, 63, 63, 63);
 	
-	display_u6(palette[0][0][editor_selected], 1, 0, 63, 0, 0);
-	display_u6(palette[0][1][editor_selected], 0, 0, 0, 63, 0);
-	display_u6(palette[0][2][editor_selected], 1, 9, 0, 0, 63);
+	display_u6(palette[palette_selected][0][editor_selected], 1, 0, 63, 0, 0);
+	display_u6(palette[palette_selected][1][editor_selected], 0, 0, 0, 63, 0);
+	display_u6(palette[palette_selected][2][editor_selected], 1, 9, 0, 0, 63);
 }
 
 void editor_draw() {
@@ -498,17 +511,17 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_update(254);
 		
 		} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
-			palette[0][0][editor_selected] ^= math_pow(2, x - 2);
+			palette[palette_selected][0][editor_selected] ^= math_pow(2, x - 2);
 			editor_refresh();
 			dirty = 1;
 		
 		} else if (2 <= p && p <= 7) { // Modify green bit
-			palette[0][1][editor_selected] ^= math_pow(2, 7 - p);
+			palette[palette_selected][1][editor_selected] ^= math_pow(2, 7 - p);
 			editor_refresh();
 			dirty = 1;
 		
 		} else if (2 <= x && x <= 7 && y == 9) { // Modify blue bit
-			palette[0][2][editor_selected] ^= math_pow(2, x - 2);
+			palette[palette_selected][2][editor_selected] ^= math_pow(2, x - 2);
 			editor_refresh();
 			dirty = 1;
 		
@@ -574,7 +587,7 @@ void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 u8 ableton_layout = 0x0;
 
 void ableton_led(u8 p, u8 v) {
-	hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+	hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 }
 
 void ableton_init() {
@@ -1182,7 +1195,7 @@ void programmer_midi_event(u8 t, u8 ch, u8 p, u8 v) {
 		u8 y = p % 10;
 		
 		if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
-			hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 		}
 	}
 }
@@ -1263,9 +1276,9 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			u8 v = *(d + i + 1);
 			
 			if (p == 99) {
-				hal_plot_led(TYPESETUP, 0, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+				hal_plot_led(TYPESETUP, 0, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 			} else {
-				hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+				hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 			}
 		}
 		return;
@@ -1277,7 +1290,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		
 		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
 			u8 v = *(d + i);
-			hal_plot_led(TYPEPAD, (i - 8) * 10 + y, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			hal_plot_led(TYPEPAD, (i - 8) * 10 + y, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 		}
 		return;
 	}
@@ -1288,7 +1301,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		
 		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
 			u8 v = *(d + i);
-			hal_plot_led(TYPEPAD, x + i - 8, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			hal_plot_led(TYPEPAD, x + i - 8, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 		}
 		return;
 	}
@@ -1298,7 +1311,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		u8 v = *(d + 7);
 		
 		for (u8 p = 1; p < 99; p++) {
-			hal_plot_led(TYPEPAD, p, palette[1][0][v], palette[1][1][v], palette[1][2][v]);
+			hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
 		}
 		return;
 	}
