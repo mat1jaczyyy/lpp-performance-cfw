@@ -86,7 +86,7 @@ u8 palette[4][3][128] = {
 	}
 };
 
-u8 palette_selected = 0;
+u8 palette_selected = 1;
 u8 vel_sensitive = 0;
 u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
 
@@ -125,9 +125,20 @@ void flash_read() {
 	hal_read_flash(0, &flash[0], 1024);
 	
 	memcpy(&palette[0][0][0], &flash[0], 384);
+	for (u8 i = 0; i < 3; i++) {
+		for (u8 j = 0; j < 128; j++) {
+			if (palette[0][i][j] >> 6) palette[0][i][j] = 0;
+		}
+	}
+	
 	palette_selected = flash[384];
+	if (palette_selected >> 2) palette_selected = 1;
+	
 	vel_sensitive = flash[385];
+	if (vel_sensitive >> 1) vel_sensitive = 0;
+	
 	top_lights_config = flash[386];
+	if (top_lights_config >> 2) top_lights_config = 0;
 }
 
 void flash_write() {
