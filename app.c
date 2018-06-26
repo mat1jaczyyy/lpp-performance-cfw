@@ -197,7 +197,7 @@ u8 mode_default = 0;
 void (*mode_init[256])();
 void (*mode_timer_event[256])();
 void (*mode_surface_event[256])(u8 p, u8 v, u8 x, u8 y);
-void (*mode_midi_event[256])(u8 t, u8 ch, u8 p, u8 v);
+void (*mode_midi_event[256])(u8 port, u8 t, u8 ch, u8 p, u8 v);
 
 void mode_refresh() {
 	for (u8 i = 1; i < 99; i++) { // Clear all LEDs
@@ -231,9 +231,7 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
-	if (port == USBMIDI) {
-		(*mode_midi_event[mode])(t >> 4, t % 16, p, v);
-	}
+	(*mode_midi_event[mode])(port, t >> 4, t % 16, p, v);
 }
 
 void app_aftertouch_event(u8 p, u8 v) {} // Unused
@@ -296,7 +294,7 @@ void boot_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0 && v != 0) mode_update(0); // Manually interrupt boot animation
 }
 
-void boot_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void boot_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*         Setup mode         */
 /*----------------------------*/
@@ -436,7 +434,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*       Palette editor       */
 /*----------------------------*/
@@ -534,7 +532,7 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void editor_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void editor_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*      Performance mode      */
 /*----------------------------*/
@@ -550,12 +548,12 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 				
 	} else { // Send MIDI input to DAW
-		hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+		hal_send_midi(USBSTANDALONE, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
 	}
 }
 
-void performance_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	if (ch == 0x5) {
+void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == USBSTANDALONE && ch == 0x5) {
 		switch (t) {
 			case 0x8: // Note off
 				v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
@@ -659,24 +657,26 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void ableton_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	switch (t) {
-		case 0x8:
-			v = 0;
-		
-		case 0x9:
-			if (ableton_layout == 0x3) {
-				if (ch == 0x5) ableton_led(dr_xy[p], v);
-				break;
-			}
+void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == USBMIDI) {
+		switch (t) {
+			case 0x8:
+				v = 0;
 			
-		case 0xB:
-			if (ableton_layout == 0x3) {
-				if (ch == 0x5) ableton_led(p, v);
-			} else {
-				if (ch == 0x0) ableton_led(p, v);
-			}
-			break;
+			case 0x9:
+				if (ableton_layout == 0x3) {
+					if (ch == 0x5) ableton_led(dr_xy[p], v);
+					break;
+				}
+				
+			case 0xB:
+				if (ableton_layout == 0x3) {
+					if (ch == 0x5) ableton_led(p, v);
+				} else {
+					if (ch == 0x0) ableton_led(p, v);
+				}
+				break;
+		}
 	}
 }
 
@@ -839,7 +839,7 @@ void note_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(USBMIDI, 0x80, i, 0);
+		hal_send_midi(USBSTANDALONE, 0x80, i, 0);
 	}
 	
 	u8 o = note_octave + 1; // Octave navigation
@@ -880,11 +880,11 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		note_scale_button();
 	
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
-		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
 		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
 		note_shift = v;
 		note_scale_button();
 	
@@ -912,11 +912,11 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = note_press(x, y, v);
-		if (n >= 0) hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, n, v);
+		if (n >= 0) hal_send_midi(USBSTANDALONE, (v == 0)? 0x80 : 0x90, n, v);
 	}
 }
 
-void note_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 void scale_setup_init() {
 	hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
@@ -963,7 +963,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		}
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(USBMIDI, 0xB0, p, v);
+		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
 		note_shift = v;
 	
 	} else if (v != 0) {
@@ -993,7 +993,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void scale_setup_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void scale_setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*    Standalone Drum mode    */
 /*----------------------------*/
@@ -1028,7 +1028,7 @@ void drum_init() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(USBMIDI, 0x81, i, 0);
+		hal_send_midi(USBSTANDALONE, 0x81, i, 0);
 	}
 	
 	hal_plot_led(TYPEPAD, 91, 0, 0, (drum_offset < 13)? (drum_nav_pressed[0]? 63 : 31) : 0); // Navigation buttons
@@ -1046,7 +1046,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 	
 	} else if (x == 0 || (x == 9 && y >= 5) || y == 0 || y == 9) { // Unused side buttons
-		hal_send_midi(USBMIDI, 0xB1, p, v);
+		hal_send_midi(USBSTANDALONE, 0xB1, p, v);
 		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y <= 4) { // Navigation buttons
@@ -1079,11 +1079,11 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		drum_init(); // Redraw grid
 	
 	} else { // Main grid
-		hal_send_midi(USBMIDI, (v == 0)? 0x81 : 0x91, drum_press(x, y, v), v);
+		hal_send_midi(USBSTANDALONE, (v == 0)? 0x81 : 0x91, drum_press(x, y, v), v);
 	}
 }
 
-void drum_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*         Fader mode         */
 /*----------------------------*/
@@ -1114,7 +1114,7 @@ void fader_timer_event() {
 					faders[y] = fader_final[y]; // Set fader to supposed final value
 				}
 				
-				hal_send_midi(USBMIDI, 0xB2, 21 + y, faders[y]); // Send fader
+				hal_send_midi(USBSTANDALONE, 0xB2, 21 + y, faders[y]); // Send fader
 				
 				for (u8 x = 0; x < 8; x++) { // Update fader LEDs
 					if (faders[y] >= fader_levels[x]) {
@@ -1136,7 +1136,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else {
 		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
-			hal_send_midi(USBMIDI, 0xB2, p, v);
+			hal_send_midi(USBSTANDALONE, 0xB2, p, v);
 			hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 		
 		} else if (v != 0) { // Main grid
@@ -1164,7 +1164,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void fader_midi_event(u8 t, u8 ch, u8 p, u8 v) {}
+void fader_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 /*   Programmer mode (MIDI)   */
 /*----------------------------*/
@@ -1180,12 +1180,12 @@ void programmer_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(254);
 	
 	} else {
-		hal_send_midi(USBMIDI, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB3 : ((v == 0)? 0x83 : 0x93), p, v);
+		hal_send_midi(USBSTANDALONE, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB3 : ((v == 0)? 0x83 : 0x93), p, v);
 	}
 }
 
-void programmer_midi_event(u8 t, u8 ch, u8 p, u8 v) {
-	if (ch == 0x3) {
+void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == USBSTANDALONE && ch == 0x3) {
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
@@ -1230,7 +1230,7 @@ u8 syx_led_grid[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
 void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Device Inquiry - Read information about the connected device
 	if (syx_cmp(d, syx_device_inquiry, 6)) {
-		hal_send_sysex(USBMIDI, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
+		hal_send_sysex(port, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
 		return;
 	}
 	
@@ -1241,7 +1241,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		mode_default = 1 - *(d + 7);
 		mode_update(mode_default); // This will interrupt boot animation!
 		
-		hal_send_sysex(USBMIDI, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
+		hal_send_sysex(port, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
 		return;
 	}
 	
@@ -1254,7 +1254,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			mode_refresh();
 		}
 		
-		hal_send_sysex(USBMIDI, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		hal_send_sysex(port, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
 		return;
 	}
 	
@@ -1264,7 +1264,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			syx_standalone_layout_selection_response[7] = *(d + 7);
 			mode_default = (syx_standalone_layout_selection_response[7] < 4)? (syx_standalone_layout_selection_response[7] + 2) : 0; // 4 for Performance mode (unavailable on stock)
 			
-			hal_send_sysex(USBMIDI, &syx_standalone_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+			hal_send_sysex(port, &syx_standalone_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
 		}
 		return;
 	}
