@@ -1,3 +1,7 @@
+/*----------------------------------------------------------------------------*/
+/*  Performance-optimized Launchpad Pro Firmware modification by mat1jaczyyy  */
+/*----------------------------------------------------------------------------*/
+
 /******************************************************************************
  
   Copyright (c) 2015, Focusrite Audio Engineering Ltd.
@@ -28,15 +32,13 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
-    Performance-optimized Launchpad Pro Firmware modification by mat1jaczyyy
- 
  ******************************************************************************/
 
 /*
-  NOTE: TO USE THIS FIRMWARE WITH ABLETON, YOU NEED TO PATCH THE LAUNCHPPAD PRO
- CONTROL SURFACE. THIS IS DUE TO THE UMAC HASH CHECK (encrypt_challenge2) WHOSE
- PURPOSE IS TO ENSURE THE DEVICE IS A LEGITIMATE LAUNCHPAD PRO DEVICE. ONLY THE
- CLOSED-SOURCE STOCK FIRMWARE IS ABLE TO CORRECTLY RESPOND TO THIS MESSAGE.
+  NOTE: TO USE THIS FIRMWARE WITH ABLETON LIVE, YOU NEED TO PATCH THE LAUNCHPAD
+ PRO CONTROL SURFACE. THIS IS BECAUSE IT USES AN UMAC HASH TO ENSURE THE DEVICE
+ IS A LEGITIMATE LAUNCHPAD PRO. ONLY THE CLOSED-SOURCE STOCK FIRMWARE CORRECTLY
+ RESPONDS TO THE SYSEX MESSAGE. A PATCHER FOR THE CONTROL SURFACE IS INCLUDED.
                                                                               */
 
 /*    Includes and helpers    */
@@ -59,6 +61,36 @@ u8 math_pow(u8 x, u8 e) {
 
 u8 xy_dr[128] = {0, 116, 117, 118, 119, 120, 121, 122, 123, 0, 115, 36, 37, 38, 39, 68, 69, 70, 71, 107, 114, 40, 41, 42, 43, 72, 73, 74, 75, 106, 113, 44, 45, 46, 47, 76, 77, 78, 79, 105, 112, 48, 49, 50, 51, 80, 81, 82, 83, 104, 111, 52, 53, 54, 55, 84, 85, 86, 87, 103, 110, 56, 57, 58, 59, 88, 89, 90, 91, 102, 109, 60, 61, 62, 63, 92, 93, 94, 95, 101, 108, 64, 65, 66, 67, 96, 97, 98, 99, 100, 0, 28, 29, 30, 31, 32, 33, 34, 35, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 91, 92, 93, 94, 95, 96, 97, 98, 11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44, 51, 52, 53, 54, 61, 62, 63, 64, 71, 72, 73, 74, 81, 82, 83, 84, 15, 16, 17, 18, 25, 26, 27, 28, 35, 36, 37, 38, 45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 89, 79, 69, 59, 49, 39, 29, 19, 80, 70, 60, 50, 40, 30, 20, 10, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0};
+
+/*       SysEx messages       */
+/*----------------------------*/
+
+u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
+u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
+                                    0x00,                                                      // Device ID
+                                    0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
+                                    0x00, 0x01, 0x08, 0x02,                                    // Firmware rev. (4 bytes)
+                                    0xF7};
+
+u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
+u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
+
+u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
+u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
+
+u8 syx_standalone_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2C};
+u8 syx_standalone_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2F, 0xFF, 0xF7};
+
+u8 syx_led_single[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0A};
+u8 syx_led_column[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0C};
+u8 syx_led_row[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0D};
+u8 syx_led_all[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
+
+u8 syx_led_rgb[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
+u8 syx_led_grid[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
+
+u8 syx_text[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x14};
+u8 syx_text_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x15, 0xF7};
 
 /*   Flash-backed variables   */
 /*----------------------------*/
@@ -114,7 +146,7 @@ void palette_led(u8 p, u8 v) {
 void display_u8(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < 8; i++) {
 		u8 w = ((v & math_pow(2, i)) >> i);
-		hal_plot_led(TYPEPAD, (d == 0)? (8 - i + x * 10) : (i * 10 + x), r * w, g * w, b * w);
+		hal_plot_led(TYPEPAD, (d == 0)? (8 - i + x * 10) : ((i + 1) * 10 + x), r * w, g * w, b * w);
 	}
 }
 
@@ -1217,32 +1249,203 @@ void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
-/*    SysEx event handling    */
+/*       Text scrolling       */
 /*----------------------------*/
 
-u8 syx_device_inquiry[] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
-u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
-                                    0x00,                                                      // Device ID
-                                    0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,      // Constant
-                                    0x00, 0x01, 0x08, 0x02,                                    // Firmware rev. (4 bytes)
-                                    0xF7};
+u8 text_bitmap[96][7] = {
+	{4, 0b00000000}, // 32 = Space
+	{1, 0b11111011}, // 33 = !
+	{3, 0b11100000, 0b00000000, 0b11100000}, // 34 = "
+	{5, 0b00101000, 0b11111110, 0b00101000, 0b11111110, 0b00101000}, // 35 = #
+	{5, 0b00100100, 0b01010100, 0b11111110, 0b01010100, 0b01001000}, // 36 = $
+	{5, 0b11000100, 0b11001000, 0b00010000, 0b00100110, 0b01000110}, // 37 = %
+	{5, 0b01101100, 0b10010010, 0b10010010, 0b01101100, 0b00001010}, // 38 = &
+	{2, 0b00100000, 0b11000000}, // 39 = '
+	{2, 0b01111100, 0b10000010}, // 40 = (
+	{2, 0b10000010, 0b01111100}, // 41 = )
+	{5, 0b00101000, 0b00111000, 0b01111100, 0b00111000, 0b00101000}, // 42 = *
+	{5, 0b00010000, 0b00010000, 0b01111100, 0b00010000, 0b00010000}, // 43 = +
+	{4, 0b00000000, 0b00000101, 0b00000110, 0b00000000}, // 44 = ,
+	{4, 0b00010000, 0b00010000, 0b00010000, 0b00010000}, // 45 = -
+	{4, 0b00000000, 0b00000110, 0b00000110, 0b00000000}, // 46 = .
+	{5, 0b00000100, 0b00001000, 0b00010000, 0b00100000, 0b01000000}, // 47 = /
+	{5, 0b01111100, 0b10000010, 0b10000010, 0b10000010, 0b01111100}, // 48 = 0
+	{3, 0b01000010, 0b11111110, 0b00000010}, // 49 = 1
+	{5, 0b01001110, 0b10010010, 0b10010010, 0b10010010, 0b01100010}, // 50 = 2
+	{5, 0b01000100, 0b10000010, 0b10010010, 0b10010010, 0b01101100}, // 51 = 3
+	{5, 0b00011000, 0b00101000, 0b01001000, 0b11111110, 0b00001000}, // 52 = 4
+	{5, 0b11100100, 0b10100010, 0b10100010, 0b10100010, 0b10011100}, // 53 = 5
+	{5, 0b01111100, 0b10010010, 0b10010010, 0b10010010, 0b01001100}, // 54 = 6
+	{5, 0b10000000, 0b10000110, 0b10011000, 0b10100000, 0b11000000}, // 55 = 7
+	{5, 0b01101100, 0b10010010, 0b10010010, 0b10010010, 0b01101100}, // 56 = 8
+	{5, 0b01100100, 0b10010010, 0b10010010, 0b10010010, 0b01111100}, // 57 = 9
+	{4, 0b00000000, 0b00110110, 0b00110110, 0b00000000}, // 58 = :
+	{4, 0b00000000, 0b00110101, 0b00110110, 0b00000000}, // 59 = ;
+	{4, 0b00010000, 0b00101000, 0b01000100, 0b10000010}, // 60 = <
+	{4, 0b00101000, 0b00101000, 0b00101000, 0b00101000}, // 61 = =
+	{4, 0b10000010, 0b01000100, 0b00101000, 0b00010000}, // 62 = >
+	{5, 0b01000000, 0b10000000, 0b10001010, 0b10010000, 0b01100000}, // 63 = ?
+	{5, 0b01111100, 0b10000010, 0b10010010, 0b10101010, 0b01111000}, // 64 = @
+	{5, 0b00000110, 0b00111000, 0b11001000, 0b00111000, 0b00000110}, // 65 = A
+	{5, 0b11111110, 0b10010010, 0b10010010, 0b10010010, 0b01101100}, // 66 = B
+	{5, 0b01111100, 0b10000010, 0b10000010, 0b10000010, 0b01000100}, // 67 = C
+	{5, 0b11111110, 0b10000010, 0b10000010, 0b01000100, 0b00111000}, // 68 = D
+	{5, 0b11111110, 0b10010010, 0b10010010, 0b10010010, 0b10000010}, // 69 = E
+	{5, 0b11111110, 0b10010000, 0b10010000, 0b10010000, 0b10000000}, // 70 = F
+	{5, 0b01111100, 0b10000010, 0b10000010, 0b10010010, 0b10011110}, // 71 = G
+	{5, 0b11111110, 0b00010000, 0b00010000, 0b00010000, 0b11111110}, // 72 = H
+	{3, 0b10000010, 0b11111110, 0b10000010}, // 73 = I
+	{4, 0b00000100, 0b00000010, 0b10000010, 0b11111100}, // 74 = J
+	{5, 0b11111110, 0b00010000, 0b00101000, 0b01000100, 0b10000010}, // 75 = K
+	{5, 0b11111110, 0b00000010, 0b00000010, 0b00000010, 0b00000010}, // 76 = L
+	{5, 0b11111110, 0b01000000, 0b00110000, 0b01000000, 0b11111110}, // 77 = M
+	{5, 0b11111110, 0b01100000, 0b00010000, 0b00001100, 0b11111110}, // 78 = N
+	{5, 0b01111100, 0b10000010, 0b10000010, 0b10000010, 0b01111100}, // 79 = O
+	{5, 0b11111110, 0b10010000, 0b10010000, 0b10010000, 0b01100000}, // 80 = P
+	{5, 0b01111100, 0b10000010, 0b10001010, 0b10000100, 0b01111010}, // 81 = Q
+	{5, 0b11111110, 0b10010000, 0b10011000, 0b10010100, 0b01100010}, // 82 = R
+	{5, 0b01100100, 0b10110010, 0b10010010, 0b10010010, 0b01001100}, // 83 = S
+	{5, 0b10000000, 0b10000000, 0b11111110, 0b10000000, 0b10000000}, // 84 = T
+	{5, 0b11111100, 0b00000010, 0b00000010, 0b00000010, 0b11111100}, // 85 = U
+	{5, 0b11100000, 0b00011000, 0b00000110, 0b00011000, 0b11100000}, // 86 = V
+	{5, 0b11110000, 0b00001110, 0b00110000, 0b00001110, 0b11110000}, // 87 = W
+	{5, 0b11000110, 0b00101000, 0b00010000, 0b00101000, 0b11000110}, // 88 = X
+	{5, 0b11000000, 0b00100000, 0b00011110, 0b00100000, 0b11000000}, // 89 = Y
+	{5, 0b10000110, 0b10001010, 0b10010010, 0b10100010, 0b11000010}, // 90 = Z
+	{3, 0b11111110, 0b10000010, 0b10000010}, // 91 = [
+	{5, 0b01000000, 0b00100000, 0b00010000, 0b00001000, 0b00000100}, // 92 = Backslash
+	{3, 0b10000010, 0b10000010, 0b11111110}, // 93 = ]
+	{5, 0b00100000, 0b01000000, 0b10000000, 0b01000000, 0b00100000}, // 94 = ^
+	{5, 0b00000010, 0b00000010, 0b00000010, 0b00000010, 0b00000010}, // 95 = _
+	{2, 0b11000000, 0b00100000}, // 96 = `
+	{5, 0b00000100, 0b00101010, 0b00101010, 0b00101010, 0b00011110}, // 97 = a
+	{5, 0b11111110, 0b00100010, 0b00100010, 0b00100010, 0b00011100}, // 98 = b
+	{5, 0b00011100, 0b00100010, 0b00100010, 0b00100010, 0b00100010}, // 99 = c
+	{5, 0b00011100, 0b00100010, 0b00100010, 0b00100010, 0b11111110}, // 100 = d
+	{5, 0b00011100, 0b00101010, 0b00101010, 0b00101010, 0b00011010}, // 101 = e
+	{4, 0b00010000, 0b01111110, 0b10010000, 0b10010000}, // 102 = f
+	{5, 0b00011000, 0b00100101, 0b00100101, 0b00100101, 0b00111110}, // 103 = g
+	{5, 0b11111110, 0b00100000, 0b00100000, 0b00100000, 0b00011110}, // 104 = h
+	{2, 0b10111100, 0b00000010}, // 105 = i
+	{3, 0b00000010, 0b00000001, 0b10111110}, // 106 = j
+	{4, 0b11111110, 0b00001000, 0b00010100, 0b00100010}, // 107 = k
+	{2, 0b11111100, 0b00000010}, // 108 = l
+	{5, 0b00111110, 0b00100000, 0b00011110, 0b00100000, 0b00011110}, // 109 = m
+	{5, 0b00111110, 0b00100000, 0b00100000, 0b00100000, 0b00011110}, // 110 = n
+	{5, 0b00011100, 0b00100010, 0b00100010, 0b00100010, 0b00011100}, // 111 = o
+	{5, 0b00111111, 0b00100100, 0b00100100, 0b00100100, 0b00011000}, // 112 = p
+	{5, 0b00011100, 0b00100010, 0b00100010, 0b00100100, 0b00111111}, // 113 = q
+	{4, 0b00111110, 0b00010000, 0b00100000, 0b00100000}, // 114 = r
+	{5, 0b00010010, 0b00101010, 0b00101010, 0b00101010, 0b00100100}, // 115 = s
+	{3, 0b00100000, 0b01111100, 0b00100010}, // 116 = t
+	{5, 0b00111100, 0b00000010, 0b00000010, 0b00000100, 0b00111110}, // 117 = u
+	{5, 0b00110000, 0b00001100, 0b00000010, 0b00001100, 0b00110000}, // 118 = v
+	{5, 0b00111000, 0b00000110, 0b00111000, 0b00000110, 0b00111000}, // 119 = w
+	{5, 0b00100010, 0b00010100, 0b00001000, 0b00010100, 0b00100010}, // 120 = x
+	{5, 0b00111000, 0b00000101, 0b00000101, 0b00000101, 0b00111110}, // 121 = y
+	{5, 0b00100010, 0b00100110, 0b00101010, 0b00110010, 0b00100010}, // 122 = z
+	{3, 0b00010000, 0b01101100, 0b10000010}, // 123 = {
+	{1, 0b11111111}, // 124 = |
+	{3, 0b10000010, 0b01101100, 0b00010000}, // 125 = }
+	{4, 0b01000000, 0b10000000, 0b01000000, 0b10000000, }, // 126 = ~
+	{5, 0b00111000, 0b00101000, 0b01101100, 0b00101000, 0b00010000} // 127 = DEL
+};
 
-u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
-u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
+u8 text_port = 0;
+u8 text_color = 127;
+u8 text_loop = 0;
+u8 text_bytes[323] = {};
 
-u8 syx_live_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x22};
-u8 syx_live_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2E, 0xFF, 0xF7};
+u16 text_tick = 80;
+u16 text_elapsed = 80;
+u16 text_counter = 1;
+u8 text_subcounter = 0;
 
-u8 syx_standalone_layout_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2C};
-u8 syx_standalone_layout_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2F, 0xFF, 0xF7};
+u8 text_frame[10] = {};
+u8 text_frame_empty[10] = {};
+u8 text_done = 0;
 
-u8 syx_led_single[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0A};
-u8 syx_led_column[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0C};
-u8 syx_led_row[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0D};
-u8 syx_led_all[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
+void text_init() {
+	text_elapsed = text_tick;
+	text_counter = 1;
+	text_subcounter = 0;
+	text_done = 0;
+	
+	for (u8 i = 0; i < 10; i++) text_frame[i] = 0;
+}
 
-u8 syx_led_rgb[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
-u8 syx_led_grid[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
+void text_timer_event() {
+	if (++text_elapsed >= text_tick) { // Next frame
+		if (text_done) {
+			mode_update(mode_default);
+		
+		} else {
+			for (u8 i = 0; i < 9; i++) text_frame[i] = text_frame[i + 1]; // Shift all frames left
+			
+			u8 b = 0;
+			
+			if (text_counter) {
+				b = text_bytes[text_counter];
+				
+				while (b < 8) {
+					text_tick = (8 - b) * 20;
+					
+					if (++text_counter == text_bytes[0]) {
+						text_counter = 0;
+						break;
+					}
+					
+					b = text_bytes[text_counter];
+				}
+			}
+			
+			if (text_counter) {
+				b -= 32;
+				
+				if (text_subcounter++ < text_bitmap[b][0]) {
+					text_frame[9] = text_bitmap[b][text_subcounter];
+				} else {
+					text_frame[9] = 0; // Padding between bytes
+				}
+				
+				if (text_subcounter == text_bitmap[b][0] + 2) { // Increment counters
+					text_subcounter = 0;
+					if (++text_counter == text_bytes[0]) {
+						text_counter = 0;
+					}
+				}
+			
+			} else {
+				text_frame[9] = 0;
+				
+				if (!memcmp(&text_frame[0], &text_frame_empty[0], 10)) { // If frames empty
+					hal_send_sysex(text_port, &syx_text_response[0], arr_size(syx_text_response));
+					
+					if (text_loop) {
+						text_counter = 1;
+						text_subcounter = 0;
+					
+					} else {
+						text_done = 1;
+					}
+				}
+			}
+			
+			for (u8 i = 0; i < 10; i++) display_u8(text_frame[i], 1, i, palette[3][0][text_color], palette[3][1][text_color], palette[3][2][text_color]); // Draw text
+			
+			text_elapsed = 0;
+		}
+	}
+}
+
+void text_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	mode_update(mode_default);
+}
+
+void text_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+
+/*    SysEx event handling    */
+/*----------------------------*/
 
 void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Device Inquiry - Read information about the connected device
@@ -1376,6 +1579,34 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		}
 		return;
 	}
+	
+	// Text scrolling
+	if (syx_cmp(d, syx_text, 7)) {
+		if (l <= 10) { // Empty message
+			if (mode == 6 && port == text_port) mode_update(mode_default); // Stops the text scrolling
+			
+		} else if ((mode_default == 1 && port == USBMIDI) || (mode_default != 1 && port == USBSTANDALONE)) { // Valid message
+			text_port = port;
+			text_color = *(d + 7) & 127;
+			text_loop = *(d + 8) != 0;
+			
+			u16 bp = 1;
+			
+			for (u16 i = 9; i < l - 1; i++) {
+				u8 v = *(d + i);
+				if ((1 <= v && v <= 7) || (32 <= v && v <= 127)) {
+					text_bytes[bp++] = v;
+				}
+			}
+			
+			for (u16 i = bp; i < text_bytes[0]; i++) text_bytes[i] = 0; // Clear rest of array
+			
+			text_bytes[0] = bp; // Stop reading bytes at this offset
+			
+			mode_update(6);
+		}
+		return;
+	}
 }
 
 /*  Initialize the Launchpad  */
@@ -1433,6 +1664,11 @@ void app_init(const u16 *adc_raw) {
 	mode_timer_event[5] = programmer_timer_event;
 	mode_surface_event[5] = programmer_surface_event;
 	mode_midi_event[5] = programmer_midi_event;
+	
+	mode_init[6] = text_init;
+	mode_timer_event[6] = text_timer_event;
+	mode_surface_event[6] = text_surface_event;
+	mode_midi_event[6] = text_midi_event;
 	
 	mode_update(255);
 }
