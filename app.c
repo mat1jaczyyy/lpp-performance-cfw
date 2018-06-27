@@ -145,6 +145,8 @@ void flash_read() {
 				
 				fp += 3;
 			}
+			
+			palette[p][i][0] = 0;
 		}
 	}
 	
@@ -473,6 +475,11 @@ void editor_select_xy(u8 xy) {
 	if (xy != 81 || (editor_selected >> 6) != 0) {
 		editor_selected = editor_xy_v(xy);
 		editor_refresh();
+	} else {
+		palette[palette_selected][0][0] = 0;
+		palette[palette_selected][1][0] = 0;
+		palette[palette_selected][2][0] = 0;
+		editor_draw();
 	}
 }
 
@@ -480,6 +487,11 @@ void editor_select_v(u8 v) {
 	if (v != 0) {
 		editor_selected = v;
 		editor_refresh();
+	} else {
+		palette[palette_selected][0][0] = 0;
+		palette[palette_selected][1][0] = 0;
+		palette[palette_selected][2][0] = 0;
+		editor_draw();
 	}
 }
 
@@ -493,6 +505,11 @@ void editor_select_flip(u8 i) {
 		} else {
 			editor_refresh();
 		}
+	} else {
+		palette[palette_selected][0][0] = 0;
+		palette[palette_selected][1][0] = 0;
+		palette[palette_selected][2][0] = 0;
+		editor_draw();
 	}
 }
 
