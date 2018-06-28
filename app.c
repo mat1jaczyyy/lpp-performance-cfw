@@ -92,6 +92,12 @@ u8 syx_led_grid[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
 u8 syx_text[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x14};
 u8 syx_text_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x15, 0xF7};
 
+u8 syx_palette_start[] = {0xF0, 0x52, 0x45, 0x54, 0x49, 0x4E, 0x41, 0x7B};
+u8 syx_palette_write[] = {0xF0, 0x52, 0x45, 0x54, 0x49, 0x4E, 0x41, 0x3D};
+u8 syx_palette_end[] = {0xF0, 0x52, 0x45, 0x54, 0x49, 0x4E, 0x41, 0x7D};
+
+u8 syx_palette_text[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x14, 0x03, 0x01, 0x04, 0x44, 0x6f, 0x77, 0x6E, 0x6C, 0x6F, 0x61, 0x64, 0x69, 0x6E, 0x67, 0x20, 0x70, 0x61, 0x6C, 0x65, 0x74, 0x74, 0x65, 0x2E, 0x2E, 0x2E, 0xF7};
+
 /*   Flash-backed variables   */
 /*----------------------------*/
 
@@ -1252,8 +1258,8 @@ void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*       Text scrolling       */
 /*----------------------------*/
 
-u8 text_bitmap[96][7] = {
-	{4, 0b00000000}, // 32 = Space
+u8 text_bitmap[96][6] = {
+	{4, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, // 32 = Space
 	{1, 0b11111011}, // 33 = !
 	{3, 0b11100000, 0b00000000, 0b11100000}, // 34 = "
 	{5, 0b00101000, 0b11111110, 0b00101000, 0b11111110, 0b00101000}, // 35 = #
@@ -1365,6 +1371,8 @@ u8 text_frame[10] = {};
 u8 text_frame_empty[10] = {};
 u8 text_done = 0;
 
+u8 text_palette = 0;
+
 void text_init() {
 	text_elapsed = text_tick;
 	text_counter = 1;
@@ -1439,7 +1447,7 @@ void text_timer_event() {
 }
 
 void text_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	mode_update(mode_default);
+	if (!text_palette) mode_update(mode_default);
 }
 
 void text_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
@@ -1583,7 +1591,7 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Text scrolling
 	if (syx_cmp(d, syx_text, 7)) {
 		if (l <= 10) { // Empty message
-			if (mode == 6 && port == text_port) mode_update(mode_default); // Stops the text scrolling
+			if (mode == 6 && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
 			
 		} else if ((mode_default == 1 && port == USBMIDI) || (mode_default != 1 && port == USBSTANDALONE)) { // Valid message
 			text_port = port;
@@ -1604,6 +1612,40 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			text_bytes[0] = bp; // Stop reading bytes at this offset
 			
 			mode_update(6);
+		}
+		return;
+	}
+	
+	// Retina palette download start
+	if (syx_cmp(d, syx_palette_start, 8)) {
+		if (!text_palette) {
+			text_palette = 1;
+			app_sysex_event(port, &syx_palette_text[0], arr_size(syx_palette_text));
+		}
+		return;
+	}
+	
+	// Retina palette download write
+	if (syx_cmp(d, syx_palette_write, 8)) {
+		if (text_palette) {
+			u8 j = *(d + 8);
+			
+			if (j < 3) {
+				for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
+					for (u8 k = 0; k < 3; k++) {
+						palette[j][k][*(d + i)] = *(d + i + k + 1);
+					}
+				}
+			}
+		}
+		return;
+	}
+	
+	// Retina palette download end
+	if (syx_cmp(d, syx_palette_end, 8)) {
+		if (text_palette) {
+			text_palette = 0;
+			mode_update(mode_default);
 		}
 		return;
 	}
