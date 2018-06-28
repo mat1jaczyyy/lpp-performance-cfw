@@ -1632,6 +1632,8 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			
 			if (j < 3) {
 				for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
+					dirty = 1;
+					
 					for (u8 k = 0; k < 3; k++) {
 						palette[j][k][*(d + i)] = *(d + i + k + 1);
 					}
