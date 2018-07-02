@@ -656,107 +656,6 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
-/*        Ableton mode        */
-/*----------------------------*/
-
-u8 ableton_layout = 0x0;
-
-void ableton_led(u8 p, u8 v) {
-	hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
-}
-
-void ableton_init() {
-	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
-	if (ableton_layout == 0x3) hal_plot_led(TYPEPAD, 98, 20, 0, 63); // User LED
-}
-
-void ableton_timer_event() {}
-
-void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	if (p == 0) { // Enter Setup mode
-		if (v != 0) mode_update(254);	
-	} else {
-		switch (ableton_layout) {
-			case 0x0: // Session mode
-			case 0x6: // Session mode - Record Arm
-			case 0x7: // Session mode - Track Select
-			case 0x8: // Session mode - Mute
-			case 0x9: // Session mode - Solo
-			case 0xD: // Session mode - Stop Clip
-				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
-				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
-				}
-				break;
-			
-			case 0x1: // Note mode - Drum Rack layout
-				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
-				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
-				}
-				break;
-			
-			case 0x2: // Note mode - Chromatic layout
-				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
-				} else {
-					// TODO: Implement true Note mode
-				}
-				break;
-			
-			case 0x4: // Note mode - Blank layout (for Audio track)
-				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
-				}
-				break;
-			
-			case 0x5: // Fader - Device mode
-			case 0xA: // Fader - Volume
-			case 0xB: // Fader - Pan
-			case 0xC: // Fader - Sends
-				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
-				} else {
-					// TODO: Implement true Device mode
-				}
-				break;
-			
-			case 0x3: // User mode
-				if (x == 9) {
-					hal_send_midi(USBMIDI, 0xB5, p, v);
-				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
-				}
-				break;
-		}
-	}
-}
-
-void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBMIDI) {
-		switch (t) {
-			case 0x8:
-				v = 0;
-			
-			case 0x9:
-				if (ableton_layout == 0x3) {
-					if (ch == 0x5) ableton_led(dr_xy[p], v);
-					break;
-				}
-				
-			case 0xB:
-				if (ableton_layout == 0x3) {
-					if (ch == 0x5) ableton_led(p, v);
-				} else {
-					if (ch == 0x0) ableton_led(p, v);
-				}
-				break;
-		}
-	}
-}
-
 /*    Note and Scale modes    */
 /*----------------------------*/
 
@@ -904,7 +803,11 @@ void note_scale_button() {
 	
 	} else { // Shift button released
 		hal_plot_led(TYPEPAD, 80, 7, 7, 7);
-		hal_plot_led(TYPEPAD, 96, 0, 0, 0);
+		if (mode_default == 1) {
+			hal_plot_led(TYPEPAD, 96, 0, 63, 63);
+		} else if (mode_default == 2) {
+			hal_plot_led(TYPEPAD, 96, 0, 0, 0);
+		}
 	}
 }
 
@@ -916,7 +819,7 @@ void note_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(USBSTANDALONE, 0x80, i, 0);
+		hal_send_midi(2 - mode_default, 0x80, i, 0);
 	}
 	
 	u8 o = note_octave + 1; // Octave navigation
@@ -940,7 +843,7 @@ void note_draw() {
 void note_init() {
 	note_draw();
 	note_scale_button();
-	hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
+	if (mode == 2) hal_plot_led(TYPESETUP, 0, 0, 63, 63); // Note mode LED
 }
 
 void note_timer_event() {}
@@ -957,11 +860,11 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		note_scale_button();
 	
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
-		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
+		hal_send_midi(2 - mode_default, 0xB0, p, v);
 		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
+		hal_send_midi(2 - mode_default, 0xB0, p, v);
 		note_shift = v;
 		note_scale_button();
 	
@@ -989,7 +892,7 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = note_press(x, y, v);
-		if (n >= 0) hal_send_midi(USBSTANDALONE, (v == 0)? 0x80 : 0x90, n, v);
+		if (n >= 0) hal_send_midi(2 - mode_default, (v == 0)? 0x80 : 0x90, n, v);
 	}
 }
 
@@ -1035,7 +938,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v == 0) {
 			hal_plot_led(TYPEPAD, 96, 0, 7, 7);
 		} else {
-			mode_update(2); // Enter Note mode
+			mode_update(mode_default); // Enter Note/Live mode
 			hal_plot_led(TYPEPAD, 96, 0, 63, 0);
 		}
 	
@@ -1071,6 +974,112 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void scale_setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+
+/*        Ableton mode        */
+/*----------------------------*/
+
+u8 ableton_layout = 0x0;
+
+void ableton_led(u8 p, u8 v) {
+	hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
+}
+
+void ableton_init() {
+	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
+	if (ableton_layout == 0x3) hal_plot_led(TYPEPAD, 98, 20, 0, 63); // User LED
+}
+
+void ableton_timer_event() {}
+
+void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
+	if (p == 0) { // Enter Setup mode
+		if (v != 0) mode_update(254);	
+	} else {
+		switch (ableton_layout) {
+			case 0x0: // Session mode
+			case 0x6: // Session mode - Record Arm
+			case 0x7: // Session mode - Track Select
+			case 0x8: // Session mode - Mute
+			case 0x9: // Session mode - Solo
+			case 0xD: // Session mode - Stop Clip
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, v);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
+				}
+				break;
+			
+			case 0x1: // Note mode - Drum Rack layout
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, v);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
+				}
+				break;
+			
+			case 0x2: // Note mode - Chromatic layout
+				if (x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, v);
+				} else {
+					note_surface_event(p, v, x, y);
+				}
+				break;
+			
+			case 0x4: // Note mode - Blank layout (for Audio track)
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, v);
+				}
+				break;
+			
+			case 0x5: // Fader - Device mode
+			case 0xA: // Fader - Volume
+			case 0xB: // Fader - Pan
+			case 0xC: // Fader - Sends
+				if (x == 0 || x == 9 || y == 0 || y == 9) {
+					hal_send_midi(USBMIDI, 0xB0, p, v);
+				} else {
+					// TODO: Implement true Device mode
+				}
+				break;
+			
+			case 0x3: // User mode
+				if (x == 9) {
+					hal_send_midi(USBMIDI, 0xB5, p, v);
+				} else {
+					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+				}
+				break;
+		}
+	}
+}
+
+void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == USBMIDI) {
+		u8 x = p / 10;
+		u8 y = p % 10;
+		
+		if (ableton_layout == 0x2 && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) return;
+		
+		switch (t) {
+			case 0x8:
+				v = 0;
+			
+			case 0x9:
+				if (ableton_layout == 0x3) {
+					if (ch == 0x5) ableton_led(dr_xy[p], v);
+					break;
+				}
+				
+			case 0xB:
+				if (ableton_layout == 0x3) {
+					if (ch == 0x5) ableton_led(p, v);
+				} else {
+					if (ch == 0x0) ableton_led(p, v);
+				}
+				break;
+		}
+	}
+}
 
 /*    Standalone Drum mode    */
 /*----------------------------*/
@@ -1488,10 +1497,14 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (syx_cmp(d, syx_mode_selection, 7)) {
 		syx_mode_selection_response[7] = *(d + 7);
 		
-		mode_default = 1 - *(d + 7);
-		mode_update(mode_default); // This will interrupt boot animation!
-		
 		hal_send_sysex(port, &syx_mode_selection_response[0], arr_size(syx_mode_selection_response));
+		
+		u8 new = 1 - *(d + 7);
+		if (mode_default != new) {
+			mode_default = new;
+			mode_update(mode_default); // This will interrupt boot animation!
+		}
+		
 		return;
 	}
 	
@@ -1499,12 +1512,12 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (syx_cmp(d, syx_live_layout_selection, 7)) {
 		syx_live_layout_selection_response[7] = *(d + 7);
 		
-		ableton_layout = *(d + 7);
-		if (ableton_layout == 0x3) {
-			mode_refresh();
-		}
-		
 		hal_send_sysex(port, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+		
+		ableton_layout = *(d + 7);
+		if (ableton_layout == 0x2) note_init();
+		if (ableton_layout == 0x3) mode_refresh();
+		
 		return;
 	}
 	
@@ -1512,9 +1525,14 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (syx_cmp(d, syx_standalone_layout_selection, 7)) {
 		if (mode_default != 1) { // If not in Ableton mode
 			syx_standalone_layout_selection_response[7] = *(d + 7);
-			mode_default = (syx_standalone_layout_selection_response[7] < 4)? (syx_standalone_layout_selection_response[7] + 2) : 0; // 4 for Performance mode (unavailable on stock)
 			
-			hal_send_sysex(port, &syx_standalone_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
+			hal_send_sysex(port, &syx_standalone_layout_selection_response[0], arr_size(syx_standalone_layout_selection_response));
+			
+			u8 new = (syx_standalone_layout_selection_response[7] < 4)? (syx_standalone_layout_selection_response[7] + 2) : 0; // 4 for Performance mode (unavailable on stock)
+			if (mode_default != new) {
+				mode_default = new;
+				mode_update(mode_default); // This will interrupt boot animation!
+			}
 		}
 		return;
 	}
