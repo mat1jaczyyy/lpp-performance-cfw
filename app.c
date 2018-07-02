@@ -943,7 +943,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		}
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(USBSTANDALONE, 0xB0, p, v);
+		hal_send_midi(2 - mode_default, 0xB0, p, v);
 		note_shift = v;
 	
 	} else if (v != 0) {
@@ -973,7 +973,13 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 }
 
-void scale_setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+u8 ableton_pads[100] = {};
+
+void scale_setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (mode_default == 1) {
+		ableton_pads[p] = v;
+	}
+}
 
 /*        Ableton mode        */
 /*----------------------------*/
@@ -982,10 +988,17 @@ u8 ableton_layout = 0x0;
 
 void ableton_led(u8 p, u8 v) {
 	hal_plot_led(TYPEPAD, p, palette[3][0][v], palette[3][1][v], palette[3][2][v]);
+	ableton_pads[p] = v;
 }
 
 void ableton_init() {
 	hal_plot_led(TYPESETUP, 0, 0, 63, 0); // Live mode LED
+	
+	for (u8 i = 0; i < 100; i++) {
+		hal_plot_led(TYPEPAD, i, palette[3][0][ableton_pads[i]], palette[3][1][ableton_pads[i]], palette[3][2][ableton_pads[i]]);
+	}
+	
+	if (ableton_layout == 0x2) note_init();
 	if (ableton_layout == 0x3) hal_plot_led(TYPEPAD, 98, 20, 0, 63); // User LED
 }
 
@@ -1058,7 +1071,10 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == 0x2 && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) return;
+		if (ableton_layout == 0x2 && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) {
+			note_midi_event(port, t, ch, p, v);
+			return;
+		}
 		
 		switch (t) {
 			case 0x8:
@@ -1069,7 +1085,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 					if (ch == 0x5) ableton_led(dr_xy[p], v);
 					break;
 				}
-				
+			
 			case 0xB:
 				if (ableton_layout == 0x3) {
 					if (ch == 0x5) ableton_led(p, v);
@@ -1515,9 +1531,13 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		hal_send_sysex(port, &syx_live_layout_selection_response[0], arr_size(syx_live_layout_selection_response));
 		
 		ableton_layout = *(d + 7);
-		if (ableton_layout == 0x2) note_init();
-		if (ableton_layout == 0x3) mode_refresh();
 		
+		if (ableton_layout == 0x2) note_init();
+		
+		if (ableton_layout == 0x3) {
+			for (u8 i = 0; i < 100; i++) ableton_pads[i] = 0;
+			mode_refresh();
+		}
 		return;
 	}
 	
