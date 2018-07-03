@@ -71,6 +71,12 @@ u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
                                     0x00, 0x01, 0x08, 0x02,                                    // Firmware rev. (4 bytes)
                                     0xF7};
 
+u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40};
+u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, 0xFF, 0xFF, 0xF7};
+u8 challenge_do = 0;
+s8 challenge_x = -128;
+s8 challenge_y = -128;
+
 u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
 u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
 
@@ -387,6 +393,27 @@ u8 text_done = 0;
 
 u8 text_palette = 0;
 
+/*      Challenge solver      */
+/*----------------------------*/
+
+void challenge_timer_event() {
+	for (u8 i = 0; i < 16; i++) {
+		syx_challenge_response[7] = challenge_x;
+		syx_challenge_response[8] = challenge_y;
+				
+		hal_send_sysex(USBMIDI, &syx_challenge_response[0], arr_size(syx_challenge_response));
+		
+		if (++challenge_y < 0) {
+			challenge_y = 0;
+			
+			if (++challenge_x < 0) {
+				challenge_do = 0;
+				return;
+			}
+		}
+	}
+}
+
 /*       LED management       */
 /*----------------------------*/
 
@@ -497,6 +524,7 @@ void mode_update(u8 x) {
 }
 
 void app_timer_event() {
+	if (challenge_do) challenge_timer_event();
 	(*mode_timer_event[mode])();
 }
 
@@ -1526,6 +1554,14 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Device Inquiry - Read information about the connected device
 	if (syx_cmp(d, syx_device_inquiry, 6)) {
 		hal_send_sysex(port, &syx_device_inquiry_response[0], arr_size(syx_device_inquiry_response));
+		return;
+	}
+	
+	// Challenge from the Control Surface
+	if (syx_cmp(d, syx_challenge, 7)) {
+		challenge_do = 1;
+		challenge_x = 0;
+		challenge_y = 0;
 		return;
 	}
 	
