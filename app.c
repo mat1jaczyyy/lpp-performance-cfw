@@ -34,13 +34,6 @@
  
  ******************************************************************************/
 
-/*
-  NOTE: TO USE THIS FIRMWARE WITH ABLETON LIVE, YOU NEED TO PATCH THE LAUNCHPAD
- PRO CONTROL SURFACE. THIS IS BECAUSE IT USES AN UMAC HASH TO ENSURE THE DEVICE
- IS A LEGITIMATE LAUNCHPAD PRO. ONLY THE CLOSED-SOURCE STOCK FIRMWARE CORRECTLY
- RESPONDS TO THE SYSEX MESSAGE. A PATCHER FOR THE CONTROL SURFACE IS INCLUDED.
-                                                                              */
-
 /*  Includes and definitions  */
 /*----------------------------*/
 
@@ -74,8 +67,7 @@ u8 syx_device_inquiry_response[] = {0xF0, 0x7E,
 u8 syx_challenge[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40};
 u8 syx_challenge_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x40, 0xFF, 0xFF, 0xF7};
 u8 challenge_do = 0;
-s8 challenge_x = -128;
-s8 challenge_y = -128;
+u16 challenge_counter = 0;
 
 u8 syx_mode_selection[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x21};
 u8 syx_mode_selection_response[] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2D, 0xFF, 0xF7};
@@ -397,19 +389,15 @@ u8 text_palette = 0;
 /*----------------------------*/
 
 void challenge_timer_event() {
-	for (u8 i = 0; i < 16; i++) {
-		syx_challenge_response[7] = challenge_x;
-		syx_challenge_response[8] = challenge_y;
-				
+	for (u8 i = 0; i < 9; i++) {
+		syx_challenge_response[7] = challenge_counter >> 7;
+		syx_challenge_response[8] = challenge_counter & 127;
+		
 		hal_send_sysex(USBMIDI, &syx_challenge_response[0], arr_size(syx_challenge_response));
 		
-		if (++challenge_y < 0) {
-			challenge_y = 0;
-			
-			if (++challenge_x < 0) {
-				challenge_do = 0;
-				return;
-			}
+		if (++challenge_counter >= 16384) {
+			challenge_do = 0;
+			return;
 		}
 	}
 }
@@ -1559,9 +1547,18 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	
 	// Challenge from the Control Surface
 	if (syx_cmp(d, syx_challenge, 7)) {
-		challenge_do = 1;
-		challenge_x = 0;
-		challenge_y = 0;
+		if (port == USBMIDI) {
+			if (l == 12) {
+				challenge_do = 1;
+				challenge_counter = 0;
+			
+			} else if (l == 8) {
+				if (mode_default != 0) {
+					mode_default = 0;
+					mode_update(mode_default);
+				}
+			}
+		}
 		return;
 	}
 	
