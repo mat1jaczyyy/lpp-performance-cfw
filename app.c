@@ -1083,7 +1083,7 @@ void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
 	}
 }
 
-s8 note_press(u8 x, u8 y, u8 v) {
+s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 length = (scale_enabled)? scales[scale_selected][0] : note_length;
 	u8 segment = (scale_enabled)? scale_segment : note_segment;
 	
@@ -1096,71 +1096,73 @@ s8 note_press(u8 x, u8 y, u8 v) {
 	s8 c = (note_octave + up) * 12 + offset; // Note in relation to C
 	s8 n = c + note_transpose + ((scale_enabled)? scale_root : 0); // Actual note (transposition applied)
 	
-	u8 p[8] = {x * 10 + y}; // Pitches to update on the Launchpad
-	u8 l = 1;
-	
-	for (u8 i = 0; i < 7; i++) { // Add pitches above
-		s8 e = x + i;
-		s8 f = y - segment * i;
+	if (n == out_p || out_p < 0) {
+		u8 p[8] = {x * 10 + y}; // Pitches to update on the Launchpad
+		u8 l = 1;
 		
-		if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
-			p[l++] = e * 10 + f; // Append to array
-		} else {
-			break;
-		}
-	}
-	
-	for (u8 i = 0; i < 7; i++) { // Add pitches below
-		s8 e = x - i;
-		s8 f = y + segment * i;
-		
-		if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
-			p[l++] = e * 10 + f;
-		} else {
-			break;
-		}
-	}
-	
-	if (n < 0) { // Invalid note - also affects notes larger than 127 due to overflow!
-		note_single(&p[0], l, note_color_invalid_r, note_color_invalid_g, note_color_invalid_b);
-		
-	} else { // Valid note
-		if (v == 0) { // Note released
-			u8 m = modulo(c, 12); // Note without octave
+		for (u8 i = 0; i < 7; i++) { // Add pitches above
+			s8 e = x + i;
+			s8 f = y - segment * i;
 			
-			if (scale_enabled) {
-				if (m == 0) {
-					note_single(&p[0], l, note_color_scale_base_r, note_color_scale_base_g, note_color_scale_base_b);
-				} else {
-					note_single(&p[0], l, note_color_scale_r, note_color_scale_g, note_color_scale_b);
-				}
-			
+			if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
+				p[l++] = e * 10 + f; // Append to array
 			} else {
-				switch (m) {
-					case 0: // C base note
-						note_single(&p[0], l, note_color_base_r, note_color_base_g, note_color_base_b);
-						break;
-					
-					case 2:
-					case 4:
-					case 5:
-					case 7:
-					case 9:
-					case 11: // White note
-						note_single(&p[0], l, note_color_white_r, note_color_white_g, note_color_white_b);
-						break;
-					
-					default: // Black note
-						note_single(&p[0], l, note_color_black_r, note_color_black_g, note_color_black_b);
-						break;
-				}
-				
-				u8 b = modulo(note_transpose, length); // Base note of scale
-				if (b != 0 && b == m) note_single(&p[0], l, note_color_transposed_r, note_color_transposed_g, note_color_transposed_b); // Scale base note
+				break;
 			}
+		}
 		
-		} else { // Note pressed
-			note_single(&p[0], l, note_color_pressed_r, note_color_pressed_g, note_color_pressed_b);
+		for (u8 i = 0; i < 7; i++) { // Add pitches below
+			s8 e = x - i;
+			s8 f = y + segment * i;
+			
+			if (1 <= e && e <= 8 && 1 <= f && f <= 8) {
+				p[l++] = e * 10 + f;
+			} else {
+				break;
+			}
+		}
+		
+		if (n < 0) { // Invalid note - also affects notes larger than 127 due to overflow!
+			note_single(&p[0], l, note_color_invalid_r, note_color_invalid_g, note_color_invalid_b);
+			
+		} else { // Valid note
+			if (v == 0) { // Note released
+				u8 m = modulo(c, 12); // Note without octave
+				
+				if (scale_enabled) {
+					if (m == 0) {
+						note_single(&p[0], l, note_color_scale_base_r, note_color_scale_base_g, note_color_scale_base_b);
+					} else {
+						note_single(&p[0], l, note_color_scale_r, note_color_scale_g, note_color_scale_b);
+					}
+				
+				} else {
+					switch (m) {
+						case 0: // C base note
+							note_single(&p[0], l, note_color_base_r, note_color_base_g, note_color_base_b);
+							break;
+						
+						case 2:
+						case 4:
+						case 5:
+						case 7:
+						case 9:
+						case 11: // White note
+							note_single(&p[0], l, note_color_white_r, note_color_white_g, note_color_white_b);
+							break;
+						
+						default: // Black note
+							note_single(&p[0], l, note_color_black_r, note_color_black_g, note_color_black_b);
+							break;
+					}
+					
+					u8 b = modulo(note_transpose, length); // Base note of scale
+					if (b != 0 && b == m) note_single(&p[0], l, note_color_transposed_r, note_color_transposed_g, note_color_transposed_b); // Scale base note
+				}
+			
+			} else { // Note pressed
+				note_single(&p[0], l, note_color_pressed_r, note_color_pressed_g, note_color_pressed_b);
+			}
 		}
 	}
 	
@@ -1185,7 +1187,7 @@ void note_scale_button() {
 void note_draw() {
 	for (u8 x = 1; x < 9; x++) { // Regular notes
 		for (u8 y = 1; y < 9; y++) {
-			note_press(x, y, 0);
+			note_press(x, y, 0, -1);
 		}
 	}
 	
@@ -1262,12 +1264,36 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		}
 	
 	} else { // Main grid
-		s8 n = note_press(x, y, v);
+		s8 n = note_press(x, y, v, -1);
 		if (n >= 0) hal_send_midi(2 - mode_default, (v == 0)? 0x80 : 0x90, n, v);
 	}
 }
 
-void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == 2 - mode_default && ch == 0x0) {
+		u8 x = p / 10;
+		u8 y = p % 10;
+		
+		switch (t) {
+			case 0x8:
+				v = 0;
+			
+			case 0x9:
+				for (u8 x = 1; x < 9; x++) { // I'm lazy
+					for (u8 y = 1; y < 9; y++) {
+						note_press(x, y, v, p);
+					}
+				}
+				break;
+			
+			case 0xB:
+				if (x == 0 || (x == 9 && y > 4) || y == 0 || y == 9) {
+					hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+				}
+				break;
+		}
+	}
+}
 
 void scale_setup_init() {
 	hal_plot_led(TYPESETUP, 0, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
@@ -1470,18 +1496,20 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*    Standalone Drum mode    */
 /*----------------------------*/
 
-s8 drum_press(u8 x, u8 y, u8 v) {
+s8 drum_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 n = (drum_offset + x - 1) * 4 + (y - 1) % 4;
 	if (y >= 5) n += 32;
 	
-	u8 p = x * 10 + y;
-	
-	if (v == 0) { // Note released
-		u8 i = (n + 12) / 16;
-		hal_plot_led(TYPEPAD, p, drum_colors[i][0], drum_colors[i][1], drum_colors[i][2]);
-	
-	} else { // Note pressed
-		hal_plot_led(TYPEPAD, p, drum_color_pressed_r, drum_color_pressed_g, drum_color_pressed_b);
+	if (n == out_p || out_p < 0) {
+		u8 p = x * 10 + y;
+		
+		if (v == 0) { // Note released
+			u8 i = (n + 12) / 16;
+			hal_plot_led(TYPEPAD, p, drum_colors[i][0], drum_colors[i][1], drum_colors[i][2]);
+		
+		} else { // Note pressed
+			hal_plot_led(TYPEPAD, p, drum_color_pressed_r, drum_color_pressed_g, drum_color_pressed_b);
+		}
 	}
 	
 	return n;
@@ -1490,7 +1518,7 @@ s8 drum_press(u8 x, u8 y, u8 v) {
 void drum_init() {
 	for (u8 x = 1; x < 9; x++) { // Regular notes
 		for (u8 y = 1; y < 9; y++) {
-			drum_press(x, y, 0);
+			drum_press(x, y, 0, -1);
 		}
 	}
 	
@@ -1546,11 +1574,35 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		drum_init(); // Redraw grid
 	
 	} else { // Main grid
-		hal_send_midi(USBSTANDALONE, (v == 0)? 0x81 : 0x91, drum_press(x, y, v), v);
+		hal_send_midi(USBSTANDALONE, (v == 0)? 0x81 : 0x91, drum_press(x, y, v, -1), v);
 	}
 }
 
-void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
+	if (port == USBSTANDALONE && ch == 0x1) {
+		u8 x = p / 10;
+		u8 y = p % 10;
+		
+		switch (t) {
+			case 0x8:
+				v = 0;
+			
+			case 0x9:
+				for (u8 x = 1; x < 9; x++) { // I'm lazy
+					for (u8 y = 1; y < 9; y++) {
+						drum_press(x, y, v, p);
+					}
+				}
+				break;
+			
+			case 0xB:
+				if (x == 0 || (x == 9 && y > 4) || y == 0 || y == 9) {
+					hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+				}
+				break;
+		}
+	}
+}
 
 /*         Fader mode         */
 /*----------------------------*/
