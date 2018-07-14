@@ -87,6 +87,8 @@ u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 
 #define syx_palette_text_length 33
 
+#define syx_fader_length 7
+
 u8 syx_device_inquiry[syx_device_inquiry_length] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
 u8 syx_device_inquiry_response[syx_device_inquiry_response_length] = {0xF0, 0x7E,
                                                                       0x00,                                                  // Device ID
@@ -127,6 +129,8 @@ u8 syx_palette_write[syx_palette_write_length] = {0xF0, 0x52, 0x45, 0x54, 0x49, 
 u8 syx_palette_end[syx_palette_end_length] = {0xF0, 0x52, 0x45, 0x54, 0x49, 0x4E, 0x41, 0x7D};
 
 u8 syx_palette_text[syx_palette_text_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x14, 0x03, 0x01, 0x04, 0x44, 0x6f, 0x77, 0x6E, 0x6C, 0x6F, 0x61, 0x64, 0x69, 0x6E, 0x67, 0x20, 0x70, 0x61, 0x6C, 0x65, 0x74, 0x74, 0x65, 0x2E, 0x2E, 0x2E, 0xF7};
+
+u8 syx_fader[syx_fader_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x2B};
 
 /*----------------------------*/
 
@@ -450,14 +454,20 @@ u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
 /*----------------------------*/
 
 u8 faders[8] = {};
-u8 fader_stops[8] = {0, 17, 34, 52, 70, 89, 108, 127};
-u8 fader_levels[8] = {1, 17, 34, 52, 70, 89, 108, 127};
+u8 fader_stops[2][8] = {
+	{0, 17, 34, 52, 70, 89, 108, 127},
+	{0, 21, 42, 63, 64, 85, 106, 127}
+};
+
+#define fader_linear 0
+#define fader_pan 1
+u8 fader_type[8] = {};
+u8 fader_color[8] = {53, 53, 53, 53, 53, 53, 53, 53};
 
 u16 fader_tick[8] = {};
 u16 fader_elapsed[8] = {};
 u8 fader_counter[8] = {};
 u8 fader_final[8] = {};
-
 s8 fader_change[8] = {};
 
 /*----------------------------*/
@@ -1607,7 +1617,58 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*         Fader mode         */
 /*----------------------------*/
 
+void fader_draw(u8 y) {
+	switch (fader_type[y]) {
+		case fader_linear:
+			for (u8 x = 0; x < 8; x++) {
+				if (faders[y] >= fader_stops[fader_linear][x] && faders[y]) {
+					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+				} else {
+					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+				}
+			}
+			break;
+			
+		case fader_pan:
+			if (faders[y] < fader_stops[fader_pan][3]) {
+				for (u8 x = 7; x > 3; x--) {
+					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+				}
+				for (s8 x = 3; x >= 0; x--) {
+					if (faders[y] <= fader_stops[fader_pan][x]) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+					} else {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					}
+				}
+			} else if (faders[y] > fader_stops[fader_pan][4]) {
+				for (u8 x = 0; x < 4; x++) {
+					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+				}
+				for (u8 x = 4; x < 8; x++) {
+					if (faders[y] >= fader_stops[fader_pan][x]) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+					} else {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					}
+				}
+			} else {
+				for (u8 x = 0; x < 8; x++) {
+					if (x == 3 || x == 4) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+					} else {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					}
+				}
+			}
+			break;
+	}
+}
+
 void fader_init() {
+	for (u8 i = 0; i < 8; i++) fader_counter[i] = 0;
+	for (u8 y = 0; y < 8; y++) fader_draw(y);
+	
 	hal_plot_led(TYPESETUP, 0, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode LED
 }
 
@@ -1617,21 +1678,13 @@ void fader_timer_event() {
 			if (++fader_elapsed[y] >= fader_tick[y]) {
 				faders[y] += fader_change[y]; // Update fader line
 				
-				fader_counter[y]--; // 
+				fader_counter[y]--;
 				if (!fader_counter[y]) {
 					faders[y] = fader_final[y]; // Set fader to supposed final value
 				}
 				
 				hal_send_midi(USBSTANDALONE, 0xB2, 21 + y, faders[y]); // Send fader
-				
-				for (u8 x = 0; x < 8; x++) { // Update fader LEDs
-					// TODO: Change these colors via SysEx?
-					if (faders[y] >= fader_levels[x]) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), 63, 0, 63);
-					} else {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), 0, 0, 0);
-					}
-				}
+				fader_draw(y);
 				
 				fader_elapsed[y] = 0;
 			}
@@ -1650,21 +1703,24 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		
 		} else if (v != 0) { // Main grid
 			x--; y--;
-			u16 time = (128 - v) * 25; // Time it takes to do the line
-						
-			fader_final[y] = fader_stops[x]; // Save final value of the line
+			u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
+			
+			fader_final[y] = fader_stops[fader_type[y]][x]; // Save final value of the line
 			
 			s8 direction = 2 * (faders[y] < fader_final[y]) - 1; // Direction of line - {-1} = down, {1} = up
 			u16 diff = (direction > 0)? (fader_final[y] - faders[y]) : (faders[y] - fader_final[y]); // Difference between current value and new value
 			
 			fader_elapsed[y] = 0; // Stop current line
 			
-			if (time >= diff) { // Enough time to do line smoothly
+			if (diff == 0) {
+				hal_send_midi(USBSTANDALONE, 0xB2, 21 + y, faders[y]); // Resend fader
+							
+			} else if (time >= diff) { // Enough time to do line smoothly
 				fader_tick[y] = time / diff;
 				fader_counter[y] = diff;
 				fader_change[y] = direction;
 				
-			} else { // Not enough time - compensate with smaller steps (not always accurate - find a better way? - maybe floats)
+			} else { // Not enough time - compensate with smaller steps
 				fader_tick[y] = 1;
 				fader_counter[y] = time;
 				fader_change[y] = direction * (diff / time);
@@ -2014,6 +2070,23 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 		if (text_palette) {
 			text_palette = 0;
 			mode_update(mode_default);
+		}
+		return;
+	}
+	
+	// Create fader control
+	if (!memcmp(d, &syx_fader[0], syx_fader_length)) {
+		if (mode == mode_fader) {
+			for (u8 i = 7; i <= l - 5 && i <= 35; i += 4) {
+				u8 y = *(d + i) & 7;
+				
+				fader_counter[y] = 0;
+				fader_type[y] = *(d + i + 1) & 1;
+				fader_color[y] = *(d + i + 2);
+				faders[y] = *(d + i + 3);
+				
+				fader_draw(y);
+			}
 		}
 		return;
 	}
