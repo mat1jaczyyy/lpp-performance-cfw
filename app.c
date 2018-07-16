@@ -412,22 +412,26 @@ u8 scale_root = 0;
 
 /*----------------------------*/
 
-u8 faders[8] = {};
+u8 fader_mode = 0; // 0 = Standalone, 1 = Live
+u8 faders[2][8] = {{}, {}};
 u8 fader_stops[2][8] = {
-	{0, 17, 34, 52, 70, 89, 108, 127},
-	{0, 21, 42, 63, 64, 85, 106, 127}
+	{0, 17, 34, 52, 70, 89, 108, 127}, // Linear
+	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
 };
 
 #define fader_linear 0
 #define fader_pan 1
-u8 fader_type[8] = {};
-u8 fader_color[8] = {53, 53, 53, 53, 53, 53, 53, 53};
+u8 fader_type[2][8] = {{}, {}};
+u8 fader_color[2][8] = {
+	{53, 53, 53, 53, 53, 53, 53, 53},
+	{0, 0, 0, 0, 0, 0, 0, 0}
+};
 
-u16 fader_tick[8] = {};
-u16 fader_elapsed[8] = {};
-u8 fader_counter[8] = {};
-u8 fader_final[8] = {};
-s8 fader_change[8] = {};
+u16 fader_tick[2][8] = {{}, {}};
+u16 fader_elapsed[2][8] = {{}, {}};
+u8 fader_counter[2][8] = {{}, {}};
+u8 fader_final[2][8] = {{}, {}};
+s8 fader_change[2][8] = {{}, {}};
 
 /*----------------------------*/
 
@@ -1386,11 +1390,11 @@ void scale_setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 /*----------------------------*/
 
 void fader_draw(u8 y) {
-	switch (fader_type[y]) {
+	switch (fader_type[fader_mode][y]) {
 		case fader_linear:
 			for (u8 x = 0; x < 8; x++) {
-				if (faders[y] >= fader_stops[fader_linear][x] && faders[y]) {
-					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+				if (faders[fader_mode][y] >= fader_stops[fader_linear][x] && faders[fader_mode][y]) {
+					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
 				} else {
 					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 				}
@@ -1398,24 +1402,24 @@ void fader_draw(u8 y) {
 			break;
 			
 		case fader_pan:
-			if (faders[y] < fader_stops[fader_pan][3]) {
+			if (faders[fader_mode][y] < fader_stops[fader_pan][3]) {
 				for (u8 x = 7; x > 3; x--) {
 					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 				}
 				for (s8 x = 3; x >= 0; x--) {
-					if (faders[y] <= fader_stops[fader_pan][x]) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+					if (faders[fader_mode][y] <= fader_stops[fader_pan][x]) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
 					} else {
 						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 					}
 				}
-			} else if (faders[y] > fader_stops[fader_pan][4]) {
+			} else if (faders[fader_mode][y] > fader_stops[fader_pan][4]) {
 				for (u8 x = 0; x < 4; x++) {
 					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 				}
 				for (u8 x = 4; x < 8; x++) {
-					if (faders[y] >= fader_stops[fader_pan][x]) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+					if (faders[fader_mode][y] >= fader_stops[fader_pan][x]) {
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
 					} else {
 						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 					}
@@ -1423,7 +1427,7 @@ void fader_draw(u8 y) {
 			} else {
 				for (u8 x = 0; x < 8; x++) {
 					if (x == 3 || x == 4) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[y]], palette[palette_novation][1][fader_color[y]], palette[palette_novation][2][fader_color[y]]);
+						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
 					} else {
 						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
 					}
@@ -1434,7 +1438,9 @@ void fader_draw(u8 y) {
 }
 
 void fader_init() {
-	for (u8 i = 0; i < 8; i++) fader_counter[i] = 0;
+	fader_mode = (4 - mode_default) / 3;
+	
+	for (u8 i = 0; i < 8; i++) fader_counter[fader_mode][i] = 0;
 	for (u8 y = 0; y < 8; y++) fader_draw(y);
 	
 	if (mode == mode_fader) hal_plot_led(TYPESETUP, 0, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode LED
@@ -1442,19 +1448,19 @@ void fader_init() {
 
 void fader_timer_event() {
 	for (u8 y = 0; y < 8; y++) {
-		if (fader_counter[y]) {
-			if (++fader_elapsed[y] >= fader_tick[y]) {
-				faders[y] += fader_change[y]; // Update fader line
+		if (fader_counter[fader_mode][y]) {
+			if (++fader_elapsed[fader_mode][y] >= fader_tick[fader_mode][y]) {
+				faders[fader_mode][y] += fader_change[fader_mode][y]; // Update fader line
 				
-				fader_counter[y]--;
-				if (!fader_counter[y]) {
-					faders[y] = fader_final[y]; // Set fader to supposed final value
+				fader_counter[fader_mode][y]--;
+				if (!fader_counter[fader_mode][y]) {
+					faders[fader_mode][y] = fader_final[fader_mode][y]; // Set fader to supposed final value
 				}
 				
-				hal_send_midi((4 - mode_default) / 3, 0xB0 + (2 * mode_default - 2) / 3, 21 + y, faders[y]); // Send fader
+				hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Send fader
 				fader_draw(y);
 				
-				fader_elapsed[y] = 0;
+				fader_elapsed[fader_mode][y] = 0;
 			}
 		}
 	}
@@ -1466,43 +1472,43 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else {
 		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
-			hal_send_midi((4 - mode_default) / 3, 0xB2, p, v);
+			hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), p, v);
 			hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
 		
 		} else if (v != 0) { // Main grid
 			x--; y--;
 			u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
 			
-			fader_final[y] = fader_stops[fader_type[y]][x]; // Save final value of the line
+			fader_final[fader_mode][y] = fader_stops[fader_type[fader_mode][y]][x]; // Save final value of the line
 			
-			s8 direction = 2 * (faders[y] < fader_final[y]) - 1; // Direction of line - {-1} = down, {1} = up
-			u16 diff = (direction > 0)? (fader_final[y] - faders[y]) : (faders[y] - fader_final[y]); // Difference between current value and new value
+			s8 direction = 2 * (faders[fader_mode][y] < fader_final[fader_mode][y]) - 1; // Direction of line - {-1} = down, {1} = up
+			u16 diff = (direction > 0)? (fader_final[fader_mode][y] - faders[fader_mode][y]) : (faders[fader_mode][y] - fader_final[fader_mode][y]); // Difference between current value and new value
 			
-			fader_elapsed[y] = 0; // Stop current line
+			fader_elapsed[fader_mode][y] = 0; // Stop current line
 			
 			if (diff == 0) {
-				hal_send_midi((4 - mode_default) / 3, 0xB0 + (2 * mode_default - 2) / 3, 21 + y, faders[y]); // Resend fader
+				hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Resend fader
 							
 			} else if (time >= diff) { // Enough time to do line smoothly
-				fader_tick[y] = time / diff;
-				fader_counter[y] = diff;
-				fader_change[y] = direction;
+				fader_tick[fader_mode][y] = time / diff;
+				fader_counter[fader_mode][y] = diff;
+				fader_change[fader_mode][y] = direction;
 				
 			} else { // Not enough time - compensate with smaller steps
-				fader_tick[y] = 1;
-				fader_counter[y] = time;
-				fader_change[y] = direction * (diff / time);
+				fader_tick[fader_mode][y] = 1;
+				fader_counter[fader_mode][y] = time;
+				fader_change[fader_mode][y] = direction * (diff / time);
 			}
 		}
 	}
 }
 
 void fader_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == (4 - mode_default) / 3 && t == 0xB && ch == (2 * mode_default - 2) / 3 && 21 <= p && p <= 28) {
+	if (port == fader_mode && t == 0xB && ch == (2 * (1 - fader_mode)) && 21 <= p && p <= 28) {
 		p -= 21;
 		
-		fader_counter[p] = 0;
-		faders[p] = v;
+		fader_counter[fader_mode][p] = 0;
+		faders[fader_mode][p] = v;
 		
 		fader_draw(p);
 	}
@@ -2099,10 +2105,10 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 			for (u8 i = 7; i <= l - 5 && i <= 35; i += 4) {
 				u8 y = *(d + i) & 7;
 				
-				fader_counter[y] = 0;
-				fader_type[y] = *(d + i + 1) & 1;
-				fader_color[y] = *(d + i + 2);
-				faders[y] = *(d + i + 3);
+				fader_counter[fader_mode][y] = 0;
+				fader_type[fader_mode][y] = *(d + i + 1) & 1;
+				fader_color[fader_mode][y] = *(d + i + 2);
+				faders[fader_mode][y] = *(d + i + 3);
 				
 				fader_draw(y);
 			}
