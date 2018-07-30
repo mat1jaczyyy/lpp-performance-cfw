@@ -40,7 +40,7 @@
 #include <string.h> // array operations
 #include "app.h"    // HAL interface
 
-#define modulo(x, y) ((x % y + y) % y)
+#define modulo(x, y) ((x % y + y) % y) // Fix negative modulo behavior
 
 u8 math_pow(u8 x, u8 e) {
 	u8 y = 1;
@@ -74,6 +74,8 @@ u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 #define syx_led_column_length 7
 #define syx_led_row_length 7
 #define syx_led_all_length 7
+
+#define syx_led_flash_length 7
 
 #define syx_led_rgb_length 7
 #define syx_led_grid_length 7
@@ -117,6 +119,8 @@ u8 syx_led_single[syx_led_single_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 
 u8 syx_led_column[syx_led_column_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0C};
 u8 syx_led_row[syx_led_row_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0D};
 u8 syx_led_all[syx_led_all_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
+
+u8 syx_led_flash[syx_led_flash_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x23};
 
 u8 syx_led_rgb[syx_led_rgb_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
 u8 syx_led_grid[syx_led_grid_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
@@ -175,16 +179,19 @@ u8 palette_selected = 1;
 u8 vel_sensitive = 0;
 u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
 
+u8 flash_screen[100] = {};
+
 #define flash_indicator_r 3
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 u8 flash[USER_AREA_SIZE] = {0};
 u8 dirty = 0;
 
-#define tempo_counter_max 24
+u32 tempo_counter = 0;
 u8 tempo_listen = 0;
 u32 tempo_timer = 0;
-u8 tempo_counter = 0;
+u8 tempo_message_counter = 0;
+#define tempo_message_counter_max 24
 u32 tempo_beat = 500;
 
 /*----------------------------*/
@@ -271,7 +278,6 @@ u8 boot_fade_counter[16] = {};
 #define boot_colors_length 252
 u8 boot_colors[boot_colors_length][3] = {{0, 0, 1}, {0, 0, 2}, {0, 0, 3}, {0, 0, 4}, {0, 0, 5}, {0, 0, 6}, {0, 0, 7}, {0, 0, 8}, {0, 0, 9}, {0, 0, 10}, {0, 0, 11}, {0, 0, 12}, {0, 0, 13}, {0, 0, 14}, {0, 0, 15}, {0, 0, 16}, {0, 0, 17}, {0, 0, 18}, {0, 0, 19}, {0, 0, 20}, {0, 0, 21}, {0, 0, 22}, {0, 0, 23}, {0, 0, 24}, {0, 0, 25}, {0, 0, 26}, {0, 0, 27}, {0, 0, 28}, {0, 0, 29}, {0, 0, 30}, {0, 0, 31}, {0, 0, 32}, {0, 0, 33}, {0, 0, 34}, {0, 0, 35}, {0, 0, 36}, {0, 0, 37}, {0, 0, 38}, {0, 0, 39}, {0, 0, 40}, {0, 0, 41}, {0, 0, 42}, {0, 0, 43}, {0, 0, 44}, {0, 0, 45}, {0, 0, 46}, {0, 0, 47}, {0, 0, 48}, {0, 0, 49}, {0, 0, 50}, {0, 0, 51}, {0, 0, 52}, {0, 0, 53}, {0, 0, 54}, {0, 0, 55}, {0, 0, 56}, {0, 0, 57}, {0, 0, 58}, {0, 0, 59}, {0, 0, 60}, {0, 0, 61}, {0, 0, 62}, {0, 0, 63}, {1, 0, 63}, {2, 0, 63}, {3, 0, 63}, {4, 0, 63}, {5, 0, 63}, {6, 0, 63}, {7, 0, 63}, {8, 0, 63}, {9, 0, 63}, {10, 0, 63}, {11, 0, 63}, {12, 0, 63}, {13, 0, 63}, {14, 0, 63}, {15, 0, 63}, {16, 0, 63}, {17, 0, 63}, {18, 0, 63}, {19, 0, 63}, {20, 0, 63}, {21, 0, 63}, {22, 0, 63}, {23, 0, 63}, {24, 0, 63}, {25, 0, 63}, {26, 0, 63}, {27, 0, 63}, {28, 0, 63}, {29, 0, 63}, {30, 0, 63}, {31, 0, 63}, {32, 0, 63}, {33, 0, 63}, {34, 0, 63}, {35, 0, 63}, {36, 0, 63}, {37, 0, 63}, {38, 0, 63}, {39, 0, 63}, {40, 0, 63}, {41, 0, 63}, {42, 0, 63}, {43, 0, 63}, {44, 0, 63}, {45, 0, 63}, {46, 0, 63}, {47, 0, 63}, {48, 0, 63}, {49, 0, 63}, {50, 0, 63}, {51, 0, 63}, {52, 0, 63}, {53, 0, 63}, {54, 0, 63}, {55, 0, 63}, {56, 0, 63}, {57, 0, 63}, {58, 0, 63}, {59, 0, 63}, {60, 0, 63}, {61, 0, 63}, {62, 0, 63}, {63, 0, 63}, {63, 0, 62}, {63, 0, 61}, {63, 0, 60}, {63, 0, 59}, {63, 0, 58}, {63, 0, 57}, {63, 0, 56}, {63, 0, 55}, {63, 0, 54}, {63, 0, 53}, {63, 0, 52}, {63, 0, 51}, {63, 0, 50}, {63, 0, 49}, {63, 0, 48}, {63, 0, 47}, {63, 0, 46}, {63, 0, 45}, {63, 0, 44}, {63, 0, 43}, {63, 0, 42}, {63, 0, 41}, {63, 0, 40}, {63, 0, 39}, {63, 0, 38}, {63, 0, 37}, {63, 0, 36}, {63, 0, 35}, {63, 0, 34}, {63, 0, 33}, {63, 0, 32}, {63, 0, 31}, {63, 0, 30}, {63, 0, 29}, {63, 0, 28}, {63, 0, 27}, {63, 0, 26}, {63, 0, 25}, {63, 0, 24}, {63, 0, 23}, {63, 0, 22}, {63, 0, 21}, {63, 0, 20}, {63, 0, 19}, {63, 0, 18}, {63, 0, 17}, {63, 0, 16}, {63, 0, 15}, {63, 0, 14}, {63, 0, 13}, {63, 0, 12}, {63, 0, 11}, {63, 0, 10}, {63, 0, 9}, {63, 0, 8}, {63, 0, 7}, {63, 0, 6}, {63, 0, 5}, {63, 0, 4}, {63, 0, 3}, {63, 0, 2}, {63, 0, 1}, {63, 0, 0}, {62, 0, 0}, {61, 0, 0}, {60, 0, 0}, {59, 0, 0}, {58, 0, 0}, {57, 0, 0}, {56, 0, 0}, {55, 0, 0}, {54, 0, 0}, {53, 0, 0}, {52, 0, 0}, {51, 0, 0}, {50, 0, 0}, {49, 0, 0}, {48, 0, 0}, {47, 0, 0}, {46, 0, 0}, {45, 0, 0}, {44, 0, 0}, {43, 0, 0}, {42, 0, 0}, {41, 0, 0}, {40, 0, 0}, {39, 0, 0}, {38, 0, 0}, {37, 0, 0}, {36, 0, 0}, {35, 0, 0}, {34, 0, 0}, {33, 0, 0}, {32, 0, 0}, {31, 0, 0}, {30, 0, 0}, {29, 0, 0}, {28, 0, 0}, {27, 0, 0}, {26, 0, 0}, {25, 0, 0}, {24, 0, 0}, {23, 0, 0}, {22, 0, 0}, {21, 0, 0}, {20, 0, 0}, {19, 0, 0}, {18, 0, 0}, {17, 0, 0}, {16, 0, 0}, {15, 0, 0}, {14, 0, 0}, {13, 0, 0}, {12, 0, 0}, {11, 0, 0}, {10, 0, 0}, {9, 0, 0}, {8, 0, 0}, {7, 0, 0}, {6, 0, 0}, {5, 0, 0}, {4, 0, 0}, {3, 0, 0}, {2, 0, 0}, {1, 0, 0}, {0, 0, 0}};
 #define boot_user_stop 188
-
 
 /*----------------------------*/
 
@@ -440,7 +446,7 @@ s8 fader_change[2][8] = {{}, {}};
 
 /*----------------------------*/
 
-u8 ableton_pads[100] = {};
+u8 ableton_screen[100] = {};
 
 #define ableton_layout_session 0x0
 #define ableton_layout_note_drum 0x1
@@ -616,32 +622,46 @@ void challenge_timer_event() {
 /*       LED management       */
 /*----------------------------*/
 
-void clear_led() {
-	for (u8 i = 1; i < 99; i++) {
-		hal_plot_led(TYPEPAD, i, 0, 0, 0);
+void rgb_led(u8 p, u8 r, u8 g, u8 b) {
+	if (p == 99) {
+		hal_plot_led(TYPESETUP, 0, r, g, b);
+	} else {
+		hal_plot_led(TYPEPAD, p, r, g, b);
 	}
-	hal_plot_led(TYPESETUP, 0, 0, 0, 0);
+	flash_screen[p] = 0;
+}
+
+void clear_led() {
+	for (u8 i = 1; i < 100; i++) rgb_led(i, 0, 0, 0);
 }
 
 void palette_led(u8 p, u8 v) {
-	if (p == 99) {
-		hal_plot_led(TYPESETUP, 0, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
+	rgb_led(p, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
+}
+
+void novation_led(u8 p, u8 v) {
+	rgb_led(p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+}
+
+void flash_led(u8 p, u8 v) {
+	if (!v) {
+		rgb_led(p, 0, 0, 0);
 	} else {
-		hal_plot_led(TYPEPAD, p, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
+		flash_screen[p] = v;
 	}
 }
 
 void display_u8(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < 8; i++) {
 		u8 w = ((v & math_pow(2, i)) >> i);
-		hal_plot_led(TYPEPAD, (d == 0)? (8 - i + x * 10) : ((i + 1) * 10 + x), r * w, g * w, b * w);
+		rgb_led((d == 0)? (8 - i + x * 10) : ((i + 1) * 10 + x), r * w, g * w, b * w);
 	}
 }
 
 void display_u6(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < 6; i++) {
 		u8 w = ((v & math_pow(2, i)) >> i);
-		hal_plot_led(TYPEPAD, (d == 0)? (7 - i + x * 10) : ((i + 2) * 10 + x), r * w, g * w, b * w);
+		rgb_led((d == 0)? (7 - i + x * 10) : ((i + 2) * 10 + x), r * w, g * w, b * w);
 	}
 }
 
@@ -681,7 +701,7 @@ void flash_read() {
 
 void flash_write() {
 	if (dirty) {
-		hal_plot_led(TYPESETUP, 0, flash_indicator_r, flash_indicator_g, flash_indicator_b);
+		rgb_led(99, flash_indicator_r, flash_indicator_g, flash_indicator_b);
 		u16 fp = 0;
 		
 		// Compress 4 color values into 3 bytes. 6 bits * 4 values = 24 bits = 3 bytes
@@ -701,7 +721,7 @@ void flash_write() {
 		
 		hal_write_flash(0, &flash[0], USER_AREA_SIZE);
 		
-		hal_plot_led(TYPESETUP, 0, 0, 0, 0);
+		rgb_led(99, 0, 0, 0);
 		dirty = 0;
 	}
 }
@@ -710,14 +730,15 @@ void flash_write() {
 /*----------------------------*/
 
 void tempo_start() {
+	tempo_counter = 0;
 	tempo_listen = 1;
 	tempo_timer = 0;
-	tempo_counter = 0;
+	tempo_message_counter = 0;
 }
 
-void tempo_tick() {
+void tempo_midi() {
 	if (tempo_listen) {
-		if (++tempo_counter == tempo_counter_max) {
+		if (++tempo_message_counter == tempo_message_counter_max) {
 			tempo_beat = tempo_timer;
 			tempo_start();
 		}
@@ -726,6 +747,25 @@ void tempo_tick() {
 
 void tempo_stop() {
 	tempo_listen = 0;
+}
+
+void tempo_tick() {
+	if (++tempo_counter >= tempo_beat) {
+		tempo_counter = 0;
+	}
+
+	// Draw Flashing LEDs
+	u8 flash_state = tempo_counter < (tempo_beat >> 1);
+	for (u8 i = 1; i < 98; i++) {
+		if (flash_screen[i]) {
+			hal_plot_led(TYPEPAD, i, palette[palette_novation][0][flash_screen[i]] * flash_state, palette[palette_novation][1][flash_screen[i]] * flash_state, palette[palette_novation][2][flash_screen[i]] * flash_state);
+		}
+	}
+	if (flash_screen[99]) {
+		hal_plot_led(TYPESETUP, 0, palette[palette_novation][0][flash_screen[99]] * flash_state, palette[palette_novation][1][flash_screen[99]] * flash_state, palette[palette_novation][2][flash_screen[99]] * flash_state);	
+	}
+
+	// TODO: Draw Pulsing LEDs
 }
 
 /*  Modes and event handling  */
@@ -753,6 +793,7 @@ void mode_default_update(u8 x) {
 
 void app_timer_event() {
 	tempo_timer++;
+	tempo_tick();
 
 	if (challenge_do) challenge_timer_event();
 
@@ -776,7 +817,7 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 			break;
 
 		case 0xF8:
-			tempo_tick();
+			tempo_midi();
 			break;
 		
 		case 0xFC:
@@ -820,14 +861,10 @@ void boot_timer_event() {
 				if (boot_fade_counter[i] < boot_colors_length) { // Draw next fade for note
 					for (u8 j = 1; j <= boot_notes[i][0]; j++) { // For each note in frame
 						if (boot_notes[i][j] != 98 || boot_fade_counter[i] <= boot_user_stop) { // Check for leaving User LED on
-							hal_plot_led(TYPEPAD, boot_notes[i][j], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
+							rgb_led(boot_notes[i][j], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
 						}
 						
-						if (boot_rotate_180) hal_plot_led(TYPEPAD, 99 - boot_notes[i][j], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
-						
-						if (boot_notes[i][j] == 99) { // Mode LED
-							hal_plot_led(TYPESETUP, 0, boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
-						}
+						if (boot_rotate_180) rgb_led(99 - boot_notes[i][j], boot_colors[boot_fade_counter[i]][0], boot_colors[boot_fade_counter[i]][1], boot_colors[boot_fade_counter[i]][2]);
 					}
 					boot_fade_counter[i]++;
 					
@@ -852,66 +889,66 @@ void boot_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 void setup_init() {
 	for (u8 i = 16; i < 19; i++) {
-		hal_plot_led(TYPEPAD, i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
+		rgb_led(i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
 	}
 	
 	for (u8 i = 26; i < 29; i++) {
-		hal_plot_led(TYPEPAD, i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
+		rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
 	}
 	
 	if (palette_selected < 3) {
-		hal_plot_led(TYPEPAD, palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
+		rgb_led(palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
 	} else {
-		hal_plot_led(TYPEPAD, palette_selected + 13, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
+		rgb_led(palette_selected + 13, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
 	}
 	
 	if (vel_sensitive) {
-		hal_plot_led(TYPEPAD, 11, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
+		rgb_led(11, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
 	} else {
-		hal_plot_led(TYPEPAD, 11, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
+		rgb_led(11, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
 	}
 	
-	hal_plot_led(TYPEPAD, 85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights
+	rgb_led(85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights
 	for (u8 i = 86; i < 89; i++) {
-		hal_plot_led(TYPEPAD, i, setup_top_mk2_r >> 2, setup_top_mk2_g >> 2, setup_top_mk2_b >> 2); // MK2 Top Lights
+		rgb_led(i, setup_top_mk2_r >> 2, setup_top_mk2_g >> 2, setup_top_mk2_b >> 2); // MK2 Top Lights
 	}
 	
 	if (!top_lights_config) {
-		hal_plot_led(TYPEPAD, 85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
+		rgb_led(85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
 	} else {
-		hal_plot_led(TYPEPAD, top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
+		rgb_led(top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
 	}
 	
-	hal_plot_led(TYPEPAD, 81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
-	hal_plot_led(TYPEPAD, 82, mode_ableton_r >> 2, mode_ableton_g >> 2, mode_ableton_b >> 2); // Ableton mode
-	hal_plot_led(TYPEPAD, 83, mode_note_r >> 2, mode_note_g >> 2, mode_note_b >> 2); // Note mode
-	hal_plot_led(TYPEPAD, 71, mode_drum_r >> 2, mode_drum_g >> 2, mode_drum_b >> 2); // Drum mode
-	hal_plot_led(TYPEPAD, 72, mode_fader_r >> 2, mode_fader_g >> 2, mode_fader_b >> 2); // Fader mode
-	hal_plot_led(TYPEPAD, 73, mode_programmer_r >> 2, mode_programmer_g >> 2, mode_programmer_b >> 2); // Programmer mode
+	rgb_led(81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
+	rgb_led(82, mode_ableton_r >> 2, mode_ableton_g >> 2, mode_ableton_b >> 2); // Ableton mode
+	rgb_led(83, mode_note_r >> 2, mode_note_g >> 2, mode_note_b >> 2); // Note mode
+	rgb_led(71, mode_drum_r >> 2, mode_drum_g >> 2, mode_drum_b >> 2); // Drum mode
+	rgb_led(72, mode_fader_r >> 2, mode_fader_g >> 2, mode_fader_b >> 2); // Fader mode
+	rgb_led(73, mode_programmer_r >> 2, mode_programmer_g >> 2, mode_programmer_b >> 2); // Programmer mode
 	
 	switch (mode_default) {
 		case 0:
-			hal_plot_led(TYPEPAD, 81, mode_performance_r, mode_performance_g, mode_performance_b); // Performance mode selected
+			rgb_led(81, mode_performance_r, mode_performance_g, mode_performance_b); // Performance mode selected
 			break;
 		
 		case 1:
-			hal_plot_led(TYPEPAD, 82, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Ableton mode selected
+			rgb_led(82, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Ableton mode selected
 			break;
 		
 		case 2:
-			hal_plot_led(TYPEPAD, 83, mode_note_r, mode_note_g, mode_note_b); // Note mode selected
+			rgb_led(83, mode_note_r, mode_note_g, mode_note_b); // Note mode selected
 			break;
 		
 		case 3:
-			hal_plot_led(TYPEPAD, 71, mode_drum_r, mode_drum_g, mode_drum_b); // Drum mode selected
+			rgb_led(71, mode_drum_r, mode_drum_g, mode_drum_b); // Drum mode selected
 			break;
 		
 		case 4:
-			hal_plot_led(TYPEPAD, 72, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode selected
+			rgb_led(72, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode selected
 			break;
 		
 		case 5:
-			hal_plot_led(TYPEPAD, 73, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode selected
+			rgb_led(73, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode selected
 			break;
 	}
 	
@@ -920,11 +957,11 @@ void setup_init() {
 
 void setup_timer_event() {
 	if (++setup_elapsed >= setup_tick) {
-		hal_plot_led(TYPESETUP, 0, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
+		rgb_led(99, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
 		setup_mode_counter++; setup_mode_counter %= setup_rainbow_length;
 		
 		if (palette_selected < palette_custom) {
-			hal_plot_led(TYPEPAD, 25, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
+			rgb_led(25, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= setup_rainbow_length;
 		}
 		
@@ -1095,7 +1132,7 @@ void editor_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 /*----------------------------*/
 
 void performance_init() {
-	hal_plot_led(TYPEPAD, 98, mode_performance_r, mode_performance_g, mode_performance_b); // User LED
+	rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
 }
 
 void performance_timer_event() {}
@@ -1141,7 +1178,7 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 
 void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
-		hal_plot_led(TYPEPAD, *(p+i), r, g, b);
+		rgb_led(*(p + i), r, g, b);
 	}
 }
 
@@ -1237,15 +1274,15 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 
 void note_scale_button() {
 	if (note_shift) { // Shift button pressed
-		hal_plot_led(TYPEPAD, 80, 63, 63, 63);
-		hal_plot_led(TYPEPAD, 96, 7, 7, 7);
+		rgb_led(80, 63, 63, 63);
+		rgb_led(96, 7, 7, 7);
 	
 	} else { // Shift button released
-		hal_plot_led(TYPEPAD, 80, 7, 7, 7);
+		rgb_led(80, 7, 7, 7);
 		if (mode_default == 1) {
-			hal_plot_led(TYPEPAD, 96, 0, 63, 63);
+			rgb_led(96, 0, 63, 63);
 		} else if (mode_default == 2) {
-			hal_plot_led(TYPEPAD, 96, 0, 0, 0);
+			rgb_led(96, 0, 0, 0);
 		}
 	}
 }
@@ -1263,26 +1300,26 @@ void note_draw() {
 	
 	u8 o = note_octave + 1; // Octave navigation
 	if (o < 5) {
-		hal_plot_led(TYPEPAD, 91, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
-		hal_plot_led(TYPEPAD, 92, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+		rgb_led(91, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+		rgb_led(92, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
 	} else {
-		hal_plot_led(TYPEPAD, 91, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
-		hal_plot_led(TYPEPAD, 92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+		rgb_led(91, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+		rgb_led(92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
 	}
 	
 	if (note_transpose > 0) { // Transpose navigation
-		hal_plot_led(TYPEPAD, 93, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
-		hal_plot_led(TYPEPAD, 94, note_transpose_colors[note_transpose][0], note_transpose_colors[note_transpose][1], note_transpose_colors[note_transpose][2]);
+		rgb_led(93, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
+		rgb_led(94, note_transpose_colors[note_transpose][0], note_transpose_colors[note_transpose][1], note_transpose_colors[note_transpose][2]);
 	} else {
-		hal_plot_led(TYPEPAD, 93, note_transpose_colors[-note_transpose][0], note_transpose_colors[-note_transpose][1], note_transpose_colors[-note_transpose][2]);
-		hal_plot_led(TYPEPAD, 94, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
+		rgb_led(93, note_transpose_colors[-note_transpose][0], note_transpose_colors[-note_transpose][1], note_transpose_colors[-note_transpose][2]);
+		rgb_led(94, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
 	}
 }
 
 void note_init() {
 	note_draw();
 	note_scale_button();
-	if (mode == mode_note) hal_plot_led(TYPESETUP, 0, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
+	if (mode == mode_note) rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
 }
 
 void note_timer_event() {}
@@ -1293,14 +1330,14 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else if (p == 96 && note_shift && v != 0) { // Shift+Note button
 		mode_update(mode_scale_setup); // Enter Setup for Scale mode
-		hal_plot_led(TYPEPAD, p, 63, 63, 63);
+		rgb_led(p, 63, 63, 63);
 	
 	} else if (p == 96 && v == 0) {
 		note_scale_button();
 	
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
 		hal_send_midi(2 - mode_default, 0xB0, p, v);
-		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (p == 80) { // Shift button
 		hal_send_midi(2 - mode_default, 0xB0, p, v);
@@ -1354,7 +1391,7 @@ void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0xB:
 				if (x == 0 || (x == 9 && y > 4) || y == 0 || y == 9) {
-					hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+					novation_led(p, v);
 				}
 				break;
 		}
@@ -1362,33 +1399,33 @@ void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void scale_setup_init() {
-	hal_plot_led(TYPESETUP, 0, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
+	rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
 	
 	if (scale_enabled) {
-		hal_plot_led(TYPEPAD, 88, scale_setup_color_enabled_r, scale_setup_color_enabled_g, scale_setup_color_enabled_b); // Scale mode enabled
+		rgb_led(88, scale_setup_color_enabled_r, scale_setup_color_enabled_g, scale_setup_color_enabled_b); // Scale mode enabled
 	} else {
-		hal_plot_led(TYPEPAD, 88, scale_setup_color_enabled_r / 5, scale_setup_color_enabled_g / 5, scale_setup_color_enabled_b / 5); // Scale mode disabled
+		rgb_led(88, scale_setup_color_enabled_r / 5, scale_setup_color_enabled_g / 5, scale_setup_color_enabled_b / 5); // Scale mode disabled
 	}
 	
 	for (u8 i = 81; i < 88; i++) {
-		hal_plot_led(TYPEPAD, i, scale_setup_color_segment_r / 3, scale_setup_color_segment_g / 3, scale_setup_color_segment_b / 3); // Segment length options
+		rgb_led(i, scale_setup_color_segment_r / 3, scale_setup_color_segment_g / 3, scale_setup_color_segment_b / 3); // Segment length options
 	}
-	hal_plot_led(TYPEPAD, 88 - scale_segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
+	rgb_led(88 - scale_segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
 	
 	for (u8 i = 0; i < 12; i++) {
-		hal_plot_led(TYPEPAD, scale_keys[i], scale_setup_color_notes_r >> 3, scale_setup_color_notes_g >> 3, scale_setup_color_notes_b >> 3); // Root note selector and scale preview
+		rgb_led(scale_keys[i], scale_setup_color_notes_r >> 3, scale_setup_color_notes_g >> 3, scale_setup_color_notes_b >> 3); // Root note selector and scale preview
 	} 
 	for (u8 i = 2; i <= scales[scale_selected][0]; i++) {
-		hal_plot_led(TYPEPAD, scale_keys[modulo(scales[scale_selected][i] + scale_root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
+		rgb_led(scale_keys[modulo(scales[scale_selected][i] + scale_root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
 	}
-	hal_plot_led(TYPEPAD, scale_keys[scale_root], scale_setup_color_root_r, scale_setup_color_root_g, scale_setup_color_root_b); // Scale root note
+	rgb_led(scale_keys[scale_root], scale_setup_color_root_r, scale_setup_color_root_g, scale_setup_color_root_b); // Scale root note
 	
 	for (u8 x = 1; x < 5; x++) {
 		for (u8 y = 1; y < 9; y++) {
-			hal_plot_led(TYPEPAD, x * 10 + y, scale_setup_color_scale_r, scale_setup_color_scale_g, scale_setup_color_scale_b); // Select scale
+			rgb_led(x * 10 + y, scale_setup_color_scale_r, scale_setup_color_scale_g, scale_setup_color_scale_b); // Select scale
 		}
 	}
-	hal_plot_led(TYPEPAD, ((scale_selected >> 3) + 1) * 10 + (scale_selected % 8) + 1, scale_setup_color_scale_selected_r, scale_setup_color_scale_selected_g, scale_setup_color_scale_selected_b); // Selected scale
+	rgb_led(((scale_selected >> 3) + 1) * 10 + (scale_selected % 8) + 1, scale_setup_color_scale_selected_r, scale_setup_color_scale_selected_g, scale_setup_color_scale_selected_b); // Selected scale
 }
 
 void scale_setup_timer_event() {}
@@ -1399,9 +1436,9 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else if (p == 96) {
 		if (v == 0) {
-			hal_plot_led(TYPEPAD, 96, 0, 7, 7);
+			rgb_led(96, 0, 7, 7);
 		} else {
-			hal_plot_led(TYPEPAD, 96, 0, 63, 0);
+			rgb_led(96, 0, 63, 0);
 			mode_update(mode_default); // Enter Note/Live mode
 		}
 	
@@ -1446,9 +1483,9 @@ void fader_draw(u8 y) {
 		case fader_linear:
 			for (u8 x = 0; x < 8; x++) {
 				if (faders[fader_mode][y] >= fader_stops[fader_linear][x] && faders[fader_mode][y]) {
-					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
+					novation_led((x + 1) * 10 + y + 1, fader_color[fader_mode][y]);
 				} else {
-					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					novation_led((x + 1) * 10 + y + 1, 0);
 				}
 			}
 			break;
@@ -1456,32 +1493,32 @@ void fader_draw(u8 y) {
 		case fader_pan:
 			if (faders[fader_mode][y] < fader_stops[fader_pan][3]) {
 				for (u8 x = 7; x > 3; x--) {
-					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					novation_led((x + 1) * 10 + y + 1, 0);
 				}
 				for (s8 x = 3; x >= 0; x--) {
 					if (faders[fader_mode][y] <= fader_stops[fader_pan][x]) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
+						novation_led((x + 1) * 10 + y + 1, fader_color[fader_mode][y]);
 					} else {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+						novation_led((x + 1) * 10 + y + 1, 0);
 					}
 				}
 			} else if (faders[fader_mode][y] > fader_stops[fader_pan][4]) {
 				for (u8 x = 0; x < 4; x++) {
-					hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+					novation_led((x + 1) * 10 + y + 1, 0);
 				}
 				for (u8 x = 4; x < 8; x++) {
 					if (faders[fader_mode][y] >= fader_stops[fader_pan][x]) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
+						novation_led((x + 1) * 10 + y + 1, fader_color[fader_mode][y]);
 					} else {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+						novation_led((x + 1) * 10 + y + 1, 0);
 					}
 				}
 			} else {
 				for (u8 x = 0; x < 8; x++) {
 					if (x == 3 || x == 4) {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, palette[palette_novation][0][fader_color[fader_mode][y]], palette[palette_novation][1][fader_color[fader_mode][y]], palette[palette_novation][2][fader_color[fader_mode][y]]);
+						novation_led((x + 1) * 10 + y + 1, fader_color[fader_mode][y]);
 					} else {
-						hal_plot_led(TYPEPAD, (x + 1) * 10 + y + 1, 0, 0, 0);
+						novation_led((x + 1) * 10 + y + 1, 0);
 					}
 				}
 			}
@@ -1495,7 +1532,7 @@ void fader_init() {
 	for (u8 i = 0; i < 8; i++) fader_counter[fader_mode][i] = 0;
 	for (u8 y = 0; y < 8; y++) fader_draw(y);
 	
-	if (mode == mode_fader) hal_plot_led(TYPESETUP, 0, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode LED
+	if (mode == mode_fader) rgb_led(99, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode LED
 }
 
 void fader_timer_event() {
@@ -1525,7 +1562,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	} else {
 		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
 			hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), p, v);
-			hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+			rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 		
 		} else if (v != 0) { // Main grid
 			x--; y--;
@@ -1569,21 +1606,40 @@ void fader_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*        Ableton mode        */
 /*----------------------------*/
 
-void ableton_led(u8 p, u8 v) {
-	if (mode == mode_ableton) hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
-	ableton_pads[p] = v;
+void ableton_led(u8 ch, u8 p, u8 v) {
+	if (ch == 0x5) ch = 0x0;
+	ch %= 3;
+
+	if (mode == mode_ableton) {
+		switch (ch) {
+			case 0x0: // Normal LED
+				novation_led(p, v);
+				break;
+			
+			case 0x1: // Flashing
+				flash_led(p, v);
+				break;
+			
+			case 0x2: // Pulsing
+				// TODO: Implement Pulsing
+				break;
+		}
+		
+	}
+
+	if (ch == 0x0) ableton_screen[p] = v;
 }
 
 void ableton_init() {
-	hal_plot_led(TYPESETUP, 0, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Live mode LED
+	rgb_led(99, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Live mode LED
 	
 	for (u8 i = 0; i < 100; i++) {
-		hal_plot_led(TYPEPAD, i, palette[palette_novation][0][ableton_pads[i]], palette[palette_novation][1][ableton_pads[i]], palette[palette_novation][2][ableton_pads[i]]);
+		novation_led(i, ableton_screen[i]);
 	}
 	
 	if (ableton_layout == ableton_layout_note_chromatic) note_init();
 	if (ableton_layout == ableton_layout_fader_device || ableton_layout == ableton_layout_fader_volume || ableton_layout == ableton_layout_fader_pan || ableton_layout == ableton_layout_fader_sends) fader_init();
-	if (ableton_layout == ableton_layout_user) hal_plot_led(TYPEPAD, 98, user_r, user_g, user_b); // User LED
+	if (ableton_layout == ableton_layout_user) rgb_led(98, user_r, user_g, user_b); // User LED
 }
 
 void ableton_timer_event() {
@@ -1674,12 +1730,12 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 				v = 0;
 			
 			case 0x9:
-				if (ableton_layout == ableton_layout_note_drum && ch == 0x0 && 36 <= p && p <= 99) {
-					ableton_led(dr_xy[p], v);
+				if (ableton_layout == ableton_layout_note_drum && (ch == 0x0 || ch == 0x1) && 36 <= p && p <= 99) {
+					ableton_led(ch, dr_xy[p], v);
 					break;
 				}
-				if (ableton_layout == ableton_layout_user && ch == 0x5) {
-					ableton_led(dr_xy[p], v);
+				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1)) {
+					ableton_led(ch, dr_xy[p], v);
 					break;
 				}
 				if (ableton_layout == ableton_layout_note_blank && 1 <= x && x <= 8 && 1 <= y && y <= 8) {
@@ -1688,9 +1744,9 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0xB:
 				if (ableton_layout == ableton_layout_user) {
-					if (ch == 0x5) ableton_led(p, v);
+					if (ch == 0x5) ableton_led(ch, p, v);
 				} else {
-					if (ch == 0x0) ableton_led(p, v);
+					if (ch == 0x0 || ch == 0x1) ableton_led(ch, p, v);
 				}
 				break;
 		}
@@ -1709,10 +1765,10 @@ s8 drum_press(u8 x, u8 y, u8 v, s8 out_p) {
 		
 		if (v == 0) { // Note released
 			u8 i = (n + 12) / 16;
-			hal_plot_led(TYPEPAD, p, drum_colors[i][0], drum_colors[i][1], drum_colors[i][2]);
+			rgb_led(p, drum_colors[i][0], drum_colors[i][1], drum_colors[i][2]);
 		
 		} else { // Note pressed
-			hal_plot_led(TYPEPAD, p, drum_color_pressed_r, drum_color_pressed_g, drum_color_pressed_b);
+			rgb_led(p, drum_color_pressed_r, drum_color_pressed_g, drum_color_pressed_b);
 		}
 	}
 	
@@ -1730,12 +1786,12 @@ void drum_init() {
 		hal_send_midi(USBSTANDALONE, 0x81, i, 0);
 	}
 	
-	hal_plot_led(TYPEPAD, 91, drum_nav_r, drum_nav_g, (drum_offset < 13)? (drum_nav_b >> (1 - drum_nav_pressed[0])) : 0); // Navigation buttons
-	hal_plot_led(TYPEPAD, 92, drum_nav_r, drum_nav_g, (drum_offset > 3)? (drum_nav_b >> (1 - drum_nav_pressed[1])) : 0);
-	hal_plot_led(TYPEPAD, 93, drum_nav_r, drum_nav_g, (drum_offset < 16)? (drum_nav_b >> (1 - drum_nav_pressed[2])) : 0);
-	hal_plot_led(TYPEPAD, 94, drum_nav_r, drum_nav_g, (drum_offset > 0)? (drum_nav_b >> (1 - drum_nav_pressed[3])) : 0);
+	rgb_led(91, drum_nav_r, drum_nav_g, (drum_offset < 13)? (drum_nav_b >> (1 - drum_nav_pressed[0])) : 0); // Navigation buttons
+	rgb_led(92, drum_nav_r, drum_nav_g, (drum_offset > 3)? (drum_nav_b >> (1 - drum_nav_pressed[1])) : 0);
+	rgb_led(93, drum_nav_r, drum_nav_g, (drum_offset < 16)? (drum_nav_b >> (1 - drum_nav_pressed[2])) : 0);
+	rgb_led(94, drum_nav_r, drum_nav_g, (drum_offset > 0)? (drum_nav_b >> (1 - drum_nav_pressed[3])) : 0);
 	
-	hal_plot_led(TYPESETUP, 0, mode_drum_r, mode_drum_g, mode_drum_b); // Drum mode LED
+	rgb_led(99, mode_drum_r, mode_drum_g, mode_drum_b); // Drum mode LED
 }
 
 void drum_timer_event() {}
@@ -1746,7 +1802,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else if (x == 0 || (x == 9 && y >= 5) || y == 0 || y == 9) { // Unused side buttons
 		hal_send_midi(USBSTANDALONE, 0xB1, p, v);
-		hal_plot_led(TYPEPAD, p, 0, (v == 0)? 0 : 63, 0);
+		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y <= 4) { // Navigation buttons
 		if (v != 0) {
@@ -1801,7 +1857,7 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0xB:
 				if (x == 0 || (x == 9 && y > 4) || y == 0 || y == 9) {
-					hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+					novation_led(p, v);
 				}
 				break;
 		}
@@ -1812,7 +1868,7 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*----------------------------*/
 
 void programmer_init() {
-	hal_plot_led(TYPESETUP, 0, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode LED
+	rgb_led(99, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode LED
 }
 
 void programmer_timer_event() {}
@@ -1837,7 +1893,7 @@ void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 y = p % 10;
 		
 		if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
-			hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+			novation_led(p, v);
 		}
 	}
 }
@@ -1969,12 +2025,12 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 
 		if (mode == mode_ableton) {
 			if (ableton_layout == ableton_layout_user) {
-				for (u8 i = 0; i < 100; i++) ableton_pads[i] = 0;
+				for (u8 i = 0; i < 100; i++) ableton_screen[i] = 0;
 			}
 			
 			if (ableton_layout == ableton_layout_note_blank) {
 				for (u8 x = 10; x < 90; x += 10) {
-					for (u8 y = 1; y < 9; y++) ableton_pads[x + y] = 0;
+					for (u8 y = 1; y < 9; y++) ableton_screen[x + y] = 0;
 				}
 			}
 			
@@ -1998,90 +2054,75 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	
 	// Light LED using SysEx
 	if (!memcmp(d, &syx_led_single[0], syx_led_single_length)) {
-		for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
-			u8 p = *(d + i);
-			u8 v = *(d + i + 1);
-			
-			if (p == 99) {
-				hal_plot_led(TYPESETUP, 0, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
-			} else {
-				hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
-			}
+		if (mode < 128) {
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) novation_led(*(d + i), *(d + i + 1));
 		}
 		return;
 	}
 	
 	// Light a column of LEDs using SysEx
 	if (!memcmp(d, &syx_led_column[0], syx_led_column_length)) {
-		u8 y = *(d + 7);
-		
-		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
-			u8 v = *(d + i);
-			hal_plot_led(TYPEPAD, (i - 8) * 10 + y, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+		if (mode < 128) {
+			u8 y = *(d + 7);
+			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led((i - 8) * 10 + y, *(d + i));
 		}
 		return;
 	}
 	
 	// Light a row of LEDs using SysEx
 	if (!memcmp(d, &syx_led_row[0], syx_led_row_length)) {
-		u8 x = *(d + 7) * 10;
-		
-		for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
-			u8 v = *(d + i);
-			hal_plot_led(TYPEPAD, x + i - 8, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+		if (mode < 128) {
+			u8 x = *(d + 7) * 10;
+			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led(x + i - 8, *(d + i));
 		}
 		return;
 	}
 	
 	// Light all LEDs using SysEx
 	if (!memcmp(d, &syx_led_all[0], syx_led_all_length)) {
-		u8 v = *(d + 7);
-		
-		for (u8 p = 1; p < 99; p++) {
-			hal_plot_led(TYPEPAD, p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+		if (mode < 128) {
+			u8 v = *(d + 7);
+			for (u8 p = 1; p < 99; p++)	novation_led(p, v);
 		}
 		return;
 	}
 	
+	// Flash LED using SysEx
+	if (!memcmp(d, &syx_led_flash[0], syx_led_flash_length)) {
+		if (mode < 128) {
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) flash_led(*(d + i), *(d + i + 1));
+		}
+		return;
+	}
+
 	// Light LED using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_rgb[0], syx_led_rgb_length)) {
-		for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) {
-			u8 p = *(d + i);
-			u8 r = *(d + i + 1);
-			u8 g = *(d + i + 2);
-			u8 b = *(d + i + 3);
-			
-			if (p == 99) {
-				hal_plot_led(TYPESETUP, 0, r, g, b);
-			} else {
-				hal_plot_led(TYPEPAD, p, r, g, b);
-			}
+		if (mode < 128) {
+			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
 		}
 		return;
 	}
 	
 	// Light LED grid using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_grid[0], syx_led_grid_length)) {
-		u8 t = *(d + 7);
-		
-		u16 ceil; u8 p;
-		if (t) {
-			ceil = 197;
-			p = 11;
-		} else {
-			ceil = 305;
-			p = 0;
-		}
-		
-		for (u16 i = 8; i <= l - 4 && i <= ceil; i += 3) {
-			u8 r = *(d + i);
-			u8 g = *(d + i + 1);
-			u8 b = *(d + i + 2);
-			
-			hal_plot_led(TYPEPAD, p, r, g, b);
-			
-			if (++p % 10 == 9 && t) {
-				p += 2;
+		if (mode < 128) {
+			u8 t = *(d + 7);
+
+			u16 ceil; u8 p;
+			if (t) {
+				ceil = 197;
+				p = 11;
+			} else {
+				ceil = 305;
+				p = 0;
+			}
+
+			for (u16 i = 8; i <= l - 4 && i <= ceil; i += 3) {
+				rgb_led(p, *(d + i), *(d + i + 1), *(d + i + 2));
+
+				if (++p % 10 == 9 && t) {
+					p += 2;
+				}
 			}
 		}
 		return;
@@ -2089,52 +2130,58 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	
 	// Text scrolling
 	if (!memcmp(d, &syx_text[0], syx_text_length)) {
-		if (l <= 10) { // Empty message
-			if (mode == 6 && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
-			
-		} else if ((mode_default == 1 && port == USBMIDI) || (mode_default != 1 && port == USBSTANDALONE)) { // Valid message
-			text_port = port;
-			text_color = *(d + 7) & 127;
-			text_loop = *(d + 8) != 0;
-			
-			u16 bp = 1;
-			
-			for (u16 i = 9; i < l - 1; i++) {
-				u8 v = *(d + i);
-				if ((1 <= v && v <= 7) || (32 <= v && v <= 127)) {
-					text_bytes[bp++] = v;
+		if (mode < 128) {
+			if (l <= 10) { // Empty message
+				if (mode == 6 && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
+
+			} else if ((mode_default == 1 && port == USBMIDI) || (mode_default != 1 && port == USBSTANDALONE)) { // Valid message
+				text_port = port;
+				text_color = *(d + 7) & 127;
+				text_loop = *(d + 8) != 0;
+
+				u16 bp = 1;
+
+				for (u16 i = 9; i < l - 1; i++) {
+					u8 v = *(d + i);
+					if ((1 <= v && v <= 7) || (32 <= v && v <= 127)) {
+						text_bytes[bp++] = v;
+					}
 				}
+
+				for (u16 i = bp; i < text_bytes[0]; i++) text_bytes[i] = 0; // Clear rest of array
+
+				text_bytes[0] = bp; // Stop reading bytes at this offset
+
+				mode_update(6);
 			}
-			
-			for (u16 i = bp; i < text_bytes[0]; i++) text_bytes[i] = 0; // Clear rest of array
-			
-			text_bytes[0] = bp; // Stop reading bytes at this offset
-			
-			mode_update(6);
 		}
 		return;
 	}
 	
 	// Retina palette download start
 	if (!memcmp(d, &syx_palette_start[0], syx_palette_start_length)) {
-		if (!text_palette) {
-			text_palette = 1;
-			app_sysex_event(port, &syx_palette_text[0], syx_palette_text_length);
+		if (mode < 128) {
+			if (!text_palette) {
+				text_palette = 1;
+				app_sysex_event(port, &syx_palette_text[0], syx_palette_text_length);
+			}
 		}
 		return;
 	}
 	
 	// Retina palette download write
 	if (!memcmp(d, &syx_palette_write[0], syx_palette_write_length)) {
-		if (text_palette) {
-			u8 j = *(d + 8);
-			
-			if (j < 3) {
-				for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
-					dirty = 1;
-					
-					for (u8 k = 0; k < 3; k++) {
-						palette[j][k][*(d + i)] = *(d + i + k + 1);
+		if (mode < 128) {
+			if (text_palette) {
+				u8 j = *(d + 8);
+
+				if (j < 3) {
+					for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
+						dirty = 1;
+
+						for (u8 k = 0; k < 3; k++) {
+							palette[j][k][*(d + i)] = *(d + i + k + 1);
+						}
 					}
 				}
 			}
@@ -2144,9 +2191,11 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	
 	// Retina palette download end
 	if (!memcmp(d, &syx_palette_end[0], syx_palette_end_length)) {
-		if (text_palette) {
-			text_palette = 0;
-			mode_update(mode_default);
+		if (mode < 128) {
+			if (text_palette) {
+				text_palette = 0;
+				mode_update(mode_default);
+			}
 		}
 		return;
 	}
