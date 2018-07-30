@@ -1223,7 +1223,11 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 				}
 			
 			} else { // Note pressed
-				note_single(&p[0], l, note_color_pressed_r, note_color_pressed_g, note_color_pressed_b);
+				if (out_p < 0) {
+					note_single(&p[0], l, note_color_pressed_r, note_color_pressed_g, note_color_pressed_b);
+				} else {
+					note_single(&p[0], l, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+				}
 			}
 		}
 	}
@@ -1655,7 +1659,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == ableton_layout_note_chromatic && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) {
+		if (ableton_layout == ableton_layout_note_chromatic && (t == 0x8 || t == 0x9)) {
 			note_midi_event(port, t, ch, p, v);
 			return;
 		}
