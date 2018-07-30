@@ -640,7 +640,7 @@ void palette_led(u8 p, u8 v) {
 }
 
 void novation_led(u8 p, u8 v) {
-	rgb_led(p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+	if (p != 99) rgb_led(p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
 }
 
 void flash_led(u8 p, u8 v) {
@@ -1715,7 +1715,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == ableton_layout_note_chromatic && (t == 0x8 || t == 0x9)) {
+		if (ableton_layout == ableton_layout_note_chromatic && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) {
 			note_midi_event(port, t, ch, p, v);
 			return;
 		}
