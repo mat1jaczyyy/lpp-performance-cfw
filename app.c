@@ -178,9 +178,14 @@ u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
 #define flash_indicator_r 3
 #define flash_indicator_g 0
 #define flash_indicator_b 0
-
 u8 flash[USER_AREA_SIZE] = {0};
 u8 dirty = 0;
+
+#define tempo_counter_max 24
+u8 tempo_listen = 0;
+u32 tempo_timer = 0;
+u8 tempo_counter = 0;
+u32 tempo_beat = 500;
 
 /*----------------------------*/
 
@@ -701,6 +706,28 @@ void flash_write() {
 	}
 }
 
+/*      Tempo management      */
+/*----------------------------*/
+
+void tempo_start() {
+	tempo_listen = 1;
+	tempo_timer = 0;
+	tempo_counter = 0;
+}
+
+void tempo_tick() {
+	if (tempo_listen) {
+		if (++tempo_counter == tempo_counter_max) {
+			tempo_beat = tempo_timer;
+			tempo_start();
+		}
+	}
+}
+
+void tempo_stop() {
+	tempo_listen = 0;
+}
+
 /*  Modes and event handling  */
 /*----------------------------*/
 
@@ -725,7 +752,10 @@ void mode_default_update(u8 x) {
 }
 
 void app_timer_event() {
+	tempo_timer++;
+
 	if (challenge_do) challenge_timer_event();
+
 	(*mode_timer_event[mode])();
 }
 
@@ -738,14 +768,32 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
-	u8 ch = t % 16;
-	t >>= 4;
-	
-	if (mode != 1 && mode_default == 1) {
-		(*mode_midi_event[mode_default])(port, t, ch, p, v);
+	u8 ch;
+
+	switch (t) {
+		case 0xFA:
+			tempo_start();
+			break;
+
+		case 0xF8:
+			tempo_tick();
+			break;
+		
+		case 0xFC:
+			tempo_stop();
+			break;
+		
+		default:
+			ch = t % 16;
+			t >>= 4;
+
+			if (mode != mode_ableton && mode_default == mode_ableton) {
+				(*mode_midi_event[mode_default])(port, t, ch, p, v);
+			}
+
+			(*mode_midi_event[mode])(port, t, ch, p, v);
+			break;
 	}
-	
-	(*mode_midi_event[mode])(port, t, ch, p, v);
 }
 
 void app_aftertouch_event(u8 p, u8 v) {} // Unused
