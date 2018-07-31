@@ -920,37 +920,39 @@ void boot_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 /*----------------------------*/
 
 void setup_init() {
-	for (u8 i = 16; i < 19; i++) {
-		rgb_led(i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
-	}
+	if (mode_default == mode_performance) {
+		for (u8 i = 16; i < 19; i++) {
+			rgb_led(i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
+		}
+
+		for (u8 i = 26; i < 29; i++) {
+			rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
+		}
+
+		if (palette_selected < 3) {
+			rgb_led(palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
+		} else {
+			rgb_led(palette_selected + 13, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
+		}
+
+		rgb_led(85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights
+		for (u8 i = 86; i < 89; i++) {
+			rgb_led(i, setup_top_mk2_r >> 2, setup_top_mk2_g >> 2, setup_top_mk2_b >> 2); // MK2 Top Lights
+		}
 	
-	for (u8 i = 26; i < 29; i++) {
-		rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
+		if (!top_lights_config) {
+			rgb_led(85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
+		} else {
+			rgb_led(top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
+		}
 	}
-	
-	if (palette_selected < 3) {
-		rgb_led(palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
-	} else {
-		rgb_led(palette_selected + 13, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
-	}
-	
+
 	if (vel_sensitive) {
 		rgb_led(11, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
 	} else {
 		rgb_led(11, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
 	}
-	
-	rgb_led(85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights
-	for (u8 i = 86; i < 89; i++) {
-		rgb_led(i, setup_top_mk2_r >> 2, setup_top_mk2_g >> 2, setup_top_mk2_b >> 2); // MK2 Top Lights
-	}
-	
-	if (!top_lights_config) {
-		rgb_led(85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
-	} else {
-		rgb_led(top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
-	}
-	
+
 	rgb_led(81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
 	rgb_led(82, mode_ableton_r >> 2, mode_ableton_g >> 2, mode_ableton_b >> 2); // Ableton mode
 	rgb_led(83, mode_note_r >> 2, mode_note_g >> 2, mode_note_b >> 2); // Note mode
@@ -992,7 +994,7 @@ void setup_timer_event() {
 		rgb_led(99, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
 		setup_mode_counter++; setup_mode_counter %= setup_rainbow_length;
 		
-		if (palette_selected < palette_custom) {
+		if (mode_default == mode_performance && palette_selected < palette_custom) {
 			rgb_led(25, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= setup_rainbow_length;
 		}
@@ -1009,27 +1011,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_update(mode_default);
 			setup_jump = 0;
 		
-		} else if (1 <= x && x <= 2 && 6 <= y && y <= 8) { // Palette switch
-			palette_selected = (2 - x) * 3 + y - 6;
-			dirty = 1;
-			mode_refresh();
-		
-		} else if (p == 25) {
-			if (palette_selected < 3) { // Enter Palette editor mode
-				mode_update(mode_editor);
-				setup_jump = 0;
-			}
-		
 		} else if (p == 11) { // Toggle velocity sensitivity
 			vel_sensitive = (vel_sensitive)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
-		
-		} else if (85 <= p && p <= 88) { // Change Top Lights configuration
-			top_lights_config = p - 85;
-			dirty = 1;
-			mode_refresh();
-		
+
 		} else if (81 <= p && p <= 83) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
@@ -1037,6 +1023,24 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (71 <= p && p <= 73) {
 			mode_default = p - 68;
 			mode_refresh();
+		
+		} else if (mode_default == mode_performance) {
+			if (1 <= x && x <= 2 && 6 <= y && y <= 8) { // Palette switch
+				palette_selected = (2 - x) * 3 + y - 6;
+				dirty = 1;
+				mode_refresh();
+		
+			} else if (p == 25) {
+				if (palette_selected < 3) { // Enter Palette editor mode
+					mode_update(mode_editor);
+					setup_jump = 0;
+				}
+		
+			} else if (85 <= p && p <= 88) { // Change Top Lights configuration
+				top_lights_config = p - 85;
+				dirty = 1;
+				mode_refresh();
+			}
 		}
 	
 	} else { // Note released
@@ -1179,7 +1183,7 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x5) {
+	if (port == USBSTANDALONE && ch == 0xF) {
 		switch (t) {
 			case 0x8: // Note off
 				v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
@@ -1767,7 +1771,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 					break;
 				}
 				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1 || ch == 0x2)) {
-					ableton_led(ch, dr_xy[p], v);
+					if (36 <= p && p <= 123) ableton_led(ch, dr_xy[p], v);
 					break;
 				}
 				if (ableton_layout == ableton_layout_note_blank && 1 <= x && x <= 8 && 1 <= y && y <= 8) {
