@@ -42,14 +42,6 @@
 
 #define modulo(x, y) ((x % y + y) % y) // Fix negative modulo behavior
 
-u8 math_pow(u8 x, u8 e) {
-	u8 y = 1;
-	for (u8 j = 0; j < e; j++) {
-		y *= x;
-	}
-	return y;
-}
-
 u8 xy_dr[128] = {0, 116, 117, 118, 119, 120, 121, 122, 123, 0, 115, 36, 37, 38, 39, 68, 69, 70, 71, 107, 114, 40, 41, 42, 43, 72, 73, 74, 75, 106, 113, 44, 45, 46, 47, 76, 77, 78, 79, 105, 112, 48, 49, 50, 51, 80, 81, 82, 83, 104, 111, 52, 53, 54, 55, 84, 85, 86, 87, 103, 110, 56, 57, 58, 59, 88, 89, 90, 91, 102, 109, 60, 61, 62, 63, 92, 93, 94, 95, 101, 108, 64, 65, 66, 67, 96, 97, 98, 99, 100, 0, 28, 29, 30, 31, 32, 33, 34, 35, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99, 91, 92, 93, 94, 95, 96, 97, 98, 11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44, 51, 52, 53, 54, 61, 62, 63, 64, 71, 72, 73, 74, 81, 82, 83, 84, 15, 16, 17, 18, 25, 26, 27, 28, 35, 36, 37, 38, 45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 89, 79, 69, 59, 49, 39, 29, 19, 80, 70, 60, 50, 40, 30, 20, 10, 1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0};
 
@@ -123,7 +115,6 @@ u8 syx_led_all[syx_led_all_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
 
 u8 syx_led_flash[syx_led_flash_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x23};
 u8 syx_led_pulse[syx_led_pulse_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x28};
-
 
 u8 syx_led_rgb[syx_led_rgb_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
 u8 syx_led_grid[syx_led_grid_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
@@ -668,14 +659,14 @@ void pulse_led(u8 p, u8 v) {
 
 void display_u8(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < 8; i++) {
-		u8 w = ((v & math_pow(2, i)) >> i);
+		u8 w = (v >> i) & 1;
 		rgb_led((d == 0)? (8 - i + x * 10) : ((i + 1) * 10 + x), r * w, g * w, b * w);
 	}
 }
 
 void display_u6(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < 6; i++) {
-		u8 w = ((v & math_pow(2, i)) >> i);
+		u8 w = (v >> i) & 1;
 		rgb_led((d == 0)? (7 - i + x * 10) : ((i + 2) * 10 + x), r * w, g * w, b * w);
 	}
 }
@@ -1109,7 +1100,7 @@ void editor_select_v(u8 v) {
 }
 
 void editor_select_flip(u8 i) {
-	u8 v = editor_selected ^ math_pow(2, i);
+	u8 v = editor_selected ^ (1 << i);
 	
 	if (v != 0) {
 		editor_selected = v;
@@ -1139,17 +1130,17 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_update(mode_setup);
 		
 		} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
-			palette[palette_selected][0][editor_selected] ^= math_pow(2, x - 2);
+			palette[palette_selected][0][editor_selected] ^= 1 << (x - 2);
 			editor_refresh();
 			dirty = 1;
 		
 		} else if (2 <= p && p <= 7) { // Modify green bit
-			palette[palette_selected][1][editor_selected] ^= math_pow(2, 7 - p);
+			palette[palette_selected][1][editor_selected] ^= 1 << (7 - p);
 			editor_refresh();
 			dirty = 1;
 		
 		} else if (2 <= x && x <= 7 && y == 9) { // Modify blue bit
-			palette[palette_selected][2][editor_selected] ^= math_pow(2, x - 2);
+			palette[palette_selected][2][editor_selected] ^= 1 << (x - 2);
 			editor_refresh();
 			dirty = 1;
 		
