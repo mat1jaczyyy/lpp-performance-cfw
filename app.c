@@ -76,6 +76,7 @@ u8 dr_xy[128] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 #define syx_led_all_length 7
 
 #define syx_led_flash_length 7
+#define syx_led_pulse_length 7
 
 #define syx_led_rgb_length 7
 #define syx_led_grid_length 7
@@ -121,6 +122,8 @@ u8 syx_led_row[syx_led_row_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0D};
 u8 syx_led_all[syx_led_all_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0E};
 
 u8 syx_led_flash[syx_led_flash_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x23};
+u8 syx_led_pulse[syx_led_pulse_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x28};
+
 
 u8 syx_led_rgb[syx_led_rgb_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
 u8 syx_led_grid[syx_led_grid_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
@@ -180,6 +183,7 @@ u8 vel_sensitive = 0;
 u8 top_lights_config = 0; // 0 = PRO, 1 = MK2, 2 = MK2 Rotated, 3 = MK2 Mirrored
 
 u8 flash_screen[100] = {};
+u8 pulse_screen[100] = {};
 
 #define flash_indicator_r 3
 #define flash_indicator_g 0
@@ -191,8 +195,8 @@ u32 tempo_counter = 0;
 u8 tempo_listen = 0;
 u32 tempo_timer = 0;
 u8 tempo_message_counter = 0;
-#define tempo_message_counter_max 24
-u32 tempo_beat = 500;
+#define tempo_message_counter_max 96
+u32 tempo_bar = 2000;
 
 /*----------------------------*/
 
@@ -629,6 +633,7 @@ void rgb_led(u8 p, u8 r, u8 g, u8 b) {
 		hal_plot_led(TYPEPAD, p, r, g, b);
 	}
 	flash_screen[p] = 0;
+	pulse_screen[p] = 0;
 }
 
 void clear_led() {
@@ -649,6 +654,16 @@ void flash_led(u8 p, u8 v) {
 	} else {
 		flash_screen[p] = v;
 	}
+	pulse_screen[p] = 0;
+}
+
+void pulse_led(u8 p, u8 v) {
+	if (!v) {
+		rgb_led(p, 0, 0, 0);
+	} else {
+		pulse_screen[p] = v;
+	}
+	flash_screen[p] = 0;
 }
 
 void display_u8(u8 v, u8 d, u8 x, u8 r, u8 g, u8 b) {
@@ -738,9 +753,14 @@ void tempo_start() {
 
 void tempo_midi() {
 	if (tempo_listen) {
-		if (++tempo_message_counter == tempo_message_counter_max) {
-			tempo_beat = tempo_timer;
-			tempo_start();
+		u8 tempo_message_beat = tempo_message_counter_max >> 2;
+		if ((++tempo_message_counter % tempo_message_beat) == tempo_message_beat) {
+			tempo_bar = tempo_timer << 2;
+			tempo_timer = 0;
+		}
+		if (tempo_message_counter == tempo_message_counter_max) {
+			tempo_counter = 0;
+			tempo_message_counter = 0;
 		}
 	}
 }
@@ -750,22 +770,34 @@ void tempo_stop() {
 }
 
 void tempo_tick() {
-	if (++tempo_counter >= tempo_beat) {
+	if (++tempo_counter >= tempo_bar) {
 		tempo_counter = 0;
 	}
 
+	u8 palette_using = (mode == mode_performance)? palette_selected : palette_novation;
+
 	// Draw Flashing LEDs
-	u8 flash_state = tempo_counter < (tempo_beat >> 1);
-	for (u8 i = 1; i < 98; i++) {
+	u8 flash_state = (tempo_counter % (tempo_bar >> 2)) < (tempo_bar >> 3);
+	for (u8 i = 1; i < 99; i++) {
 		if (flash_screen[i]) {
-			hal_plot_led(TYPEPAD, i, palette[palette_novation][0][flash_screen[i]] * flash_state, palette[palette_novation][1][flash_screen[i]] * flash_state, palette[palette_novation][2][flash_screen[i]] * flash_state);
+			hal_plot_led(TYPEPAD, i, palette[palette_using][0][flash_screen[i]] * flash_state, palette[palette_using][1][flash_screen[i]] * flash_state, palette[palette_using][2][flash_screen[i]] * flash_state);
 		}
 	}
 	if (flash_screen[99]) {
-		hal_plot_led(TYPESETUP, 0, palette[palette_novation][0][flash_screen[99]] * flash_state, palette[palette_novation][1][flash_screen[99]] * flash_state, palette[palette_novation][2][flash_screen[99]] * flash_state);	
+		hal_plot_led(TYPESETUP, 0, palette[palette_using][0][flash_screen[99]] * flash_state, palette[palette_using][1][flash_screen[99]] * flash_state, palette[palette_using][2][flash_screen[99]] * flash_state);	
 	}
 
-	// TODO: Draw Pulsing LEDs
+	// Draw Pulsing LEDs
+	u32 t = tempo_counter % (tempo_bar >> 1);
+	u8 pulse_state = (t < (tempo_bar >> 3))? (15 * tempo_bar + 384 * t) / tempo_bar : (237 * tempo_bar - 384 * t) / (3 * tempo_bar);
+	for (u8 i = 1; i < 99; i++) {
+		if (pulse_screen[i]) {
+			hal_plot_led(TYPEPAD, i, (palette[palette_using][0][pulse_screen[i]] * pulse_state) / 63, (palette[palette_using][1][pulse_screen[i]] * pulse_state) / 63, (palette[palette_using][2][pulse_screen[i]] * pulse_state) / 63);
+		}
+	}
+	if (pulse_screen[99]) {
+		hal_plot_led(TYPESETUP, 0, (palette[palette_using][0][pulse_screen[99]] * pulse_state) / 63, (palette[palette_using][1][pulse_screen[99]] * pulse_state) / 63, (palette[palette_using][2][pulse_screen[99]] * pulse_state) / 63);
+	}
 }
 
 /*  Modes and event handling  */
@@ -1621,7 +1653,7 @@ void ableton_led(u8 ch, u8 p, u8 v) {
 				break;
 			
 			case 0x2: // Pulsing
-				// TODO: Implement Pulsing
+				pulse_led(p, v);
 				break;
 		}
 		
@@ -1730,11 +1762,11 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 				v = 0;
 			
 			case 0x9:
-				if (ableton_layout == ableton_layout_note_drum && (ch == 0x0 || ch == 0x1) && 36 <= p && p <= 99) {
+				if (ableton_layout == ableton_layout_note_drum && (ch == 0x0 || ch == 0x1 || ch == 0x2) && 36 <= p && p <= 99) {
 					ableton_led(ch, dr_xy[p], v);
 					break;
 				}
-				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1)) {
+				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1 || ch == 0x2)) {
 					ableton_led(ch, dr_xy[p], v);
 					break;
 				}
@@ -1746,7 +1778,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 				if (ableton_layout == ableton_layout_user) {
 					if (ch == 0x5) ableton_led(ch, p, v);
 				} else {
-					if (ch == 0x0 || ch == 0x1) ableton_led(ch, p, v);
+					if (ch == 0x0 || ch == 0x1 || ch == 0x2) ableton_led(ch, p, v);
 				}
 				break;
 		}
@@ -2091,6 +2123,14 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (!memcmp(d, &syx_led_flash[0], syx_led_flash_length)) {
 		if (mode < 128) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) flash_led(*(d + i), *(d + i + 1));
+		}
+		return;
+	}
+
+	// Pulse LED using SysEx
+	if (!memcmp(d, &syx_led_pulse[0], syx_led_pulse_length)) {
+		if (mode < 128) {
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) pulse_led(*(d + i), *(d + i + 1));
 		}
 		return;
 	}
