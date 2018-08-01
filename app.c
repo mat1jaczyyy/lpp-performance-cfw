@@ -580,14 +580,15 @@ u8 text_bitmap[96][6] = {
 	{4, 0b01000000, 0b10000000, 0b01000000, 0b10000000, }, // 126 = ~
 	{5, 0b00111000, 0b00101000, 0b01101100, 0b00101000, 0b00010000} // 127 = DEL
 };
+u8 text_ticks[7] = {187, 141, 116, 95, 75, 58, 47};
 
 u8 text_port = 0;
 u8 text_color = 127;
 u8 text_loop = 0;
 u8 text_bytes[323] = {};
 
-u16 text_tick = 80;
-u16 text_elapsed = 80;
+u8 text_speed = 3; // Default speed gets overwritten after changed
+u8 text_elapsed = 80;
 u16 text_counter = 1;
 u8 text_subcounter = 0;
 
@@ -1306,9 +1307,9 @@ void note_scale_button() {
 	
 	} else { // Shift button released
 		rgb_led(80, 7, 7, 7);
-		if (mode_default == 1) {
+		if (mode_default == mode_ableton) {
 			rgb_led(96, 0, 63, 63);
-		} else if (mode_default == 2) {
+		} else if (mode_default == mode_note) {
 			rgb_led(96, 0, 0, 0);
 		}
 	}
@@ -1929,7 +1930,7 @@ void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*----------------------------*/
 
 void text_init() {
-	text_elapsed = text_tick;
+	text_elapsed = text_ticks[text_speed];
 	text_counter = 1;
 	text_subcounter = 0;
 	text_done = 0;
@@ -1938,7 +1939,7 @@ void text_init() {
 }
 
 void text_timer_event() {
-	if (++text_elapsed >= text_tick) { // Next frame
+	if (++text_elapsed >= text_ticks[text_speed]) { // Next frame
 		if (text_done) {
 			mode_update(mode_default);
 		
@@ -1951,8 +1952,7 @@ void text_timer_event() {
 				b = text_bytes[text_counter];
 				
 				while (b < 8) {
-					// TODO: Accurate text scrolling speeds. These are approximate
-					text_tick = (8 - b) * 20;
+					text_speed = b - 1;
 					
 					if (++text_counter == text_bytes[0]) {
 						text_counter = 0;
@@ -2167,9 +2167,9 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	if (!memcmp(d, &syx_text[0], syx_text_length)) {
 		if (mode < 128) {
 			if (l <= 10) { // Empty message
-				if (mode == 6 && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
+				if (mode == mode_text && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
 
-			} else if ((mode_default == 1 && port == USBMIDI) || (mode_default != 1 && port == USBSTANDALONE)) { // Valid message
+			} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port == USBSTANDALONE)) { // Valid message
 				text_port = port;
 				text_color = *(d + 7) & 127;
 				text_loop = *(d + 8) != 0;
