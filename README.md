@@ -70,6 +70,8 @@ The firmware currently lacks a very small amount of features from the stock firm
     * Pad Lighting setting for stock Standalone modes
     * Settings for unimplemented features (aftertouch, MIDI DIN/DOUT ports)
 
+Another known issue is that Novation's USB Driver does not support units with customized firmware. For this reason, apps which utilize the driver's multi-client features (such as Retina) will not function with this firmware. To work around that particular limitation, use the built-in palette and Top Lights features of the Performance mode. This issue does not exist on macOS due to native support for multi-client MIDI output which doesn't require a special driver.
+
 For any other issues or new feature requests, submit an issue report.
 
 If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://global.novationmusic.com/support/product-downloads?product=Launchpad+Pro) to roll back to the stock firmware.
