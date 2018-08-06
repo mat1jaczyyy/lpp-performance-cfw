@@ -1494,6 +1494,10 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			} while (++i < 12);
 			
 			if (i < 12) {
+				if (i != scale_root) {
+					note_octave = 3;
+				}
+				
 				scale_root = i;
 				scale_setup_init();
 			}
