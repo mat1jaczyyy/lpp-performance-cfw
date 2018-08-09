@@ -1187,7 +1187,7 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 				
 	} else { // Send MIDI input to DAW
-		hal_send_midi(USBSTANDALONE, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+		hal_send_midi(USBSTANDALONE, (v == 0)? 0x8F : 0x9F, xy_dr[p], v);
 	}
 }
 
@@ -1212,7 +1212,7 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 					}
 				}
 				
-				performance_led(dr_xy[p], v, 0);
+				performance_led(dr_xy[p], v, 1);
 				break;
 		}		
 	}
