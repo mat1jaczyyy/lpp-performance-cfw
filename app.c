@@ -2039,11 +2039,11 @@ void app_sysex_event(u8 port, u8 * d, u16 l) {
 	// Mode selection - return the status
 	if (!memcmp(d, &syx_mode_selection[0], syx_mode_selection_length)) {
 		u8 new;
-		syx_mode_selection_response[7] = new = *(d + 7);
+		syx_mode_selection_response[7] = new = *(d + 7) & 1;
 		
 		hal_send_sysex(port, &syx_mode_selection_response[0], syx_mode_selection_response_length);
 		
-		mode_default_update(1 - new); // This will interrupt boot animation!
+		if (!(mode != mode_ableton && new)) mode_default_update(1 - new); // This will interrupt boot animation!
 		
 		return;
 	}
