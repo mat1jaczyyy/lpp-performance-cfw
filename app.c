@@ -309,6 +309,10 @@ u8 editor_selected = 1;
 
 /*----------------------------*/
 
+u8 performance_screen[100] = {};
+
+/*----------------------------*/
+
 #define note_color_invalid_r 7
 #define note_color_invalid_g 0
 #define note_color_invalid_b 0
@@ -438,6 +442,10 @@ u16 fader_elapsed[2][8] = {{}, {}};
 u8 fader_counter[2][8] = {{}, {}};
 u8 fader_final[2][8] = {{}, {}};
 s8 fader_change[2][8] = {{}, {}};
+
+/*----------------------------*/
+
+u8 programmer_screen[100] = {};
 
 /*----------------------------*/
 
@@ -1159,8 +1167,17 @@ void editor_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 /*      Performance mode      */
 /*----------------------------*/
 
+void performance_led(u8 p, u8 v, u8 s) {
+	palette_led(p, v);
+	if (s) performance_screen[p] = v;
+}
+
 void performance_init() {
-	rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
+	for (u8 i = 0; i < 100; i++) {
+		performance_led(i, performance_screen[i], 0);
+	}
+
+	if (!performance_screen[98]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
 }
 
 void performance_timer_event() {}
@@ -1188,14 +1205,14 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 					
 					if (top_lights_config > 1) { // Display additional LEDs
 						if (100 <= p && p <= 107) {
-							palette_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v);
+							performance_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v, 1);
 						} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
-							palette_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v);
+							performance_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v, 1);
 						}
 					}
 				}
 				
-				palette_led(dr_xy[p], v);
+				performance_led(dr_xy[p], v, 0);
 				break;
 		}		
 	}
@@ -1638,7 +1655,7 @@ void fader_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*        Ableton mode        */
 /*----------------------------*/
 
-void ableton_led(u8 ch, u8 p, u8 v) {
+void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
 	if (ch == 0x5) ch = 0x0;
 	ch %= 3;
 
@@ -1659,14 +1676,14 @@ void ableton_led(u8 ch, u8 p, u8 v) {
 		
 	}
 
-	if (ch == 0x0) ableton_screen[p] = v;
+	if (ch == 0x0 && s) ableton_screen[p] = v;
 }
 
 void ableton_init() {
 	rgb_led(99, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Live mode LED
 	
 	for (u8 i = 0; i < 100; i++) {
-		novation_led(i, ableton_screen[i]);
+		ableton_led(0x0, i, ableton_screen[i], 0);
 	}
 	
 	if (ableton_layout == ableton_layout_note_chromatic) note_init();
@@ -1763,11 +1780,11 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0x9:
 				if (ableton_layout == ableton_layout_note_drum && (ch == 0x0 || ch == 0x1 || ch == 0x2) && 36 <= p && p <= 99) {
-					ableton_led(ch, dr_xy[p], v);
+					ableton_led(ch, dr_xy[p], v, 1);
 					break;
 				}
 				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1 || ch == 0x2)) {
-					if (36 <= p && p <= 123) ableton_led(ch, dr_xy[p], v);
+					if (36 <= p && p <= 123) ableton_led(ch, dr_xy[p], v, 1);
 					break;
 				}
 				if (ableton_layout == ableton_layout_note_blank && 1 <= x && x <= 8 && 1 <= y && y <= 8) {
@@ -1776,9 +1793,9 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0xB:
 				if (ableton_layout == ableton_layout_user) {
-					if (ch == 0x5) ableton_led(ch, p, v);
+					if (ch == 0x5) ableton_led(ch, p, v, 1);
 				} else {
-					if (ch == 0x0 || ch == 0x1 || ch == 0x2) ableton_led(ch, p, v);
+					if (ch == 0x0 || ch == 0x1 || ch == 0x2) ableton_led(ch, p, v, 1);
 				}
 				break;
 		}
@@ -1899,7 +1916,16 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 /*   Programmer mode (MIDI)   */
 /*----------------------------*/
 
+void programmer_led(u8 p, u8 v, u8 s) {
+	novation_led(p, v);
+	if (s) programmer_screen[p] = v;
+}
+
 void programmer_init() {
+	for (u8 i = 0; i < 100; i++) {
+		programmer_led(i, programmer_screen[i], 0);
+	}
+
 	rgb_led(99, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode LED
 }
 
