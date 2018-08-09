@@ -31,7 +31,7 @@ You no longer have to hold the Setup button in order to change the settings on y
     * Cyan = Note mode (Standalone Port - Channel 1)
     * Yellow = Drum mode (Standalone Port - Channel 2)
     * Pink = Fader mode (Standalone Port - Channel 3)
-    * Orange = Programmer mode (Standalone Port - Channel 4)
+    * Orange = Programmer mode (Standalone Port - Channel 1 - this is required for FL Studio support) 
 * Bottom left corner: Velocity sensitivity toggle
     * Bright = Enabled
     * Dim = Disabled

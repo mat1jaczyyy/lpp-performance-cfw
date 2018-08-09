@@ -1915,7 +1915,7 @@ void programmer_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x0) {
+	if (port == USBSTANDALONE && ch == 0x0) { // Channel 1 REQUIRED for FL Studio support
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
