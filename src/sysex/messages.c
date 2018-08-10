@@ -1,41 +1,4 @@
-#include "messages.h"
-
-#define syx_device_inquiry_length 6
-#define syx_device_inquiry_response_length 17
-
-#define syx_challenge_length 7
-#define syx_challenge_response_length 10
-
-#define syx_mode_selection_length 7
-#define syx_mode_selection_response_length 9
-
-#define syx_live_layout_selection_length 7
-#define syx_live_layout_selection_response_length 9
-
-#define syx_standalone_layout_selection_length 7
-#define syx_standalone_layout_selection_response_length 9
-
-#define syx_led_single_length 7
-#define syx_led_column_length 7
-#define syx_led_row_length 7
-#define syx_led_all_length 7
-
-#define syx_led_flash_length 7
-#define syx_led_pulse_length 7
-
-#define syx_led_rgb_length 7
-#define syx_led_grid_length 7
-
-#define syx_text_length 7
-#define syx_text_response_length 8
-
-#define syx_palette_start_length 8
-#define syx_palette_write_length 8
-#define syx_palette_end_length 8
-
-#define syx_palette_text_length 33
-
-#define syx_fader_length 7
+#include "sysex/messages.h"
 
 u8 syx_device_inquiry[syx_device_inquiry_length] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
 u8 syx_device_inquiry_response[syx_device_inquiry_response_length] = {0xF0, 0x7E,

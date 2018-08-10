@@ -1,3 +1,6 @@
-
 .DS_Store
-*.mmon
+build/launchpad_pro.elf
+build/launchpad_pro.hex
+build/cfw-*.syx
+build/src/
+build/hextosyx

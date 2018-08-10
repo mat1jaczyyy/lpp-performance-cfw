@@ -1,10 +1,14 @@
-#include "tempo.h"
+#include "other/tempo.h"
+#include "app.h"
+#include "modes/mode.h"
+#include "flash/settings.h"
+#include "led/led.h"
+#include "led/palettes.h"
 
 u32 tempo_counter = 0;
 u8 tempo_listen = 0;
 u32 tempo_timer = 0;
 u8 tempo_message_counter = 0;
-#define tempo_message_counter_max 96
 u32 tempo_bar = 2000;
 
 void tempo_start() {

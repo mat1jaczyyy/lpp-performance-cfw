@@ -1,4 +1,4 @@
-#include "settings.h"
+#include "flash/settings.h"
 
 u8 palette_selected = 1;
 u8 vel_sensitive = 0;

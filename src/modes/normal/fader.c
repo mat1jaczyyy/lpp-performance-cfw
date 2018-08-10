@@ -1,8 +1,7 @@
-#include "fader.h"
-
-#define mode_fader_r 63
-#define mode_fader_g 0
-#define mode_fader_b 63
+#include "modes/normal/fader.h"
+#include "modes/mode.h"
+#include "app.h"
+#include "led/led.h"
 
 u8 fader_mode = 0; // 0 = Standalone, 1 = Live
 u8 faders[2][8] = {{}, {}};
@@ -11,8 +10,6 @@ u8 fader_stops[2][8] = {
 	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
 };
 
-#define fader_linear 0
-#define fader_pan 1
 u8 fader_type[2][8] = {{}, {}};
 u8 fader_color[2][8] = {
 	{53, 53, 53, 53, 53, 53, 53, 53},

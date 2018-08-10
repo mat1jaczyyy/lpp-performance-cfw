@@ -1,4 +1,12 @@
-#include "sysex.h"
+#include "sysex/sysex.h"
+#include "sysex/messages.h"
+#include "app.h"
+#include "other/challenge.h"
+#include "modes/mode.h"
+#include "led/led.h"
+#include "led/palettes.h"
+#include "flash/flash.h"
+#include "string.h"
 
 void handle_sysex(u8 port, u8 * d, u16 l) {
     // Device Inquiry - Read information about the connected device

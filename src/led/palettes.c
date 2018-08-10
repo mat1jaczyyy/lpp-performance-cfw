@@ -1,8 +1,4 @@
-#include "palettes.h"
-
-#define palette_count 6
-#define palette_custom 3
-#define palette_novation 3
+#include "led/palettes.h"
 
 u8 palette[palette_count][3][128] = {
 	{ // User-defined flash-backed palette 1

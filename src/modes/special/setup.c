@@ -1,33 +1,15 @@
-#include "setup.h"
+#include "modes/special/setup.h"
+#include "modes/mode.h"
+#include "led/led.h"
+#include "led/palettes.h"
+#include "flash/flash.h"
+#include "flash/settings.h"
 
-#define setup_tick 33
 u8 setup_elapsed = setup_tick;
-
-#define setup_rainbow_length 48
 u8 setup_rainbow[setup_rainbow_length][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
 u8 setup_mode_counter = 0;
 u8 setup_editor_counter = 0;
 u8 setup_jump = 0;
-
-#define setup_custom_r 47
-#define setup_custom_g 63
-#define setup_custom_b 63
-
-#define setup_preset_r 47
-#define setup_preset_g 63
-#define setup_preset_b 47
-
-#define setup_velocity_r 31
-#define setup_velocity_g 63
-#define setup_velocity_b 63
-
-#define setup_top_pro_r 63
-#define setup_top_pro_g 47
-#define setup_top_pro_b 63
-
-#define setup_top_mk2_r 47
-#define setup_top_mk2_g 31
-#define setup_top_mk2_b 63
 
 void setup_init() {
 	if (mode_default == mode_performance) {
@@ -39,10 +21,10 @@ void setup_init() {
 			rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
 		}
 
-		if (palette_selected < 3) {
+		if (palette_selected < palette_custom) {
 			rgb_led(palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
 		} else {
-			rgb_led(palette_selected + 13, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
+			rgb_led(palette_selected + 16 - palette_custom, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
 		}
 
 		rgb_led(85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights

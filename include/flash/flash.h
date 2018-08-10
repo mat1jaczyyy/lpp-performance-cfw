@@ -1,0 +1,15 @@
+#ifndef FLASH_H
+#define FLASH_H
+
+#include "app_defs.h"
+
+#define flash_indicator_r 3
+#define flash_indicator_g 0
+#define flash_indicator_b 0
+
+u8 flash[USER_AREA_SIZE], dirty;
+
+void flash_read();
+void flash_write();
+
+#endif

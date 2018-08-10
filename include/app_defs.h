@@ -1,6 +1,9 @@
+#ifndef APP_DEFS_H
+#define APP_DEFS_H
 
-#ifndef APP_TYPES_H
-#define APP_TYPES_H
+/*----------------------------------------------------------------------------*/
+/*  Performance-optimized Launchpad Pro Firmware modification by mat1jaczyyy  */
+/*----------------------------------------------------------------------------*/
 
 /******************************************************************************
  
@@ -34,15 +37,6 @@
  
  *****************************************************************************/
 
-// ____________________________________________________________________________
-//
-// Don't modify this file!  This declares the binary interface to the library,
-// so modifying it will probably break things.
-// ____________________________________________________________________________
-//
-// Types
-// ____________________________________________________________________________
-
 typedef signed long  s32;
 typedef signed short s16;
 typedef signed char  s8;
@@ -51,20 +45,10 @@ typedef unsigned long  u32;
 typedef unsigned short u16;
 typedef unsigned char  u8;
 
-// ____________________________________________________________________________
-//
-// App structure
-// ____________________________________________________________________________
-
 #define	TYPEPAD				0
 #define	TYPESETUP			1
 
 #define	MAXLED				63
-
-// ____________________________________________________________________________
-//
-// Useful MIDI constants
-// ____________________________________________________________________________
 
 #define	NOTEON				0x90
 #define	NOTEOFF				0x80
@@ -77,41 +61,14 @@ typedef unsigned char  u8;
 #define	MIDICONTINUE        0xFB
 #define	MIDISTOP            0xFC
 
-// ____________________________________________________________________________
-//
-// MIDI ports
-// ____________________________________________________________________________
-
-// USB MIDI: "Standalone" port
 #define	USBSTANDALONE		0
-
-// USB MIDI: "MIDI" port
 #define	USBMIDI				1
-
-// MIDI DIN port
 #define	DINMIDI				2
-
-// ____________________________________________________________________________
-//
-// MIDI Jack Socket Switch IDs
-// ____________________________________________________________________________
 
 #define	MIDI_IN_CABLE		0
 #define	MIDI_OUT_CABLE		1
 
-// ____________________________________________________________________________
-//
-// Flash storage
-// ____________________________________________________________________________
-
 #define USER_AREA_SIZE 1024
-
-// ____________________________________________________________________________
-//
-// Raw ADC reads. For technical reasons, the ADC layout is not the same as the
-// LED layout. Be sure to translate ADC values using the table below as you
-// need them!
-// ____________________________________________________________________________
 
 #define PAD_COUNT 64
 
@@ -127,6 +84,6 @@ static const u8 ADC_MAP[PAD_COUNT] =
 	45, 85, 46, 86, 47, 87, 48, 88,
 };
 
-// ____________________________________________________________________________
+#define modulo(x, y) ((x % y + y) % y) // Negative modulo behavior
 
 #endif

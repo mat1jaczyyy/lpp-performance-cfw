@@ -1,4 +1,10 @@
-#include "text.h"
+#include "modes/special/text.h"
+#include "modes/mode.h"
+#include "app.h"
+#include "sysex/messages.h"
+#include "led/led.h"
+#include "led/palettes.h"
+#include "string.h"
 
 u8 text_bitmap[96][6] = {
 	{4, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, // 32 = Space

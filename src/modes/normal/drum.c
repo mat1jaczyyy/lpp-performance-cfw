@@ -1,23 +1,13 @@
-#include "drum.h"
+#include "modes/normal/drum.h"
+#include "modes/mode.h"
+#include "app.h"
+#include "led/led.h"
 
-#define mode_drum_r 63
-#define mode_drum_g 63
-#define mode_drum_b 0
-
-#define drum_offset_start 9
 u8 drum_offset = drum_offset_start;
 u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
 
-#define drum_nav_r 0
-#define drum_nav_g 0
-#define drum_nav_b 63
 u8 drum_nav_pressed[4] = {};
-
 u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
-
-#define drum_color_pressed_r 0
-#define drum_color_pressed_g 63
-#define drum_color_pressed_b 0
 
 s8 drum_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 n = (drum_offset + x - 1) * 4 + (y - 1) % 4;

@@ -34,10 +34,13 @@
  
  ******************************************************************************/
 
-/*  Includes and definitions  */
-/*----------------------------*/
-
 #include "app.h"
+#include "modes/mode.h"
+#include "flash/flash.h"
+#include "flash/settings.h"
+#include "other/tempo.h"
+#include "other/challenge.h"
+#include "sysex/sysex.h"
 
 void app_timer_event() {
 	tempo_timer++;
@@ -88,8 +91,8 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 void app_aftertouch_event(u8 p, u8 v) {} // Unused
 void app_cable_event(u8 t, u8 v) {} // Unused
 
-void app_sysex_event(u8 port, u8 * d, u16 l) {
-	handle_sysex(port, * d, l);
+void app_sysex_event(u8 port, u8 *d, u16 l) {
+	handle_sysex(port, d, l);
 }
 
 void app_init(const u16 *adc_raw) {

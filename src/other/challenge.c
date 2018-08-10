@@ -1,7 +1,7 @@
-#include "challenge.h"
+#include "other/challenge.h"
+#include "app.h"
+#include "sysex/messages.h"
 
-#define challenge_speed 9 // The higher this value is, the more prone the FW is for crashes for whatever reason. Speeds over 32 can't be handled by the buffer at all
-#define challenge_max 16384
 u8 challenge_do = 0;
 u16 challenge_counter = 0;
 
