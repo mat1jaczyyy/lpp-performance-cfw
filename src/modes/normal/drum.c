@@ -1,10 +1,10 @@
 #include "modes/normal/drum.h"
 
-u8 drum_offset = drum_offset_start;
-u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
+const u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
+const u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
 
+u8 drum_offset = drum_offset_start;
 u8 drum_nav_pressed[4] = {};
-u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
 
 s8 drum_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 n = (drum_offset + x - 1) * 4 + (y - 1) % 4;

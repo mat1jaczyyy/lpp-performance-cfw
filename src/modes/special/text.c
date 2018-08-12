@@ -1,6 +1,6 @@
 #include "modes/special/text.h"
 
-u8 text_bitmap[96][6] = {
+const u8 text_bitmap[96][6] = {
 	{4, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, // 32 = Space
 	{1, 0b11111011}, // 33 = !
 	{3, 0b11100000, 0b00000000, 0b11100000}, // 34 = "
@@ -98,7 +98,8 @@ u8 text_bitmap[96][6] = {
 	{4, 0b01000000, 0b10000000, 0b01000000, 0b10000000, }, // 126 = ~
 	{5, 0b00111000, 0b00101000, 0b01101100, 0b00101000, 0b00010000} // 127 = DEL
 };
-u8 text_ticks[7] = {187, 141, 116, 95, 75, 58, 47};
+const u8 text_ticks[7] = {187, 141, 116, 95, 75, 58, 47};
+const u8 text_frame_empty[10] = {};
 
 u8 text_port = 0;
 u8 text_color = 127;
@@ -111,7 +112,6 @@ u16 text_counter = 1;
 u8 text_subcounter = 0;
 
 u8 text_frame[10] = {};
-u8 text_frame_empty[10] = {};
 u8 text_done = 0;
 
 u8 text_palette = 0;

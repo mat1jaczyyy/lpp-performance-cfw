@@ -1,11 +1,12 @@
 #include "modes/normal/fader.h"
 
-u8 fader_mode = 0; // 0 = Standalone, 1 = Live
-u8 faders[2][8] = {{}, {}};
-u8 fader_stops[2][8] = {
+const u8 fader_stops[2][8] = {
 	{0, 17, 34, 52, 70, 89, 108, 127}, // Linear
 	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
 };
+
+u8 fader_mode = 0; // 0 = Standalone, 1 = Live
+u8 faders[2][8] = {{}, {}};
 
 u8 fader_type[2][8] = {{}, {}};
 u8 fader_color[2][8] = {

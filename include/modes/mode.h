@@ -41,12 +41,12 @@
 #define mode_scale_setup 7
 #include "modes/special/scale.h"
 
-u8 mode, mode_default;
+void (*const mode_init[11])();
+void (*const mode_timer_event[11])();
+void (*const mode_surface_event[11])(u8 p, u8 v, u8 x, u8 y);
+void (*const mode_midi_event[11])(u8 port, u8 t, u8 ch, u8 p, u8 v);
 
-void (*mode_init[11])();
-void (*mode_timer_event[11])();
-void (*mode_surface_event[11])(u8 p, u8 v, u8 x, u8 y);
-void (*mode_midi_event[11])(u8 port, u8 t, u8 ch, u8 p, u8 v);
+u8 mode, mode_default;
 
 void mode_refresh();
 void mode_update(u8 x);

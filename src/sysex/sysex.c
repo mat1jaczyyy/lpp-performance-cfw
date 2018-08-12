@@ -187,6 +187,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (mode < mode_normal) {
 			if (!text_palette) {
 				text_palette = 1;
+
 				app_sysex_event(port, &syx_palette_text[0], syx_palette_text_length);
 			}
 		}

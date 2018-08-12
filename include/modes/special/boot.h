@@ -16,9 +16,9 @@
 
 #define boot_user_stop 188
 
-u8 boot_note_elapsed, boot_notes[boot_note_length][boot_notes_per_frame];
-u8 boot_note_floor, boot_note_ceil, boot_fade_elapsed, boot_fade_counter[16];
-u8 boot_colors[boot_colors_length][3];
+const u8 boot_notes[boot_note_length][boot_notes_per_frame], boot_colors[boot_colors_length][3];
+
+u8 boot_note_elapsed, boot_note_floor, boot_note_ceil, boot_fade_elapsed, boot_fade_counter[16];
 
 void boot_init();
 void boot_timer_event();

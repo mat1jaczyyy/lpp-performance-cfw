@@ -27,7 +27,9 @@
 #define setup_top_mk2_g 31
 #define setup_top_mk2_b 63
 
-u8 setup_elapsed, setup_rainbow[setup_rainbow_length][3], setup_mode_counter, setup_editor_counter, setup_jump;
+const u8 setup_rainbow[setup_rainbow_length][3];
+
+u8 setup_elapsed, setup_mode_counter, setup_editor_counter, setup_jump;
 
 void setup_init();
 void setup_timer_event();

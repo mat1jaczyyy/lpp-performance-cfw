@@ -4,6 +4,8 @@
 #include "app.h"
 #include "modes/mode.h"
 
+#include "modes/normal/note.h"
+
 #define scale_setup_color_enabled_r 20
 #define scale_setup_color_enabled_g 63
 #define scale_setup_color_enabled_b 0

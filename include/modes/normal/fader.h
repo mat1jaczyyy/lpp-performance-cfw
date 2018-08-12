@@ -11,7 +11,9 @@
 #define fader_linear 0
 #define fader_pan 1
 
-u8 fader_mode, faders[2][8], fader_stops[2][8], fader_type[2][8], fader_color[2][8], fader_counter[2][8], fader_final[2][8];
+const u8 fader_stops[2][8];
+
+u8 fader_mode, faders[2][8], fader_type[2][8], fader_color[2][8], fader_counter[2][8], fader_final[2][8];
 s8 fader_change[2][8];
 u16 fader_tick[2][8], fader_elapsed[2][8];
 
