@@ -4,9 +4,17 @@ This repository contains the source code of my custom firmware for the Launchpad
 
 ## Building
 
-The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. I regularly post these builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv), in case you are lazy to build the firmware yourself.
+The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
 
-To build the firmware, set up the development environment according to dvhdr's [Launchpad Pro open-source firmware repository](https://github.com/dvhdr/launchpad-pro). After you are ready to build, replace the example source code (`app.c` file) with the source code hosted in this repository and build it using `$ make`. You will find the build at `build/launchpad_pro.syx`, ready for uploading.
+To build the firmware, set up the development environment according to dvhdr's [Launchpad Pro open-source firmware repository](https://github.com/dvhdr/launchpad-pro). I've removed the Vagrant and Docker methods since I prefer using make and gcc to build locally, however you may set those up by pulling the relevant files from dvhdr's repository. On macOS you can easily install the GCC ARM toolchain using the [homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first. They can probably also be installed on Windows somehow, but I haven't looked into it yet. Then, to directly compile the code:
+
+```
+brew tap PX4/homebrew-px4
+brew install gcc-arm-none-eabi
+make
+```
+
+You will find the build at `build/cfw.syx`, ready for uploading.
 
 ## Installation
 
@@ -14,7 +22,7 @@ To install the firmware, simply send ("flash") the generated SysEx messages from
 
 * macOS only: [SysEx Librarian](https://www.snoize.com/SysExLibrarian/)
 * Windows only: [MIDI-OX](http://www.midiox.com/moxdown.htm)
-* Universal method: `CFW Flash Tool.maxpat`
+* Universal method: `max/CFW Flash Tool.maxpat`
     * To flash the firmware using my tool, simply load it up in Max (any version should work). Boot the Launchpad into Bootloader mode, click the Upload button and select the firmware SysEx file you want to upload.
 
 ## Usage
@@ -58,7 +66,7 @@ The left column displays the amount of red, the bottom row displays the amount o
 
 To save and exit, press the Setup button.
 
-You can also use the palette uploader `CFW Palette Uploader.maxpat` to upload a Retina palette into one of the palette slots on the Launchpad. Simply load it up in Max (any version should work), select your Launchpad's Standalone Port and the desired Palette Index. Then, click Upload and select your Retina palette file.
+You can also use the palette uploader found at `max/CFW Palette Uploader.maxpat` to upload a Retina palette into one of the palette slots on the Launchpad. Simply load it up in Max (any version should work), select your Launchpad's Standalone Port and the desired Palette Index. Then, click Upload and select your Retina palette file.
 
 ## Issues
 
@@ -74,4 +82,4 @@ Another known issue is that Novation's USB Driver does not support units with cu
 
 For any other issues or new feature requests, submit an issue report.
 
-If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://global.novationmusic.com/support/product-downloads?product=Launchpad+Pro) to roll back to the stock firmware.
+If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://global.novationmusic.com/support/product-downloads?product=Launchpad+Pro) or flash the latest stock firmware .syx file found at `stock/Launchpad Pro-1.0.182.syx` to roll back to the stock firmware.
