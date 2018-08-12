@@ -27,8 +27,6 @@
 
 u8 ableton_screen[100], ableton_layout;
 
-void ableton_led(u8 ch, u8 p, u8 v, u8 s);
-
 void ableton_init();
 void ableton_timer_event();
 void ableton_surface_event(u8 p, u8 v, u8 x, u8 y);

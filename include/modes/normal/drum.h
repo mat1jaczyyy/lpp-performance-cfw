@@ -8,8 +8,6 @@
 #define mode_drum_g 63
 #define mode_drum_b 0
 
-s8 drum_press(u8 x, u8 y, u8 v, s8 out_p);
-
 void drum_init();
 void drum_timer_event();
 void drum_surface_event(u8 p, u8 v, u8 x, u8 y);
