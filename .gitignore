@@ -1,6 +1,6 @@
 .DS_Store
-build/launchpad_pro.elf
-build/launchpad_pro.hex
+*.elf
+*.hex
 build/cfw-*.syx
 build/src/
 build/hextosyx

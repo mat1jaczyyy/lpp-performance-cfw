@@ -20,9 +20,9 @@ LIB = lib/launchpad_pro.a
 OBJECTS = $(addprefix $(BUILDDIR)/, $(addsuffix .o, $(basename $(SOURCES))))
 
 # output files
-SYX = $(BUILDDIR)/launchpad_pro.syx
-ELF = $(BUILDDIR)/launchpad_pro.elf
-HEX = $(BUILDDIR)/launchpad_pro.hex
+SYX = $(BUILDDIR)/cfw.syx
+ELF = $(BUILDDIR)/cfw.elf
+HEX = $(BUILDDIR)/cfw.hex
 HEXTOSYX = $(BUILDDIR)/hextosyx
 
 # tools
