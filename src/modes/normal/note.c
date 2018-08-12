@@ -1,5 +1,40 @@
 #include "modes/normal/note.h"
 
+#define note_color_invalid_r 7
+#define note_color_invalid_g 0
+#define note_color_invalid_b 0
+
+#define note_color_base_r 63
+#define note_color_base_g 0
+#define note_color_base_b 63
+
+#define note_color_transposed_r 20
+#define note_color_transposed_g 0
+#define note_color_transposed_b 63
+
+#define note_color_white_r 0
+#define note_color_white_g 41
+#define note_color_white_b 63
+
+#define note_color_black_r 0
+#define note_color_black_g 0
+#define note_color_black_b 0
+
+#define note_color_scale_base_r 20
+#define note_color_scale_base_g 0
+#define note_color_scale_base_b 63
+
+#define note_color_scale_r 63
+#define note_color_scale_g 0
+#define note_color_scale_b 63
+
+#define note_color_pressed_r 0
+#define note_color_pressed_g 63
+#define note_color_pressed_b 0
+
+#define note_length 12
+#define note_segment 5
+
 const u8 note_octave_colors[10][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}, {0, 0, 31}, {0, 0, 63}, {20, 0, 63}, {40, 0, 63}, {63, 0, 63}};
 const u8 note_transpose_colors[13][3] = {{0, 7, 0}, {0, 21, 0}, {0, 31, 0}, {0, 42, 0}, {0, 52, 0}, {0, 63, 0}, {15, 63, 0}, {23, 63, 0}, {31, 63, 0}, {39, 63, 0}, {47, 63, 0}, {55, 63, 0}, {63, 63, 0}};
 

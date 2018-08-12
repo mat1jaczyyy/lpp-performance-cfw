@@ -5,8 +5,6 @@
 
 #include "modes/mode.h"
 
-#define tempo_message_counter_max 96
-
 u32 tempo_timer;
 
 void tempo_start();

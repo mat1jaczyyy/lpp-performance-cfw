@@ -1,5 +1,28 @@
 #include "modes/special/setup.h"
 
+#define setup_custom_r 47
+#define setup_custom_g 63
+#define setup_custom_b 63
+
+#define setup_preset_r 47
+#define setup_preset_g 63
+#define setup_preset_b 47
+
+#define setup_velocity_r 31
+#define setup_velocity_g 63
+#define setup_velocity_b 63
+
+#define setup_top_pro_r 63
+#define setup_top_pro_g 47
+#define setup_top_pro_b 63
+
+#define setup_top_mk2_r 47
+#define setup_top_mk2_g 31
+#define setup_top_mk2_b 63
+
+#define setup_tick 33
+#define setup_rainbow_length 48
+
 const u8 setup_rainbow[setup_rainbow_length][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
 
 u8 setup_elapsed = setup_tick;

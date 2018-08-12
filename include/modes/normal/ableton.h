@@ -25,10 +25,6 @@
 #define ableton_layout_fader_sends 0xC
 #define ableton_layout_session_stop 0xD
 
-#define user_r 20
-#define user_g 0
-#define user_b 63
-
 u8 ableton_screen[100], ableton_layout;
 
 void ableton_led(u8 ch, u8 p, u8 v, u8 s);

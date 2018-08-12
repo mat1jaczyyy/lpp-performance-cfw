@@ -8,41 +8,6 @@
 #define mode_note_g 63
 #define mode_note_b 63
 
-#define note_color_invalid_r 7
-#define note_color_invalid_g 0
-#define note_color_invalid_b 0
-
-#define note_color_base_r 63
-#define note_color_base_g 0
-#define note_color_base_b 63
-
-#define note_color_transposed_r 20
-#define note_color_transposed_g 0
-#define note_color_transposed_b 63
-
-#define note_color_white_r 0
-#define note_color_white_g 41
-#define note_color_white_b 63
-
-#define note_color_black_r 0
-#define note_color_black_g 0
-#define note_color_black_b 0
-
-#define note_color_scale_base_r 20
-#define note_color_scale_base_g 0
-#define note_color_scale_base_b 63
-
-#define note_color_scale_r 63
-#define note_color_scale_g 0
-#define note_color_scale_b 63
-
-#define note_color_pressed_r 0
-#define note_color_pressed_g 63
-#define note_color_pressed_b 0
-
-#define note_length 12
-#define note_segment 5
-
 const u8 scales[32][13], scale_keys[12];
 
 s8 note_octave;

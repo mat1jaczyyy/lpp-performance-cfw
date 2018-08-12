@@ -1,5 +1,17 @@
 #include "modes/special/boot.h"
 
+#define boot_note_tick 72
+#define boot_note_length 17
+#define boot_notes_per_frame 6
+
+#define boot_rotate_180 1
+
+#define boot_fade_tick 4
+
+#define boot_colors_length 252
+
+#define boot_user_stop 188
+
 const u8 boot_notes[boot_note_length][boot_notes_per_frame] = { // Element [0] is array length
 	{5, 89, 78, 67, 56, 45},
 	{5, 79, 68, 57, 46, 55},

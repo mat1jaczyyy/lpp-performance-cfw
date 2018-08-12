@@ -1,5 +1,8 @@
 #include "modes/normal/fader.h"
 
+#define fader_linear 0
+#define fader_pan 1
+
 const u8 fader_stops[2][8] = {
 	{0, 17, 34, 52, 70, 89, 108, 127}, // Linear
 	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan

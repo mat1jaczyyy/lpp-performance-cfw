@@ -4,18 +4,6 @@
 #include "app_defs.h"
 #include "modes/mode.h"
 
-#define boot_note_tick 72
-#define boot_note_length 17
-#define boot_notes_per_frame 6
-
-#define boot_rotate_180 1
-
-#define boot_fade_tick 4
-
-#define boot_colors_length 252
-
-#define boot_user_stop 188
-
 void boot_init();
 void boot_timer_event();
 void boot_surface_event(u8 p, u8 v, u8 x, u8 y);

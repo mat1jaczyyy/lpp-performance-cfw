@@ -1,5 +1,29 @@
 #include "modes/special/scale.h"
 
+#define scale_setup_color_enabled_r 20
+#define scale_setup_color_enabled_g 63
+#define scale_setup_color_enabled_b 0
+
+#define scale_setup_color_segment_r 63
+#define scale_setup_color_segment_g 20
+#define scale_setup_color_segment_b 0
+
+#define scale_setup_color_notes_r 0
+#define scale_setup_color_notes_g 63
+#define scale_setup_color_notes_b 63
+
+#define scale_setup_color_root_r 0
+#define scale_setup_color_root_g 0
+#define scale_setup_color_root_b 63
+
+#define scale_setup_color_scale_r 63
+#define scale_setup_color_scale_g 0
+#define scale_setup_color_scale_b 63
+
+#define scale_setup_color_scale_selected_r 20
+#define scale_setup_color_scale_selected_g 0
+#define scale_setup_color_scale_selected_b 63
+
 void scale_setup_init() {
 	rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
 	

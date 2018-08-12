@@ -1,5 +1,7 @@
 #include "other/tempo.h"
 
+#define tempo_message_counter_max 96
+
 u32 tempo_counter = 0;
 u8 tempo_listen = 0;
 u32 tempo_timer = 0;

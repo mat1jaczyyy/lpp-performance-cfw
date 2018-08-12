@@ -1,5 +1,15 @@
 #include "modes/normal/drum.h"
 
+#define drum_offset_start 9
+
+#define drum_nav_r 0
+#define drum_nav_g 0
+#define drum_nav_b 63
+
+#define drum_color_pressed_r 0
+#define drum_color_pressed_g 63
+#define drum_color_pressed_b 0
+
 const u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
 const u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
 

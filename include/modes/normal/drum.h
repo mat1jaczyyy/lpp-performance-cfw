@@ -8,16 +8,6 @@
 #define mode_drum_g 63
 #define mode_drum_b 0
 
-#define drum_offset_start 9
-
-#define drum_nav_r 0
-#define drum_nav_g 0
-#define drum_nav_b 63
-
-#define drum_color_pressed_r 0
-#define drum_color_pressed_g 63
-#define drum_color_pressed_b 0
-
 s8 drum_press(u8 x, u8 y, u8 v, s8 out_p);
 
 void drum_init();

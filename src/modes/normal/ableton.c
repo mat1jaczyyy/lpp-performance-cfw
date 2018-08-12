@@ -1,5 +1,9 @@
 #include "modes/normal/ableton.h"
 
+#define user_r 20
+#define user_g 0
+#define user_b 63
+
 u8 ableton_screen[100] = {};
 u8 ableton_layout = 0x0;
 
