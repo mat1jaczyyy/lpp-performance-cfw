@@ -170,7 +170,7 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 				if (out_p < 0) {
 					note_single(&p[0], l, note_color_pressed_r, note_color_pressed_g, note_color_pressed_b);
 				} else {
-					note_single(&p[0], l, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+					note_single(&p[0], l, palette_value(palette_novation, v, 0), palette_value(palette_novation, v, 1), palette_value(palette_novation, v, 2));
 				}
 			}
 		}

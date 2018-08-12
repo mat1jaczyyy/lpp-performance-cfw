@@ -18,11 +18,11 @@ void clear_led() {
 }
 
 void palette_led(u8 p, u8 v) {
-	rgb_led(p, palette[palette_selected][0][v], palette[palette_selected][1][v], palette[palette_selected][2][v]);
+	rgb_led(p, palette_value(palette_selected, v, 0), palette_value(palette_selected, v, 1), palette_value(palette_selected, v, 2));
 }
 
 void novation_led(u8 p, u8 v) {
-	if (p != 99) rgb_led(p, palette[palette_novation][0][v], palette[palette_novation][1][v], palette[palette_novation][2][v]);
+	if (p != 99) rgb_led(p, palette_value(palette_novation, v, 0), palette_value(palette_novation, v, 1), palette_value(palette_novation, v, 2));
 }
 
 void flash_led(u8 p, u8 v) {

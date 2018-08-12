@@ -44,11 +44,11 @@ void tempo_tick() {
 	u8 flash_state = (tempo_counter % (tempo_bar >> 2)) < (tempo_bar >> 3);
 	for (u8 i = 1; i < 99; i++) {
 		if (flash_screen[i]) {
-			hal_plot_led(TYPEPAD, i, palette[palette_using][0][flash_screen[i]] * flash_state, palette[palette_using][1][flash_screen[i]] * flash_state, palette[palette_using][2][flash_screen[i]] * flash_state);
+			hal_plot_led(TYPEPAD, i, palette_value(palette_using, flash_screen[i], 0) * flash_state, palette_value(palette_using, flash_screen[i], 1) * flash_state, palette_value(palette_using, flash_screen[i], 2) * flash_state);
 		}
 	}
 	if (flash_screen[99]) {
-		hal_plot_led(TYPESETUP, 0, palette[palette_using][0][flash_screen[99]] * flash_state, palette[palette_using][1][flash_screen[99]] * flash_state, palette[palette_using][2][flash_screen[99]] * flash_state);	
+		hal_plot_led(TYPESETUP, 0, palette_value(palette_using, flash_screen[99], 0) * flash_state, palette_value(palette_using, flash_screen[99], 1) * flash_state, palette_value(palette_using, flash_screen[99], 2) * flash_state);	
 	}
 
 	// Draw Pulsing LEDs
@@ -56,10 +56,10 @@ void tempo_tick() {
 	u8 pulse_state = (t < (tempo_bar >> 3))? (15 * tempo_bar + 384 * t) / tempo_bar : (237 * tempo_bar - 384 * t) / (3 * tempo_bar);
 	for (u8 i = 1; i < 99; i++) {
 		if (pulse_screen[i]) {
-			hal_plot_led(TYPEPAD, i, (palette[palette_using][0][pulse_screen[i]] * pulse_state) / 63, (palette[palette_using][1][pulse_screen[i]] * pulse_state) / 63, (palette[palette_using][2][pulse_screen[i]] * pulse_state) / 63);
+			hal_plot_led(TYPEPAD, i, (palette_value(palette_using, pulse_screen[i], 0) * pulse_state) / 63, (palette_value(palette_using, pulse_screen[i], 1) * pulse_state) / 63, (palette_value(palette_using, pulse_screen[i], 2) * pulse_state) / 63);
 		}
 	}
 	if (pulse_screen[99]) {
-		hal_plot_led(TYPESETUP, 0, (palette[palette_using][0][pulse_screen[99]] * pulse_state) / 63, (palette[palette_using][1][pulse_screen[99]] * pulse_state) / 63, (palette[palette_using][2][pulse_screen[99]] * pulse_state) / 63);
+		hal_plot_led(TYPESETUP, 0, (palette_value(palette_using, pulse_screen[99], 0) * pulse_state) / 63, (palette_value(palette_using, pulse_screen[99], 1) * pulse_state) / 63, (palette_value(palette_using, pulse_screen[99], 2) * pulse_state) / 63);
 	}
 }

@@ -182,7 +182,7 @@ void text_timer_event() {
 				}
 			}
 			
-			for (u8 i = 0; i < 10; i++) display_u8(text_frame[i], 1, i, palette[palette_novation][0][text_color], palette[palette_novation][1][text_color], palette[palette_novation][2][text_color]); // Draw text
+			for (u8 i = 0; i < 10; i++) display_u8(text_frame[i], 1, i, palette_value(palette_novation, text_color, 0), palette_value(palette_novation, text_color, 1), palette_value(palette_novation, text_color, 2)); // Draw text
 			
 			text_elapsed = 0;
 		}

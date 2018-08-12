@@ -15,9 +15,9 @@ void editor_refresh() {
 	
 	display_u8(editor_selected, 0, 9, 63, 63, 63);
 	
-	display_u6(palette[palette_selected][0][editor_selected], 1, 0, 63, 0, 0);
-	display_u6(palette[palette_selected][1][editor_selected], 0, 0, 0, 63, 0);
-	display_u6(palette[palette_selected][2][editor_selected], 1, 9, 0, 0, 63);
+	display_u6(palette_value(palette_selected, editor_selected, 0), 1, 0, 63, 0, 0);
+	display_u6(palette_value(palette_selected, editor_selected, 1), 0, 0, 0, 63, 0);
+	display_u6(palette_value(palette_selected, editor_selected, 2), 1, 9, 0, 0, 63);
 }
 
 void editor_draw() {
