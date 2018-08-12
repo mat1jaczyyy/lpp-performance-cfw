@@ -43,9 +43,9 @@
 #define note_length 12
 #define note_segment 5
 
-const u8 note_octave_colors[10][3], note_transpose_colors[13][3], scales[32][13], scale_keys[12];
+const u8 scales[32][13], scale_keys[12];
 
-s8 note_octave, note_transpose;
+s8 note_octave;
 u8 note_shift, scale_enabled, scale_segment, scale_selected, scale_root;
 
 void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b);

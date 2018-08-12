@@ -10,7 +10,7 @@
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 
-u8 flash[USER_AREA_SIZE], dirty;
+u8 dirty;
 
 void flash_read();
 void flash_write();

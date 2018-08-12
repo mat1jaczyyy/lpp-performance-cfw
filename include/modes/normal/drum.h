@@ -18,10 +18,6 @@
 #define drum_color_pressed_g 63
 #define drum_color_pressed_b 0
 
-const u8 drum_colors[9][3], drum_align[17];
-
-u8 drum_offset, drum_nav_pressed[4];
-
 s8 drum_press(u8 x, u8 y, u8 v, s8 out_p);
 
 void drum_init();

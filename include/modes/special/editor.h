@@ -4,8 +4,6 @@
 #include "app_defs.h"
 #include "modes/mode.h"
 
-u8 editor_selected;
-
 u8 editor_xy_v(u8 xy);
 u8 editor_v_xy(u8 v);
 void editor_refresh();

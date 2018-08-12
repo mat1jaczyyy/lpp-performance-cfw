@@ -10,8 +10,6 @@
 #define mode_performance_g 0
 #define mode_performance_b 0
 
-u8 performance_screen[100];
-
 void performance_led(u8 p, u8 v, u8 s);
 
 void performance_init();

@@ -27,10 +27,6 @@
 #define setup_top_mk2_g 31
 #define setup_top_mk2_b 63
 
-const u8 setup_rainbow[setup_rainbow_length][3];
-
-u8 setup_elapsed, setup_mode_counter, setup_editor_counter, setup_jump;
-
 void setup_init();
 void setup_timer_event();
 void setup_surface_event(u8 p, u8 v, u8 x, u8 y);

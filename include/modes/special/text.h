@@ -7,10 +7,7 @@
 #include "string.h"
 #include "sysex/messages.h"
 
-const u8 text_bitmap[96][6], text_ticks[7], text_frame_empty[10];
-
-u8 text_port, text_color, text_loop, text_bytes[323], text_speed, text_elapsed, text_subcounter, text_frame[10], text_done, text_palette;
-u16 text_counter;
+u8 text_port, text_color, text_loop, text_bytes[323], text_palette;
 
 void text_init();
 void text_timer_event();

@@ -8,8 +8,6 @@
 #define mode_programmer_g 16
 #define mode_programmer_b 0
 
-u8 programmer_screen[100];
-
 void programmer_led(u8 p, u8 v, u8 s);
 
 void programmer_init();
