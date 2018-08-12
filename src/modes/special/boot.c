@@ -1,6 +1,4 @@
 #include "modes/special/boot.h"
-#include "modes/mode.h"
-#include "led/led.h"
 
 u8 boot_note_elapsed = boot_note_tick;
 

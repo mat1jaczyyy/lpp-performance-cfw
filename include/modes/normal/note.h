@@ -1,7 +1,8 @@
 #ifndef NOTE_H
 #define NOTE_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
 
 #define mode_note_r 0
 #define mode_note_g 63

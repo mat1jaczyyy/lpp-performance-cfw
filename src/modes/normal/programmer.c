@@ -1,7 +1,4 @@
 #include "modes/normal/programmer.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
 
 u8 programmer_screen[100] = {};
 

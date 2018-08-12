@@ -1,7 +1,8 @@
 #ifndef DRUM_H
 #define DRUM_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
 
 #define mode_drum_r 63
 #define mode_drum_g 63

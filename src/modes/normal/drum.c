@@ -1,7 +1,4 @@
 #include "modes/normal/drum.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
 
 u8 drum_offset = drum_offset_start;
 u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};

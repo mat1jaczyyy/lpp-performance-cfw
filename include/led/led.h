@@ -1,7 +1,10 @@
 #ifndef LED_H
 #define LED_H
 
-#include "app_defs.h"
+#include "app.h"
+
+#include "led/palettes.h"
+#include "flash/settings.h"
 
 u8 flash_screen[100], pulse_screen[100];
 

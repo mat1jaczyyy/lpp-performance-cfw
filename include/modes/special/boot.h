@@ -2,6 +2,7 @@
 #define BOOT_H
 
 #include "app_defs.h"
+#include "modes/mode.h"
 
 #define boot_note_tick 72
 #define boot_note_length 17

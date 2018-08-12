@@ -1,7 +1,10 @@
 #ifndef FLASH_H
 #define FLASH_H
 
-#include "app_defs.h"
+#include "app.h"
+
+#include "flash/settings.h"
+#include "led/led.h"
 
 #define flash_indicator_r 3
 #define flash_indicator_g 0

@@ -2,6 +2,7 @@
 #define SETUP_H
 
 #include "app_defs.h"
+#include "modes/mode.h"
 
 #define setup_tick 33
 #define setup_rainbow_length 48

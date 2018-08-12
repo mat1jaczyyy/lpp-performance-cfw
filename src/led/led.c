@@ -1,7 +1,4 @@
 #include "led/led.h"
-#include "led/palettes.h"
-#include "app.h"
-#include "flash/settings.h"
 
 u8 flash_screen[100] = {};
 u8 pulse_screen[100] = {};

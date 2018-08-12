@@ -1,12 +1,4 @@
 #include "sysex/sysex.h"
-#include "sysex/messages.h"
-#include "app.h"
-#include "other/challenge.h"
-#include "modes/mode.h"
-#include "led/led.h"
-#include "led/palettes.h"
-#include "flash/flash.h"
-#include "string.h"
 
 void handle_sysex(u8 port, u8 * d, u16 l) {
     // Device Inquiry - Read information about the connected device
@@ -78,7 +70,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light LED using SysEx
 	if (!memcmp(d, &syx_led_single[0], syx_led_single_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) novation_led(*(d + i), *(d + i + 1));
 		}
 		return;
@@ -86,7 +78,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light a column of LEDs using SysEx
 	if (!memcmp(d, &syx_led_column[0], syx_led_column_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			u8 y = *(d + 7);
 			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led((i - 8) * 10 + y, *(d + i));
 		}
@@ -95,7 +87,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light a row of LEDs using SysEx
 	if (!memcmp(d, &syx_led_row[0], syx_led_row_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			u8 x = *(d + 7) * 10;
 			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led(x + i - 8, *(d + i));
 		}
@@ -104,7 +96,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light all LEDs using SysEx
 	if (!memcmp(d, &syx_led_all[0], syx_led_all_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			u8 v = *(d + 7);
 			for (u8 p = 1; p < 99; p++)	novation_led(p, v);
 		}
@@ -113,7 +105,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Flash LED using SysEx
 	if (!memcmp(d, &syx_led_flash[0], syx_led_flash_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) flash_led(*(d + i), *(d + i + 1));
 		}
 		return;
@@ -121,7 +113,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 	// Pulse LED using SysEx
 	if (!memcmp(d, &syx_led_pulse[0], syx_led_pulse_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) pulse_led(*(d + i), *(d + i + 1));
 		}
 		return;
@@ -129,7 +121,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 	// Light LED using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_rgb[0], syx_led_rgb_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
 		}
 		return;
@@ -137,7 +129,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light LED grid using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_grid[0], syx_led_grid_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			u8 t = *(d + 7);
 
 			u16 ceil; u8 p;
@@ -162,7 +154,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Text scrolling
 	if (!memcmp(d, &syx_text[0], syx_text_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			if (l <= 10) { // Empty message
 				if (mode == mode_text && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
 
@@ -192,7 +184,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Retina palette download start
 	if (!memcmp(d, &syx_palette_start[0], syx_palette_start_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			if (!text_palette) {
 				text_palette = 1;
 				app_sysex_event(port, &syx_palette_text[0], syx_palette_text_length);
@@ -203,7 +195,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Retina palette download write
 	if (!memcmp(d, &syx_palette_write[0], syx_palette_write_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			if (text_palette) {
 				u8 j = *(d + 8);
 
@@ -223,7 +215,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Retina palette download end
 	if (!memcmp(d, &syx_palette_end[0], syx_palette_end_length)) {
-		if (mode < 128) {
+		if (mode < mode_normal) {
 			if (text_palette) {
 				text_palette = 0;
 				mode_update(mode_default);

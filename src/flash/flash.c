@@ -1,8 +1,4 @@
 #include "flash/flash.h"
-#include "flash/settings.h"
-#include "app.h"
-#include "led/led.h"
-#include "led/palettes.h"
 
 u8 flash[USER_AREA_SIZE] = {0};
 u8 dirty = 0;

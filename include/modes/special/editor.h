@@ -2,6 +2,7 @@
 #define EDITOR_H
 
 #include "app_defs.h"
+#include "modes/mode.h"
 
 u8 editor_selected;
 

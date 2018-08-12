@@ -1,8 +1,4 @@
 #include "modes/normal/ableton.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
-#include "other/conversion.h"
 
 u8 ableton_screen[100] = {};
 u8 ableton_layout = 0x0;

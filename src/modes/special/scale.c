@@ -1,7 +1,4 @@
 #include "modes/special/scale.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
 
 void scale_setup_init() {
 	rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED

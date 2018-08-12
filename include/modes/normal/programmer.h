@@ -1,7 +1,8 @@
 #ifndef PROGRAMMER_H
 #define PROGRAMMER_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
 
 #define mode_programmer_r 63
 #define mode_programmer_g 16

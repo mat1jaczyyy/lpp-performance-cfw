@@ -1,6 +1,4 @@
 #include "modes/mode.h"
-#include "led/led.h"
-#include "flash/flash.h"
 
 u8 mode = 0;
 u8 mode_default = 0;

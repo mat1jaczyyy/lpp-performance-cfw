@@ -1,8 +1,4 @@
 #include "modes/normal/note.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
-#include "led/palettes.h"
 
 s8 note_octave = 3;
 u8 note_octave_colors[10][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}, {0, 0, 31}, {0, 0, 63}, {20, 0, 63}, {40, 0, 63}, {63, 0, 63}};

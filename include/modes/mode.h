@@ -3,6 +3,9 @@
 
 #include "app_defs.h"
 
+#include "led/led.h"
+#include "flash/flash.h"
+
 #define mode_performance 0
 #include "modes/normal/performance.h"
 
@@ -20,6 +23,8 @@
 
 #define mode_programmer 5
 #include "modes/normal/programmer.h"
+
+#define mode_normal 6
 
 #define mode_text 6
 #include "modes/special/text.h"

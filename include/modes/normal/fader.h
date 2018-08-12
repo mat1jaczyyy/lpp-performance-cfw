@@ -1,7 +1,8 @@
 #ifndef FADER_H
 #define FADER_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
 
 #define mode_fader_r 63
 #define mode_fader_g 0

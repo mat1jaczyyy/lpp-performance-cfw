@@ -1,7 +1,9 @@
 #ifndef TEMPO_H
 #define TEMPO_H
 
-#include "app_defs.h"
+#include "app.h"
+
+#include "modes/mode.h"
 
 #define tempo_message_counter_max 96
 

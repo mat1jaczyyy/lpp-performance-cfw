@@ -35,12 +35,6 @@
  ******************************************************************************/
 
 #include "app.h"
-#include "modes/mode.h"
-#include "flash/flash.h"
-#include "flash/settings.h"
-#include "other/tempo.h"
-#include "other/challenge.h"
-#include "sysex/sysex.h"
 
 void app_timer_event() {
 	tempo_timer++;

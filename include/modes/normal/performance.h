@@ -1,7 +1,10 @@
 #ifndef PERFORMANCE_H
 #define PERFORMANCE_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
+
+#include "other/conversion.h"
 
 #define mode_performance_r 63
 #define mode_performance_g 0

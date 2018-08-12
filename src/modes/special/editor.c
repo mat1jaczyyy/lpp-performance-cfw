@@ -1,9 +1,4 @@
 #include "modes/special/editor.h"
-#include "modes/mode.h"
-#include "led/led.h"
-#include "led/palettes.h"
-#include "flash/flash.h"
-#include "flash/settings.h"
 
 u8 editor_selected = 1;
 

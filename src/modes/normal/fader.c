@@ -1,7 +1,4 @@
 #include "modes/normal/fader.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "led/led.h"
 
 u8 fader_mode = 0; // 0 = Standalone, 1 = Live
 u8 faders[2][8] = {{}, {}};

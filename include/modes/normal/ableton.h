@@ -1,7 +1,10 @@
 #ifndef ABLETON_H
 #define ABLETON_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
+
+#include "other/conversion.h"
 
 #define mode_ableton_r 0
 #define mode_ableton_g 63

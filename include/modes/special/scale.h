@@ -1,7 +1,8 @@
 #ifndef SCALE_H
 #define SCALE_H
 
-#include "app_defs.h"
+#include "app.h"
+#include "modes/mode.h"
 
 #define scale_setup_color_enabled_r 20
 #define scale_setup_color_enabled_g 63

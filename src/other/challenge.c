@@ -1,6 +1,4 @@
 #include "other/challenge.h"
-#include "app.h"
-#include "sysex/messages.h"
 
 u8 challenge_do = 0;
 u16 challenge_counter = 0;

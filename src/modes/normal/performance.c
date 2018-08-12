@@ -1,9 +1,4 @@
 #include "modes/normal/performance.h"
-#include "modes/mode.h"
-#include "app.h"
-#include "other/conversion.h"
-#include "flash/settings.h"
-#include "led/led.h"
 
 u8 performance_screen[100] = {};
 
