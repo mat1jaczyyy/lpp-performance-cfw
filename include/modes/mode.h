@@ -24,10 +24,10 @@
 #define mode_programmer 5
 #include "modes/normal/programmer.h"
 
-#define mode_normal 6
-
 #define mode_text 6
-#include "modes/special/text.h"
+#include "modes/normal/text.h"
+
+#define mode_normal 7
 
 #define mode_scale_setup 7
 #include "modes/special/scale.h"

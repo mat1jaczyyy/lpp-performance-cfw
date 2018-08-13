@@ -1,4 +1,4 @@
-#include "modes/special/text.h"
+#include "modes/normal/text.h"
 
 const u8 text_bitmap[96][6] = {
 	{4, 0b00000000, 0b00000000, 0b00000000, 0b00000000}, // 32 = Space
