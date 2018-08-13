@@ -9,7 +9,7 @@ SOURCES += src/other/challenge.c src/other/conversion.c src/other/tempo.c
 
 SOURCES += src/modes/mode.c
 SOURCES += src/modes/normal/performance.c src/modes/normal/ableton.c src/modes/normal/note.c src/modes/normal/drum.c src/modes/normal/fader.c src/modes/normal/programmer.c99
-SOURCES += src/modes/special/text.c src/modes/special/boot.c src/modes/special/setup.c src/modes/special/editor.c src/modes/special/scale.c
+SOURCES += src/modes/special/text.c src/modes/special/boot.c src/modes/special/setup.c src/modes/special/editor.c src/modes/special/scale.c src/modes/special/puyo.c
 
 SOURCES += src/app.c
 

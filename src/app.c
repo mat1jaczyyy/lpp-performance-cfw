@@ -36,9 +36,12 @@
 
 #include "app.h"
 
+u32 global_timer = 0;
+
 void app_timer_event() {
-	tempo_timer++;
-	tempo_tick();
+	global_timer++;
+
+	tempo_timer++; tempo_tick();
 
 	if (challenge_do) challenge_timer_event();
 

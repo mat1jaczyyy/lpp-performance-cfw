@@ -22,13 +22,16 @@
 
 #define setup_tick 33
 #define setup_rainbow_length 48
+#define konami_length 11
 
 const u8 setup_rainbow[setup_rainbow_length][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
+const u8 konami[konami_length] = {91, 91, 92, 92, 93, 94, 93, 94, 79, 89, 10};
 
 u8 setup_elapsed = setup_tick;
 u8 setup_mode_counter = 0;
 u8 setup_editor_counter = 0;
 u8 setup_jump = 0;
+u8 konami_counter = 0;
 
 void setup_init() {
 	if (mode_default == mode_performance) {
@@ -98,6 +101,7 @@ void setup_init() {
 	}
 	
 	setup_elapsed = setup_tick;
+	konami_counter = 0;
 }
 
 void setup_timer_event() {
@@ -152,6 +156,15 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				dirty = 1;
 				mode_refresh();
 			}
+		}
+
+		if (p == konami[konami_counter]) {
+			if (++konami_counter == konami_length) {
+				mode_update(mode_puyo);
+				setup_jump = 0;
+			}
+		} else {
+			konami_counter = 0;
 		}
 	
 	} else { // Note released

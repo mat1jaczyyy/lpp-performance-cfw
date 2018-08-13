@@ -1,7 +1,7 @@
 #include "modes/mode.h"
 
 // Arrays of function pointers. Used to programmatically call the correct mode's function
-void (*const mode_init[11])() = {
+void (*const mode_init[12])() = {
 	performance_init,
 	ableton_init,
 	note_init,
@@ -12,9 +12,10 @@ void (*const mode_init[11])() = {
 	scale_setup_init,
 	editor_init,
 	setup_init,
-	boot_init
+	boot_init,
+	puyo_init
 };
-void (*const mode_timer_event[11])() = {
+void (*const mode_timer_event[12])() = {
 	performance_timer_event,
 	ableton_timer_event,
 	note_timer_event,
@@ -25,9 +26,10 @@ void (*const mode_timer_event[11])() = {
 	scale_setup_timer_event,
 	editor_timer_event,
 	setup_timer_event,
-	boot_timer_event
+	boot_timer_event,
+	puyo_timer_event
 };
-void (*const mode_surface_event[11])(u8 p, u8 v, u8 x, u8 y) = {
+void (*const mode_surface_event[12])(u8 p, u8 v, u8 x, u8 y) = {
 	performance_surface_event,
 	ableton_surface_event,
 	note_surface_event,
@@ -38,9 +40,10 @@ void (*const mode_surface_event[11])(u8 p, u8 v, u8 x, u8 y) = {
 	scale_setup_surface_event,
 	editor_surface_event,
 	setup_surface_event,
-	boot_surface_event
+	boot_surface_event,
+	puyo_surface_event
 };
-void (*const mode_midi_event[11])(u8 port, u8 t, u8 ch, u8 p, u8 v) = {
+void (*const mode_midi_event[12])(u8 port, u8 t, u8 ch, u8 p, u8 v) = {
 	performance_midi_event,
 	ableton_midi_event,
 	note_midi_event,
@@ -51,7 +54,8 @@ void (*const mode_midi_event[11])(u8 port, u8 t, u8 ch, u8 p, u8 v) = {
 	scale_setup_midi_event,
 	editor_midi_event,
 	setup_midi_event,
-	boot_midi_event
+	boot_midi_event,
+	puyo_midi_event
 };
 
 u8 mode = 0;
