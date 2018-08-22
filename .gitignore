@@ -1,4 +1,5 @@
 .DS_Store
+.vscode
 *.elf
 *.hex
 build/cfw-*.syx
