@@ -29,13 +29,16 @@ void flash_read() {
 	// Doesn't need to check palette for 0xFF
 	
 	palette_selected = flash[fp++];
-	if (palette_selected >> 2) palette_selected = 1;
+	if (palette_selected >= palette_count) palette_selected = palette_novation;
 	
 	vel_sensitive = flash[fp++];
 	if (vel_sensitive >> 1) vel_sensitive = 0;
 	
 	top_lights_config = flash[fp++];
 	if (top_lights_config >> 2) top_lights_config = 0;
+
+	performance_xy_enabled = flash[fp++];
+	if (performance_xy_enabled >> 1) performance_xy_enabled = 0;
 }
 
 void flash_write() {
@@ -57,6 +60,7 @@ void flash_write() {
 		flash[fp++] = palette_selected;
 		flash[fp++] = vel_sensitive;
 		flash[fp++] = top_lights_config;
+		flash[fp++] = performance_xy_enabled;
 		
 		hal_write_flash(0, &flash[0], USER_AREA_SIZE);
 		
