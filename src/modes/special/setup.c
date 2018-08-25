@@ -20,6 +20,10 @@
 #define setup_top_mk2_g 31
 #define setup_top_mk2_b 63
 
+#define setup_performance_xy_r 63
+#define setup_performance_xy_g 31
+#define setup_performance_xy_b 31
+
 #define setup_tick 33
 #define setup_rainbow_length 48
 #define konami_length 11
@@ -58,6 +62,12 @@ void setup_init() {
 			rgb_led(85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
 		} else {
 			rgb_led(top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
+		}
+
+		if (!performance_xy_enabled) {
+			rgb_led(78, setup_performance_xy_r >> 2, setup_performance_xy_g >> 2, setup_performance_xy_b >> 2); // Drum Rack layout selected
+		} else {
+			rgb_led(78, setup_performance_xy_r, setup_performance_xy_g, setup_performance_xy_b); // XY layout selected
 		}
 	}
 
@@ -153,6 +163,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		
 			} else if (85 <= p && p <= 88) { // Change Top Lights configuration
 				top_lights_config = p - 85;
+				dirty = 1;
+				mode_refresh();
+			
+			} else if (p == 78) { // Change DR or XY layout
+				performance_xy_enabled = (performance_xy_enabled)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 			}
