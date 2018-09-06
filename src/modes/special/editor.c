@@ -94,7 +94,7 @@ void editor_timer_event() {
 	if (editor_export_do) {
 		for (u8 i = 0; i < editor_export_speed; i++) {
 			syx_palette_export[8] = editor_export_counter;
-			for (u8 j = 0; j < 3; j++) syx_palette_export[j + 9] = palette[editor_selected][j][editor_export_counter];
+			for (u8 j = 0; j < 3; j++) syx_palette_export[j + 9] = palette[palette_selected][j][editor_export_counter];
 			
 			hal_send_sysex(USBSTANDALONE, &syx_palette_export[0], syx_palette_export_length);
 			
