@@ -32,9 +32,10 @@
 #define syx_text_length 7
 #define syx_text_response_length 8
 
-#define syx_palette_start_length 8
+#define syx_palette_start_length 9
 #define syx_palette_write_length 8
-#define syx_palette_end_length 8
+#define syx_palette_export_length 13
+#define syx_palette_end_length 9
 
 #define syx_palette_text_length 33
 
@@ -71,6 +72,7 @@ const u8 syx_text_response[syx_text_response_length];
 
 const u8 syx_palette_start[syx_palette_start_length];
 const u8 syx_palette_write[syx_palette_write_length];
+u8 syx_palette_export[syx_palette_export_length];
 const u8 syx_palette_end[syx_palette_end_length];
 
 u8 syx_palette_text[syx_palette_text_length];
