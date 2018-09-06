@@ -45,11 +45,14 @@ You no longer have to hold the Setup button in order to change the settings on y
     * Dim = Disabled
 
 Additional options will appear if the Performance mode is selected:
-* Top-right corner: Top Lights configuration, in left-to-right order:
+* Top-right corner: Layout configuration, in left-to-right order:
     * Pro = the Launchpad reacts to Top Lights normally
     * MK2 = the Launchpad reacts to Top Lights as if it was a Launchpad MK2
     * MK2 Rotated = similar to MK2 configuration, but additionally rotates the side lights by 180 degrees to display them on the bottom and left side
     * MK2 Mirrored = similar to MK2 configuration, but additionally mirrors the side lights along a diagonal descending axis to display them on the bottom and left side
+    * Pink LED = Layout toggle
+        * Bright = XY Layout
+        * Dim = Drum Rack Layout
 * Bottom-right corner: Palette selection
     * The top row selects the 3 custom palettes stored on the Launchpad's flash memory. If one of those palettes is selected, a rainbow edit button will be displayed on the left side. Alongside editing directly on the Launchpad, they can also be uploaded to the Launchpad in the Retina palette file format.
     * The bottom row selects 3 built-in preset palettes, in left-to-right order: Novation's original palette, mat1jaczyyy's custom palette, and the Launchpad S legacy palette.
