@@ -3,6 +3,7 @@
 
 #include "app_defs.h"
 #include "modes/mode.h"
+#include "sysex/messages.h"
 
 void editor_init();
 void editor_timer_event();
