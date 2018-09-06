@@ -81,6 +81,8 @@ void editor_select_flip(u8 i) {
 void editor_export() {
 	editor_export_do = 1;
 	editor_export_counter = 0;
+
+	hal_send_sysex(USBSTANDALONE, &syx_palette_start[0], syx_palette_start_length);
 }
 
 void editor_init() {
@@ -94,10 +96,12 @@ void editor_timer_event() {
 			syx_palette_export[8] = editor_export_counter;
 			for (u8 j = 0; j < 3; j++) syx_palette_export[j + 9] = palette[editor_selected][j][editor_export_counter];
 			
-			hal_send_sysex(USBMIDI, &syx_palette_export[0], syx_palette_export_length);
+			hal_send_sysex(USBSTANDALONE, &syx_palette_export[0], syx_palette_export_length);
 			
 			if (++editor_export_counter >= editor_export_max) {
 				editor_export_do = 0;
+				
+				hal_send_sysex(USBSTANDALONE, &syx_palette_end[0], syx_palette_end_length);
 				return;
 			}
 		}
