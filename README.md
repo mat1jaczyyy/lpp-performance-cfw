@@ -73,6 +73,10 @@ You can also use the palette uploader found at `max/CFW Palette Uploader.maxpat`
 
 To download a palette from the Launchpad to the computer, load `max/CFW Palette Downloader.maxpat` in Max (probably requires 8, older versions were not tested) and select your Launchpad's Standalone Port. Then, press Up on your Launchpad to send the palette.
 
+### Piano mode
+
+The new Piano mode is similar to the Note mode, but employs a classical piano-like rows per octave layout. Note that it doesn't support Scale mode due to the vastly different layout. The navigation buttons change octaves and transpose the keys.
+
 ## Issues
 
 The firmware currently lacks a very small amount of features from the stock firmware, which could be implemented if there is a demand. If you want to add the following features to the firmware yourself, feel free to fork the repository and submit a pull request when you're done.
