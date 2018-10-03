@@ -24,30 +24,33 @@
 #define mode_programmer 5
 #include "modes/normal/programmer.h"
 
-#define mode_text 6
+#define mode_piano 6
+#include "modes/normal/piano.h"
+
+#define mode_text 7
 #include "modes/normal/text.h"
 
-#define mode_normal 7
+#define mode_normal 8
 
-#define mode_scale_setup 7
+#define mode_scale_setup 8
 #include "modes/special/scale.h"
 
-#define mode_editor 8
+#define mode_editor 9
 #include "modes/special/editor.h"
 
-#define mode_setup 9
+#define mode_setup 10
 #include "modes/special/setup.h"
 
-#define mode_boot 10
+#define mode_boot 11
 #include "modes/special/boot.h"
 
-#define mode_puyo 11
+#define mode_puyo 12
 #include "modes/special/puyo.h"
 
-void (*const mode_init[12])();
-void (*const mode_timer_event[12])();
-void (*const mode_surface_event[12])(u8 p, u8 v, u8 x, u8 y);
-void (*const mode_midi_event[12])(u8 port, u8 t, u8 ch, u8 p, u8 v);
+void (*const mode_init[13])();
+void (*const mode_timer_event[13])();
+void (*const mode_surface_event[13])(u8 p, u8 v, u8 x, u8 y);
+void (*const mode_midi_event[13])(u8 port, u8 t, u8 ch, u8 p, u8 v);
 
 u8 mode, mode_default;
 
