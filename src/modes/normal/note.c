@@ -253,22 +253,34 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else if (x == 9 && y < 5) { // Navigation buttons
 		if (v != 0) {
-			switch (p) {
-				case 91: // Octave up
-					if (note_octave < 8) note_octave++;
-					break;
-				
-				case 92: // Octave down
-					if (note_octave > -1) note_octave--;
-					break;
-				
-				case 93: // Transpose down
-					if (note_transpose > -12) note_transpose--;
-					break;
-				
-				case 94: // Transpose up
-					if (note_transpose < 12) note_transpose++;
-					break;
+			if (scale_enabled && note_shift) {
+				switch (p) {
+					case 93: // Segment down
+						if (scale_segment > 1) scale_segment--;
+						break;
+					
+					case 94: // Segment up
+						if (scale_segment < 7) scale_segment++;
+						break;
+				}
+			} else {
+				switch (p) {
+					case 91: // Octave up
+						if (note_octave < 8) note_octave++;
+						break;
+					
+					case 92: // Octave down
+						if (note_octave > -1) note_octave--;
+						break;
+					
+					case 93: // Transpose down
+						if (note_transpose > -12) note_transpose--;
+						break;
+					
+					case 94: // Transpose up
+						if (note_transpose < 12) note_transpose++;
+						break;
+				}
 			}
 			note_draw();
 		}
