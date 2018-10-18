@@ -59,7 +59,9 @@ Additional options will appear if the Performance mode is selected:
 
 ### Performance mode
 
-The new Performance mode is designed to eliminate the need for Top Lights plugins and Retina 2.1 on the host machine. Top Lights are made directly available via normal Note On messages (according to the Top Lights configuration), and the velocities received are displayed using the currently selected palette. This also allows for placing samples on the top row.
+The new Performance mode is designed to eliminate the need for Top Lights plugins and Retina 2.1 on the host machine. Top Lights are made directly available via normal Note On messages (according to the Top Lights configuration), and the velocities received are displayed using the currently selected palette. This also allows for placing samples on the top row. 
+
+As an additional touch, if you're using [Outbreak's latest Multi](https://github.com/mat1jaczyyy/outbreak/tree/master/Multi), entering the Performance mode will reset all multisamples in your Live set. This feature does not necessarily require a Multi Reset device to reside somewhere in the chain, but relies on any devices in between to properly pass CC messages through.
 
 ### Palette editor
 
