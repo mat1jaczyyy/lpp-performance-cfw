@@ -11,8 +11,10 @@ void performance_init() {
 	for (u8 i = 0; i < 100; i++) {
 		performance_led(i, performance_screen[i], 0);
 	}
-
+	
 	if (!performance_screen[98]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
+
+	hal_send_midi(USBSTANDALONE, 0xB0, 121, 0); // Reset All Controllers message, triggers Multi Reset
 }
 
 void performance_timer_event() {}
