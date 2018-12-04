@@ -21,6 +21,10 @@ void palette_led(u8 p, u8 v) {
 	rgb_led(p, palette_value(palette_selected, v, 0), palette_value(palette_selected, v, 1), palette_value(palette_selected, v, 2));
 }
 
+void palette_channel_led(u8 p, u8 c, u8 v) { //c for channel / choose
+	rgb_led(p, palette_value_reverse(c, v, 0), palette_value_reverse(c, v, 1), palette_value_reverse(c, v, 2));
+}
+
 void novation_led(u8 p, u8 v) {
 	if (p != 99) rgb_led(p, palette_value(palette_novation, v, 0), palette_value(palette_novation, v, 1), palette_value(palette_novation, v, 2));
 }
