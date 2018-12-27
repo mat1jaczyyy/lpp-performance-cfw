@@ -254,10 +254,13 @@ void puyo_move(u8 a) {
             switch (puyo_current.r) {
                 case 0: // 0 degrees
                 case 1: // 90 degrees
-                case 2: // 180 degrees
                     if (puyo_current.y == 0) return;
                     if (puyo_board[puyo_current.x][puyo_current.y - 1] != puyo_empty) return;
                     break;
+
+                case 2: // 180 degrees
+                    if (puyo_current.y == 0) return;
+                    if (puyo_board[puyo_current.x - 1][puyo_current.y - 1] != puyo_empty) return;
                 
                 case 3: // 270 degrees
                     if (puyo_current.y == 1) return;
@@ -271,9 +274,13 @@ void puyo_move(u8 a) {
             switch (puyo_current.r) {
                 case 0: // 0 degrees
                 case 3: // 270 degrees
-                case 2: // 180 degrees
                     if (puyo_current.y == 7) return;
                     if (puyo_board[puyo_current.x][puyo_current.y + 1] != puyo_empty) return;
+                    break;
+
+                case 2: // 180 degrees
+                    if (puyo_current.y == 7) return;
+                    if (puyo_board[puyo_current.x - 1][puyo_current.y + 1] != puyo_empty) return;
                     break;
                 
                 case 1: // 90 degrees
