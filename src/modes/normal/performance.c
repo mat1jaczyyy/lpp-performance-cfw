@@ -2,14 +2,28 @@
 
 u8 performance_screen[100] = {};
 
-void performance_led(u8 p, u8 v, u8 s) {
-	palette_led(p, v);
-	if (s) performance_screen[p] = v;
+void performance_led(u8 ch, u8 p, u8 v, u8 s) {
+	switch (ch) {
+		case 0xB:
+			flash_led(p, v);
+			if (s) performance_screen[p] = 0;
+			break;
+
+		case 0xC:
+			pulse_led(p, v);
+			if (s) performance_screen[p] = 0;
+			break;
+
+		case 0xF:
+			palette_led(p, v);
+			if (s) performance_screen[p] = v;
+			break;
+	}
 }
 
 void performance_init() {
 	for (u8 i = 0; i < 100; i++) {
-		performance_led(i, performance_screen[i], 0);
+		performance_led(0xF, i, performance_screen[i], 0);
 	}
 	
 	if (!performance_screen[98]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
@@ -29,14 +43,14 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0xF) {
+	if (port == USBSTANDALONE && ch >= 0xA) {
 		switch (t) {
 			case 0x8: // Note off
 				v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
 			
 			case 0x9: // Note on
 				if (performance_xy_enabled) { // XY layout
-					performance_led(p, v, 1);
+					performance_led(ch, p, v, 1);
 
 				} else { // Drum Rack layout
 					if (top_lights_config != 0) {
@@ -46,14 +60,14 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 						
 						if (top_lights_config > 1) { // Display additional LEDs
 							if (100 <= p && p <= 107) {
-								performance_led(dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v, 1);
+								performance_led(ch, dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v, 1);
 							} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
-								performance_led(dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v, 1);
+								performance_led(ch, dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v, 1);
 							}
 						}
 					}
 					
-					performance_led(dr_xy[p], v, 1);
+					performance_led(ch, dr_xy[p], v, 1);
 				}
 				break;
 		}
