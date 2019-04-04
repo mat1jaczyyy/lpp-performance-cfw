@@ -14,8 +14,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				challenge_do = 1;
 				challenge_counter = 0;
 			
-			} else if (l == 8) {
-				mode_default_update(0);
+			} else if (l == 8) { // Live Quit Message
+				mode_default_update(mode_performance);
 			}
 		}
 		return;
@@ -28,7 +28,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		
 		hal_send_sysex(port, &syx_mode_selection_response[0], syx_mode_selection_response_length);
 		
-		if (!(mode != mode_ableton && new)) mode_default_update(1 - new); // This will interrupt boot animation!
+		if (!(mode != mode_ableton && new)) mode_default_update(mode_ableton - new); // This will interrupt boot animation!
 		
 		return;
 	}
@@ -63,7 +63,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 			
 			hal_send_sysex(port, &syx_standalone_layout_selection_response[0], syx_standalone_layout_selection_response_length);
 			
-			mode_default_update((new < 4)? (new + 2) : 0); // 4 for Performance mode (unavailable on stock)
+			mode_default_update((new < 4)? (new + mode_note) : mode_performance); // 4 for Performance mode (unavailable on stock)
 		}
 		return;
 	}
@@ -176,7 +176,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 				text_bytes[0] = bp; // Stop reading bytes at this offset
 
-				mode_update(6);
+				mode_update(mode_text);
 			}
 		}
 		return;
