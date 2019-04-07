@@ -27,7 +27,7 @@ To install the firmware, simply send ("flash") the generated SysEx messages from
 
 ## Usage
 
-All modes other than the new Performance mode behave much the same as they do on stock firmware. Included is a new boot animation, which can be skipped by pressing the Setup button while it is displaying. For Ableton Live integration (Live mode), set your Launchpad Pro up the same way you would set up a normal one, but use the MIDI Port instead of the Live Port (doesn't exist in open-source firmware). If you want to use any of the Standalone modes (including the new Performance mode), all you need to do is set the track inputs/outputs to the Standalone Port and the appropriate channel for the mode (listed shortly after). Note that on Windows, the Standalone Port displays itself as "Launchpad Open" and the MIDI Port displays itself as "Launchpad Open (Port 2)".
+All modes other than the new Performance mode behave much the same as they do on stock firmware. Included is a new boot animation, which can be skipped by pressing the Setup button while it is displaying. For Ableton Live integration (Live mode), set your Launchpad Pro up the same way you would set up a normal one, but use the MIDI Port instead of the Live Port (doesn't exist in open-source firmware). If you want to use any of the Standalone modes (including the new Performance mode), all you need to do is set the track inputs/outputs to the Standalone Port and the appropriate channel for the mode (listed shortly after). Note that on Windows, the Standalone Port displays itself as "Launchpad Open" or "x- Launchpad Open" and the MIDI Port displays itself as "Launchpad Open (Port 2)" or "MIDIIN2 (x- Launchpad Open)".
 
 ### Setup mode
 
