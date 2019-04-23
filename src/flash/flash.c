@@ -39,6 +39,9 @@ void flash_read() {
 
 	performance_xy_enabled = flash[fp++];
 	if (performance_xy_enabled >> 1) performance_xy_enabled = 0;
+
+	aftertouch_enabled = flash[fp++];
+	if (aftertouch_enabled >> 1) aftertouch_enabled = 0;
 }
 
 void flash_write() {
@@ -61,6 +64,7 @@ void flash_write() {
 		flash[fp++] = vel_sensitive;
 		flash[fp++] = top_lights_config;
 		flash[fp++] = performance_xy_enabled;
+		flash[fp++] = aftertouch_enabled;
 		
 		hal_write_flash(0, &flash[0], USER_AREA_SIZE);
 		

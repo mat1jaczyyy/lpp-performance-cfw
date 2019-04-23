@@ -85,7 +85,13 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 	}
 }
 
-void app_aftertouch_event(u8 p, u8 v) {} // Unused
+void app_aftertouch_event(u8 p, u8 v) {
+	int result = aftertouch_update(p, v);
+
+	if (result != -1 && aftertouch_enabled)
+		(*mode_aftertouch_event[mode])(result);
+}
+
 void app_cable_event(u8 t, u8 v) {} // Unused
 
 void app_sysex_event(u8 port, u8 *d, u16 l) {

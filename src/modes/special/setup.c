@@ -24,6 +24,10 @@
 #define setup_performance_xy_g 31
 #define setup_performance_xy_b 31
 
+#define setup_aftertouch_r 31
+#define setup_aftertouch_g 63
+#define setup_aftertouch_b 31
+
 #define setup_tick 33
 #define setup_rainbow_length 48
 #define konami_length 11
@@ -75,6 +79,14 @@ void setup_init() {
 		rgb_led(11, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
 	} else {
 		rgb_led(11, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
+	}
+
+	if (mode_default != mode_fader) {
+		if (aftertouch_enabled) {
+			rgb_led(12, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch enabled
+		} else {
+			rgb_led(12, setup_aftertouch_r >> 2, setup_aftertouch_g >> 2, setup_aftertouch_b >> 2); // Aftertouch disabled
+		}
 	}
 
 	rgb_led(81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
@@ -146,6 +158,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 
+		} else if (mode_default != mode_fader && p == 12) { // Toggle aftertouch
+			aftertouch_enabled = (aftertouch_enabled)? 0 : 1;
+			dirty = 1;
+			mode_refresh();
+
 		} else if (81 <= p && p <= 83) { // Switch default mode
 			mode_default = p - 81;
 			mode_refresh();
@@ -200,3 +217,5 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
+
+void setup_aftertouch_event(u8 v) {}

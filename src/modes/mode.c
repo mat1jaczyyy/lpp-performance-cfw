@@ -61,6 +61,21 @@ void (*const mode_midi_event[13])(u8 port, u8 t, u8 ch, u8 p, u8 v) = {
 	boot_midi_event,
 	puyo_midi_event
 };
+void (*const mode_aftertouch_event[13])(u8 v) = {
+	performance_aftertouch_event,
+	ableton_aftertouch_event,
+	note_aftertouch_event,
+	drum_aftertouch_event,
+	fader_aftertouch_event,
+	programmer_aftertouch_event,
+	piano_aftertouch_event,
+	text_aftertouch_event,
+	scale_setup_aftertouch_event,
+	editor_aftertouch_event,
+	setup_aftertouch_event,
+	boot_aftertouch_event,
+	puyo_aftertouch_event
+};
 
 u8 mode = 0;
 u8 mode_default = 0;

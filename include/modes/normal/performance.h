@@ -4,6 +4,7 @@
 #include "app.h"
 #include "modes/mode.h"
 
+#include "aftertouch/aftertouch.h"
 #include "other/conversion.h"
 
 #define mode_performance_r 63
@@ -14,5 +15,6 @@ void performance_init();
 void performance_timer_event();
 void performance_surface_event(u8 p, u8 v, u8 x, u8 y);
 void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v);
+void performance_aftertouch_event(u8 v);
 
 #endif

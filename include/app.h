@@ -39,6 +39,7 @@
 
 #include "app_defs.h"
 
+#include "aftertouch/aftertouch.h"
 #include "modes/mode.h"
 #include "other/tempo.h"
 #include "sysex/sysex.h"

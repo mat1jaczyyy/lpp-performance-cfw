@@ -153,3 +153,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		}
 	}
 }
+
+void ableton_aftertouch_event(u8 v) {
+	aftertouch_send(USBMIDI, (ableton_layout == ableton_layout_user)? 0xD5 : 0xD0, v);
+}

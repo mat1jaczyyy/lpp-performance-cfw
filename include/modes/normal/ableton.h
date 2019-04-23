@@ -4,6 +4,7 @@
 #include "app.h"
 #include "modes/mode.h"
 
+#include "aftertouch/aftertouch.h"
 #include "other/conversion.h"
 
 #define mode_ableton_r 0
@@ -31,5 +32,6 @@ void ableton_init();
 void ableton_timer_event();
 void ableton_surface_event(u8 p, u8 v, u8 x, u8 y);
 void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v);
+void ableton_aftertouch_event(u8 v);
 
 #endif

@@ -2,6 +2,7 @@ BUILDDIR = build
 
 TOOLS = tools
 
+SOURCES += src/aftertouch/aftertouch.c
 SOURCES += src/flash/flash.c src/flash/settings.c
 SOURCES += src/led/led.c src/led/palettes.c
 SOURCES += src/sysex/sysex.c src/sysex/messages.c
