@@ -84,13 +84,10 @@ The new Piano mode is similar to the Note mode, but employs a classical piano-li
 
 The firmware currently lacks a very small amount of features from the stock firmware, which could be implemented if there is a demand. If you want to add the following features to the firmware yourself, feel free to fork the repository and submit a pull request when you're done.
 * Due to lack of external MIDI synthesizers, I am unable to test the MIDI DIN/DOUT ports and thus won't support them (for now).
-* Aftertouch
 * Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
     * Channel selection for all modes
     * Pad Lighting setting for stock Standalone modes
-    * Settings for unimplemented features (aftertouch, MIDI DIN/DOUT ports)
-
-Another known issue is that Novation's USB Driver does not support units with customized firmware. For this reason, apps which utilize the driver's multi-client features (such as Retina) will not function with this firmware. To work around that particular limitation, use the built-in palette and Top Lights features of the Performance mode. This issue does not exist on macOS due to native support for multi-client MIDI output which doesn't require a special driver.
+    * Settings for unimplemented features (MIDI DIN/DOUT ports)
 
 For any other issues or new feature requests, submit an issue report.
 
