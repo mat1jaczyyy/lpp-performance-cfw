@@ -4,6 +4,8 @@
 #include "app.h"
 #include "modes/mode.h"
 
+#include "aftertouch/aftertouch.h"
+
 #define mode_drum_r 63
 #define mode_drum_g 63
 #define mode_drum_b 0
