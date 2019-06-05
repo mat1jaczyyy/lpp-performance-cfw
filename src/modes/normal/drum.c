@@ -127,3 +127,7 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 void drum_aftertouch_event(u8 v) {
 	aftertouch_send(USBSTANDALONE, 0xD1, v);
 }
+
+void drum_poly_event(u8 p, u8 v) {
+	poly_send(USBSTANDALONE, 0xA1, drum_press(p / 10, p % 10, v, -1), v);
+}

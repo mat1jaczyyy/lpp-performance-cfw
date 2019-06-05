@@ -76,17 +76,17 @@ void setup_init() {
 	}
 
 	if (vel_sensitive) {
-		rgb_led(11, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
+		rgb_led(21, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
 	} else {
-		rgb_led(11, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
+		rgb_led(21, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
 	}
 
 	if (mode_default != mode_fader) {
-		if (aftertouch_enabled) {
-			rgb_led(12, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch enabled
-		} else {
-			rgb_led(12, setup_aftertouch_r >> 2, setup_aftertouch_g >> 2, setup_aftertouch_b >> 2); // Aftertouch disabled
+		for (u8 i = 11; i < 14; i++) {
+			rgb_led(i, setup_aftertouch_r >> 2, setup_aftertouch_g >> 2, setup_aftertouch_b >> 2); // Aftertouch
 		}
+
+		rgb_led(aftertouch_enabled + 11, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch selected
 	}
 
 	rgb_led(81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
@@ -153,13 +153,13 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_update(mode_default);
 			setup_jump = 0;
 		
-		} else if (p == 11) { // Toggle velocity sensitivity
+		} else if (p == 21) { // Toggle velocity sensitivity
 			vel_sensitive = (vel_sensitive)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 
-		} else if (mode_default != mode_fader && p == 12) { // Toggle aftertouch
-			aftertouch_enabled = (aftertouch_enabled)? 0 : 1;
+		} else if (mode_default != mode_fader && 11 <= p && p <= 13) { // Toggle aftertouch
+			aftertouch_enabled = p - 11;
 			dirty = 1;
 			mode_refresh();
 
@@ -219,3 +219,5 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 void setup_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}
 
 void setup_aftertouch_event(u8 v) {}
+
+void setup_poly_event(u8 p, u8 v) {}

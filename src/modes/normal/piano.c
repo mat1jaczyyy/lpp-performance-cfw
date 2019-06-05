@@ -208,3 +208,8 @@ void piano_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 void piano_aftertouch_event(u8 v) {
 	aftertouch_send(USBSTANDALONE, 0xD3, v);
 }
+
+void piano_poly_event(u8 p, u8 v) {
+	s8 n = piano_press(p / 10, p % 10, v, -1);
+	if (n >= 0) poly_send(USBSTANDALONE, 0xA3, n, v);
+}

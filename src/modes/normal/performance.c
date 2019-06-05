@@ -77,3 +77,7 @@ void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 void performance_aftertouch_event(u8 v) {
 	aftertouch_send(USBSTANDALONE, 0xDF, v);
 }
+
+void performance_poly_event(u8 p, u8 v) {
+	poly_send(USBSTANDALONE, 0xAF, (performance_xy_enabled)? p : xy_dr[p], v);
+}
