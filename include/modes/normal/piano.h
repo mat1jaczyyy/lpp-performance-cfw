@@ -3,9 +3,9 @@
 
 #include "app.h"
 #include "modes/mode.h"
+#include "send/send.h"
 
 #include "aftertouch/aftertouch.h"
-#include "aftertouch/poly.h"
 
 #define mode_piano_r 7
 #define mode_piano_g 0

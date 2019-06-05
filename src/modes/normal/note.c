@@ -202,7 +202,7 @@ void note_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(2 - mode_default, 0x80, i, 0);
+		send_midi(2 - mode_default, 0x80, i, 0);
 	}
 	
 	u8 o = note_octave + 1; // Octave navigation
@@ -243,11 +243,11 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		note_scale_button();
 	
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
-		hal_send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0, p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0, p, v);
 		note_shift = v;
 		note_scale_button();
 	
@@ -287,7 +287,7 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = note_press(x, y, v, -1);
-		if (n >= 0) hal_send_midi(2 - mode_default, (v == 0)? 0x80 : 0x90, n, v);
+		if (n >= 0) send_midi(2 - mode_default, (v == 0)? 0x80 : 0x90, n, v);
 	}
 }
 
@@ -323,5 +323,5 @@ void note_aftertouch_event(u8 v) {
 
 void note_poly_event(u8 p, u8 v) {
 	s8 n = note_press(p / 10, p % 10, v, -1);
-	if (n >= 0) poly_send(USBSTANDALONE, 0xA0, n, v);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA0, n, v);
 }

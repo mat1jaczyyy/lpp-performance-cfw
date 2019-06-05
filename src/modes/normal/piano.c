@@ -115,7 +115,7 @@ void piano_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		hal_send_midi(2 - mode_default, 0x80, i, 0);
+		send_midi(2 - mode_default, 0x80, i, 0);
 	}
 	
 	u8 o = piano_octave + 3; // Octave navigation
@@ -148,7 +148,7 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 	
 	} else if (x == 0 || y == 9 || y == 0 || (x == 9 && y > 4)) { // Unused side buttons
-		hal_send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0, p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y < 5) { // Navigation buttons
@@ -175,7 +175,7 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = piano_press(x, y, v, -1);
-		if (n >= 0) hal_send_midi(USBSTANDALONE, (v == 0)? 0x83 : 0x93, n, v);
+		if (n >= 0) send_midi(USBSTANDALONE, (v == 0)? 0x83 : 0x93, n, v);
 	}
 }
 
@@ -211,5 +211,5 @@ void piano_aftertouch_event(u8 v) {
 
 void piano_poly_event(u8 p, u8 v) {
 	s8 n = piano_press(p / 10, p % 10, v, -1);
-	if (n >= 0) poly_send(USBSTANDALONE, 0xA3, n, v);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA3, n, v);
 }

@@ -3,6 +3,7 @@
 
 #include "app.h"
 #include "modes/mode.h"
+#include "send/send.h"
 
 #include "modes/normal/note.h"
 

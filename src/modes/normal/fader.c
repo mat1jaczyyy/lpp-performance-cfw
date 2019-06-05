@@ -91,7 +91,7 @@ void fader_timer_event() {
 					faders[fader_mode][y] = fader_final[fader_mode][y]; // Set fader to supposed final value
 				}
 				
-				hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Send fader
+				send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Send fader
 				fader_draw(y);
 				
 				fader_elapsed[fader_mode][y] = 0;
@@ -106,7 +106,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else {
 		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
-			hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), p, v);
+			send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), p, v);
 			rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 		
 		} else if (v != 0) { // Main grid
@@ -121,7 +121,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			fader_elapsed[fader_mode][y] = 0; // Stop current line
 			
 			if (diff == 0) {
-				hal_send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Resend fader
+				send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Resend fader
 							
 			} else if (time >= diff) { // Enough time to do line smoothly
 				fader_tick[fader_mode][y] = time / diff;

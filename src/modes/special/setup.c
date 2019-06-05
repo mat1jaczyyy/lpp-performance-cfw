@@ -28,6 +28,10 @@
 #define setup_aftertouch_g 63
 #define setup_aftertouch_b 31
 
+#define setup_direct_r 63
+#define setup_direct_g 47
+#define setup_direct_b 31
+
 #define setup_tick 33
 #define setup_rainbow_length 48
 #define konami_length 11
@@ -87,6 +91,14 @@ void setup_init() {
 		}
 
 		rgb_led(aftertouch_enabled + 11, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch selected
+	}
+
+	if (mode_default != mode_ableton) {
+		if (direct_enabled) {
+			rgb_led(22, setup_direct_r, setup_direct_g, setup_direct_b); // Direct MIDI enabled
+		} else {
+			rgb_led(22, setup_direct_r >> 2, setup_direct_g >> 2, setup_direct_b >> 2); // Direct MIDI disabled
+		}
 	}
 
 	rgb_led(81, mode_performance_r >> 2, mode_performance_g >> 2, mode_performance_b >> 2); // Performance mode
@@ -160,6 +172,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 		} else if (mode_default != mode_fader && 11 <= p && p <= 13) { // Toggle aftertouch
 			aftertouch_enabled = p - 11;
+			dirty = 1;
+			mode_refresh();
+
+		} else if (mode_default != mode_ableton && p == 22) { // Toggle direct MIDI
+			direct_enabled = (direct_enabled)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 

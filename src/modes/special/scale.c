@@ -69,7 +69,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		}
 	
 	} else if (p == 80) { // Shift button
-		hal_send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0, p, v);
 		note_shift = v;
 	
 	} else if (v != 0) {

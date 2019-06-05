@@ -3,9 +3,9 @@
 
 #include "app.h"
 #include "modes/mode.h"
+#include "send/send.h"
 
 #include "aftertouch/aftertouch.h"
-#include "aftertouch/poly.h"
 
 #define mode_note_r 0
 #define mode_note_g 63

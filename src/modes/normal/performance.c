@@ -28,7 +28,7 @@ void performance_init() {
 	
 	if (!performance_screen[98]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
 
-	hal_send_midi(USBSTANDALONE, 0xB0, 121, 0); // Reset All Controllers message, triggers Multi Reset
+	send_midi(USBSTANDALONE, 0xB0, 121, 0); // Reset All Controllers message, triggers Multi Reset
 }
 
 void performance_timer_event() {}
@@ -38,7 +38,7 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 				
 	} else { // Send MIDI input to DAW
-		hal_send_midi(USBSTANDALONE, (v == 0)? 0x8F : 0x9F, (performance_xy_enabled)? p : xy_dr[p], v);
+		send_midi(USBSTANDALONE, (v == 0)? 0x8F : 0x9F, (performance_xy_enabled)? p : xy_dr[p], v);
 	}
 }
 
@@ -79,5 +79,5 @@ void performance_aftertouch_event(u8 v) {
 }
 
 void performance_poly_event(u8 p, u8 v) {
-	poly_send(USBSTANDALONE, 0xAF, (performance_xy_enabled)? p : xy_dr[p], v);
+	send_midi(USBSTANDALONE, 0xAF, (performance_xy_enabled)? p : xy_dr[p], v);
 }

@@ -61,23 +61,23 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			case ableton_layout_session_solo: // Session mode - Solo
 			case ableton_layout_session_stop: // Session mode - Stop Clip
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
+					send_midi(USBMIDI, 0xB0, p, v);
 				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
+					send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, p, v);
 				}
 				break;
 			
 			case ableton_layout_note_drum: // Note mode - Drum Rack layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
+					send_midi(USBMIDI, 0xB0, p, v);
 				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
+					send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
 				}
 				break;
 			
 			case ableton_layout_note_chromatic: // Note mode - Chromatic layout
 				if (x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
+					send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					note_surface_event(p, v, x, y);
 				}
@@ -85,7 +85,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case ableton_layout_note_blank: // Note mode - Blank layout (for Audio track)
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
+					send_midi(USBMIDI, 0xB0, p, v);
 				}
 				break;
 			
@@ -94,7 +94,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			case ableton_layout_fader_pan: // Fader - Pan
 			case ableton_layout_fader_sends: // Fader - Sends
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
-					hal_send_midi(USBMIDI, 0xB0, p, v);
+					send_midi(USBMIDI, 0xB0, p, v);
 				} else {
 					fader_surface_event(p, v, x, y);
 				}
@@ -102,9 +102,9 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case ableton_layout_user: // User mode
 				if (x == 9) {
-					hal_send_midi(USBMIDI, 0xB5, p, v);
+					send_midi(USBMIDI, 0xB5, p, v);
 				} else {
-					hal_send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+					send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
 				}
 				break;
 		}
@@ -159,5 +159,5 @@ void ableton_aftertouch_event(u8 v) {
 }
 
 void ableton_poly_event(u8 p, u8 v) {
-	poly_send(USBMIDI, (ableton_layout == ableton_layout_user)? 0xA5 : 0xA0, p, v);
+	send_midi(USBMIDI, (ableton_layout == ableton_layout_user)? 0xA5 : 0xA0, p, v);
 }

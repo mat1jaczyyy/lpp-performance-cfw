@@ -3,6 +3,7 @@
 
 #include "app.h"
 #include "modes/mode.h"
+#include "send/send.h"
 
 #define mode_fader_r 63
 #define mode_fader_g 0

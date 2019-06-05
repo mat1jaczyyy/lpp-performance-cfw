@@ -158,7 +158,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 			if (l <= 10) { // Empty message
 				if (mode == mode_text && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
 
-			} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port == USBSTANDALONE)) { // Valid message
+			} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port != USBMIDI)) { // Valid message
 				text_port = port;
 				text_color = *(d + 7) & 127;
 				text_loop = *(d + 8) != 0;
