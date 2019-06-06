@@ -1,6 +1,6 @@
 # Launchpad Pro performance-optimized Custom Firmware
 
-This repository contains the source code of my custom firmware for the Launchpad Pro. The firmware retains almost all functionality (even Ableton Live integration) from the stock firmware in addition to the all-new Performance mode. The modification is easy to install, free to use and works with every currently existing project or DAW.
+This repository contains the source code of my custom firmware for the Launchpad Pro. The firmware retains all functionality (even Ableton Live integration) from the stock firmware in addition to the all-new Performance mode. The modification is easy to install, free to use and works with every currently existing project or DAW.
 
 ## Building
 
@@ -41,9 +41,11 @@ You no longer have to hold the Setup button in order to change the settings on y
     * Pink = Fader mode (Standalone Port - Channel 3)
     * Orange = Programmer mode (Standalone Port - Channel 1 - this is required for FL Studio support)
     * Violet = Piano mode (Standalone Port - Channel 4)
-* Bottom left corner: Velocity sensitivity toggle
-    * Bright = Enabled
-    * Dim = Disabled
+* Bottom left corner: Input/Output Management
+    * Cyan = Velocity sensitivity toggle
+    * Orange = Direct standalone MIDI out toggle (3.5mm port)
+    * Green = Aftertouch settings
+        * In left-to-right order: Disabled, Channel Pressure enabled, Polyphonic Aftertouch enabled
 
 Additional options will appear if the Performance mode is selected:
 * Top-right corner: Layout configuration, in left-to-right order:
@@ -82,12 +84,9 @@ The new Piano mode is similar to the Note mode, but employs a classical piano-li
 
 ## Issues
 
-The firmware currently lacks a very small amount of features from the stock firmware, which could be implemented if there is a demand. If you want to add the following features to the firmware yourself, feel free to fork the repository and submit a pull request when you're done.
-* Due to lack of external MIDI synthesizers, I am unable to test the MIDI DIN/DOUT ports and thus won't support them (for now).
-* Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
+Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
     * Channel selection for all modes
     * Pad Lighting setting for stock Standalone modes
-    * Settings for unimplemented features (MIDI DIN/DOUT ports)
 
 For any other issues or new feature requests, submit an issue report.
 
