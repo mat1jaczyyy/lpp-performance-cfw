@@ -90,4 +90,4 @@ Some Setup parameters found on the stock firmware are not implemented in order t
 
 For any other issues or new feature requests, submit an issue report.
 
-If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://global.novationmusic.com/support/product-downloads?product=Launchpad+Pro) or flash the latest stock firmware .syx file found at `stock/Launchpad Pro-1.0.182.syx` to roll back to the stock firmware.
+If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://customer.novationmusic.com/support/downloads?brand=Novation&product_by_range=527&download_type=all) or flash the latest stock firmware .syx file found at `stock/Launchpad Pro-1.0.182.syx` to roll back to the stock firmware.
