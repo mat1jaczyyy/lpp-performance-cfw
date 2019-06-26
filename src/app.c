@@ -37,9 +37,15 @@
 #include "app.h"
 
 u32 global_timer = 0;
+u32 idle_time = idle_timeout;
 
 void app_timer_event() {
 	global_timer++;
+
+	if (mode != mode_idle && mode != mode_boot && mode != mode_text && mode != mode_puyo && idle_time <= global_timer) {
+		idle_return = mode;
+		mode_update(mode_idle);
+	}
 
 	tempo_timer++; tempo_tick();
 
@@ -49,6 +55,8 @@ void app_timer_event() {
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {
+	idle_time = global_timer + idle_timeout;
+
 	if (!vel_sensitive) {
 		v = (v == 0)? 0 : 127;
 	}
@@ -57,6 +65,8 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
+	idle_time = global_timer + idle_timeout;
+
 	u8 ch;
 
 	switch (t) {
@@ -86,6 +96,8 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 }
 
 void app_aftertouch_event(u8 p, u8 v) {
+	idle_time = global_timer + idle_timeout;
+
 	u8 result = aftertouch_update(p, v);
 
 	if (result != -1 && aftertouch_enabled == 1)
@@ -98,6 +110,8 @@ void app_aftertouch_event(u8 p, u8 v) {
 void app_cable_event(u8 t, u8 v) {} // Unused
 
 void app_sysex_event(u8 port, u8 *d, u16 l) {
+	idle_time = global_timer + idle_timeout;
+
 	handle_sysex(port, d, l);
 }
 

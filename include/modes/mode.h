@@ -47,12 +47,15 @@
 #define mode_puyo 12
 #include "modes/special/puyo.h"
 
-void (*const mode_init[13])();
-void (*const mode_timer_event[13])();
-void (*const mode_surface_event[13])(u8 p, u8 v, u8 x, u8 y);
-void (*const mode_midi_event[13])(u8 port, u8 t, u8 ch, u8 p, u8 v);
-void (*const mode_aftertouch_event[13])(u8 v);
-void (*const mode_poly_event[13])(u8 p, u8 v);
+#define mode_idle 13
+#include "modes/special/idle.h"
+
+void (*const mode_init[14])();
+void (*const mode_timer_event[14])();
+void (*const mode_surface_event[14])(u8 p, u8 v, u8 x, u8 y);
+void (*const mode_midi_event[14])(u8 port, u8 t, u8 ch, u8 p, u8 v);
+void (*const mode_aftertouch_event[14])(u8 v);
+void (*const mode_poly_event[14])(u8 p, u8 v);
 
 u8 mode, mode_default;
 
