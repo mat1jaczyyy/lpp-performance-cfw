@@ -27,6 +27,7 @@
 #define syx_led_pulse_length 7
 
 #define syx_led_rgb_length 7
+#define syx_led_rgb_fast_length 2
 #define syx_led_grid_length 7
 
 #define syx_text_length 7
@@ -65,6 +66,7 @@ const u8 syx_led_flash[syx_led_flash_length];
 const u8 syx_led_pulse[syx_led_pulse_length];
 
 const u8 syx_led_rgb[syx_led_rgb_length];
+const u8 syx_led_rgb_fast[syx_led_rgb_fast_length];
 const u8 syx_led_grid[syx_led_grid_length];
 
 const u8 syx_text[syx_text_length];

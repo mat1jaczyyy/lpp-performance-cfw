@@ -140,6 +140,16 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		}
 		return;
 	}
+
+	// Light LED using SysEx (RGB mode) - custom fast message
+	if (!memcmp(d, &syx_led_rgb_fast[0], syx_led_rgb_fast_length)) {
+		if (active_port != port) return;
+
+		if (mode < mode_normal) {
+			rgb_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
+		}
+		return;
+	}
 	
 	// Light LED grid using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_grid[0], syx_led_grid_length)) {
