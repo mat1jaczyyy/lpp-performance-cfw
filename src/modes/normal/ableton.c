@@ -116,7 +116,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == ableton_layout_note_chromatic && !(x == 0 || (x == 9 && (y == 5 || y > 6)) || (y == 0 && x < 8) || y == 9)) {
+		if (ableton_layout == ableton_layout_note_chromatic && (ch >> 4) != 0xB) {
 			note_midi_event(port, t, ch, p, v);
 			return;
 		}
