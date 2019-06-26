@@ -29,6 +29,8 @@ void performance_init() {
 	if (!performance_screen[98]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
 
 	send_midi(USBSTANDALONE, 0xB0, 121, 0); // Reset All Controllers message, triggers Multi Reset
+
+	active_port = USBSTANDALONE;
 }
 
 void performance_timer_event() {}

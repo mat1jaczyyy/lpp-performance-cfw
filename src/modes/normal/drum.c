@@ -52,6 +52,8 @@ void drum_init() {
 	rgb_led(94, drum_nav_r, drum_nav_g, (drum_offset > 0)? (drum_nav_b >> (1 - drum_nav_pressed[3])) : 0);
 	
 	rgb_led(99, mode_drum_r, mode_drum_g, mode_drum_b); // Drum mode LED
+
+	active_port = USBSTANDALONE;
 }
 
 void drum_timer_event() {}

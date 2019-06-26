@@ -70,6 +70,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light LED using SysEx
 	if (!memcmp(d, &syx_led_single[0], syx_led_single_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) novation_led(*(d + i), *(d + i + 1));
 		}
@@ -78,6 +80,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light a column of LEDs using SysEx
 	if (!memcmp(d, &syx_led_column[0], syx_led_column_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			u8 y = *(d + 7);
 			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led((i - 8) * 10 + y, *(d + i));
@@ -87,6 +91,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light a row of LEDs using SysEx
 	if (!memcmp(d, &syx_led_row[0], syx_led_row_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			u8 x = *(d + 7) * 10;
 			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led(x + i - 8, *(d + i));
@@ -96,6 +102,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light all LEDs using SysEx
 	if (!memcmp(d, &syx_led_all[0], syx_led_all_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			u8 v = *(d + 7);
 			for (u8 p = 1; p < 99; p++)	novation_led(p, v);
@@ -105,6 +113,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Flash LED using SysEx
 	if (!memcmp(d, &syx_led_flash[0], syx_led_flash_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) flash_led(*(d + i), *(d + i + 1));
 		}
@@ -113,6 +123,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 	// Pulse LED using SysEx
 	if (!memcmp(d, &syx_led_pulse[0], syx_led_pulse_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) pulse_led(*(d + i), *(d + i + 1));
 		}
@@ -121,6 +133,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 	// Light LED using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_rgb[0], syx_led_rgb_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
 		}
@@ -129,6 +143,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Light LED grid using SysEx (RGB mode)
 	if (!memcmp(d, &syx_led_grid[0], syx_led_grid_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			u8 t = *(d + 7);
 
@@ -154,6 +170,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Text scrolling
 	if (!memcmp(d, &syx_text[0], syx_text_length)) {
+		if (active_port != port) return;
+
 		if (mode < mode_normal) {
 			if (l <= 10) { // Empty message
 				if (mode == mode_text && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
@@ -227,7 +245,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	
 	// Create fader control
 	if (!memcmp(d, &syx_fader[0], syx_fader_length)) {
-		if (mode == mode_fader || (mode == mode_ableton && (ableton_layout == ableton_layout_fader_device || ableton_layout == ableton_layout_fader_volume || ableton_layout == ableton_layout_fader_pan || ableton_layout == ableton_layout_fader_sends))) {
+		if ((mode == mode_fader && port == USBSTANDALONE) || (mode == mode_ableton && port == USBMIDI && (ableton_layout == ableton_layout_fader_device || ableton_layout == ableton_layout_fader_volume || ableton_layout == ableton_layout_fader_pan || ableton_layout == ableton_layout_fader_sends))) {
 			for (u8 i = 7; i <= l - 5 && i <= 35; i += 4) {
 				u8 y = *(d + i) & 7;
 				

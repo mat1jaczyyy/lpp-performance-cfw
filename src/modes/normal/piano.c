@@ -139,6 +139,8 @@ void piano_draw() {
 void piano_init() {
 	piano_draw();
 	if (mode == mode_piano) rgb_led(99, mode_piano_r, mode_piano_g, mode_piano_b); // Note mode LED
+
+	active_port = USBSTANDALONE;
 }
 
 void piano_timer_event() {}

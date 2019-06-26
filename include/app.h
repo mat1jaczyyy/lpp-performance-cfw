@@ -45,6 +45,7 @@
 #include "sysex/sysex.h"
 
 u32 global_timer;
+u8 active_port;
 
 void hal_plot_led(u8 type, u8 index, u8 red, u8 green, u8 blue);
 void hal_send_midi(u8 port, u8 status, u8 data1, u8 data2);

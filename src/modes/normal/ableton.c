@@ -41,6 +41,8 @@ void ableton_init() {
 	if (ableton_layout == ableton_layout_note_chromatic) note_init();
 	if (ableton_layout == ableton_layout_fader_device || ableton_layout == ableton_layout_fader_volume || ableton_layout == ableton_layout_fader_pan || ableton_layout == ableton_layout_fader_sends) fader_init();
 	if (ableton_layout == ableton_layout_user) rgb_led(98, user_r, user_g, user_b); // User LED
+
+	active_port = USBMIDI;
 }
 
 void ableton_timer_event() {

@@ -227,6 +227,8 @@ void note_init() {
 	note_draw();
 	note_scale_button();
 	if (mode == mode_note) rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
+
+	active_port = USBSTANDALONE;
 }
 
 void note_timer_event() {}

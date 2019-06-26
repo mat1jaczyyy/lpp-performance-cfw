@@ -13,6 +13,8 @@ void programmer_init() {
 	}
 
 	rgb_led(99, mode_programmer_r, mode_programmer_g, mode_programmer_b); // Programmer mode LED
+
+	active_port = USBSTANDALONE;
 }
 
 void programmer_timer_event() {}

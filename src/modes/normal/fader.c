@@ -78,6 +78,8 @@ void fader_init() {
 	for (u8 y = 0; y < 8; y++) fader_draw(y);
 	
 	if (mode == mode_fader) rgb_led(99, mode_fader_r, mode_fader_g, mode_fader_b); // Fader mode LED
+
+	active_port = USBSTANDALONE;
 }
 
 void fader_timer_event() {
