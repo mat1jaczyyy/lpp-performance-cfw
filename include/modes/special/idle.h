@@ -4,7 +4,7 @@
 #include "app.h"
 #include "modes/mode.h"
 
-#define idle_timeout 300000
+#define idle_timeout 600000
 
 u8 idle_return;
 
