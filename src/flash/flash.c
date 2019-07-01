@@ -45,6 +45,9 @@ void flash_read() {
 
 	direct_enabled = flash[fp++];
 	if (direct_enabled >> 1) direct_enabled = 0;
+
+	idle_enabled = flash[fp++];
+	if (idle_enabled >> 1) idle_enabled = 1;
 }
 
 void flash_write() {
@@ -69,6 +72,7 @@ void flash_write() {
 		flash[fp++] = performance_xy_enabled;
 		flash[fp++] = aftertouch_enabled;
 		flash[fp++] = direct_enabled;
+		flash[fp++] = idle_enabled;
 		
 		hal_write_flash(0, &flash[0], USER_AREA_SIZE);
 		

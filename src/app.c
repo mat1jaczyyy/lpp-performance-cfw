@@ -47,7 +47,7 @@ void idle_exit() {
 void app_timer_event() {
 	global_timer++;
 
-	if (mode != mode_idle && mode != mode_boot && mode != mode_text && mode != mode_puyo && idle_time <= global_timer) {
+	if (idle_enabled && mode < mode_normal - 1 && idle_time <= global_timer) {
 		idle_return = mode;
 		mode_update(mode_idle);
 	}

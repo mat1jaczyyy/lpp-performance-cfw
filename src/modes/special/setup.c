@@ -32,6 +32,10 @@
 #define setup_direct_g 47
 #define setup_direct_b 31
 
+#define setup_idle_r 31
+#define setup_idle_g 31
+#define setup_idle_b 63
+
 #define setup_tick 33
 #define setup_rainbow_length 48
 #define konami_length 11
@@ -77,6 +81,12 @@ void setup_init() {
 		} else {
 			rgb_led(78, setup_performance_xy_r, setup_performance_xy_g, setup_performance_xy_b); // XY layout selected
 		}
+	}
+
+	if (idle_enabled) {
+		rgb_led(41, setup_idle_r, setup_idle_g, setup_idle_b); // Idle animation enabled
+	} else {
+		rgb_led(41, setup_idle_r >> 2, setup_idle_g >> 2, setup_idle_b >> 2); // Idle animation disabled
 	}
 
 	if (vel_sensitive) {
@@ -164,6 +174,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (p == 0) { // Enter selected main mode
 			mode_update(mode_default);
 			setup_jump = 0;
+		
+		} else if (p == 41) { // Toggle idle animation
+			idle_enabled = (idle_enabled)? 0 : 1;
+			dirty = 1;
+			mode_refresh();
 		
 		} else if (p == 21) { // Toggle velocity sensitivity
 			vel_sensitive = (vel_sensitive)? 0 : 1;
