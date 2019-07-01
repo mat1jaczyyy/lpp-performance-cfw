@@ -41,6 +41,7 @@ You no longer have to hold the Setup button in order to change the settings on y
     * Pink = Fader mode (Standalone Port - Channel 3)
     * Orange = Programmer mode (Standalone Port - Channel 1 - this is required for FL Studio support)
     * Violet = Piano mode (Standalone Port - Channel 4)
+* Left side: Idle animation toggle
 * Bottom left corner: Input/Output Management
     * Cyan = Velocity sensitivity toggle
     * Orange = Direct standalone MIDI out toggle (3.5mm port)
