@@ -39,6 +39,11 @@
 u32 global_timer = 0;
 u32 idle_time = idle_timeout;
 
+void idle_exit() {
+	if (mode == mode_idle) mode_update(idle_return);
+	idle_time = global_timer + idle_timeout;
+}
+
 void app_timer_event() {
 	global_timer++;
 
@@ -55,7 +60,7 @@ void app_timer_event() {
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {
-	idle_time = global_timer + idle_timeout;
+	idle_exit();
 
 	if (!vel_sensitive) {
 		v = (v == 0)? 0 : 127;
@@ -65,7 +70,7 @@ void app_surface_event(u8 t, u8 p, u8 v) {
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
-	idle_time = global_timer + idle_timeout;
+	idle_exit();
 
 	u8 ch;
 
@@ -96,7 +101,7 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 }
 
 void app_aftertouch_event(u8 p, u8 v) {
-	idle_time = global_timer + idle_timeout;
+	idle_exit();
 
 	u8 result = aftertouch_update(p, v);
 
@@ -107,10 +112,12 @@ void app_aftertouch_event(u8 p, u8 v) {
 		(*mode_poly_event[mode])(p, v);
 }
 
-void app_cable_event(u8 t, u8 v) {} // Unused
+void app_cable_event(u8 t, u8 v) {
+	idle_exit();
+}
 
 void app_sysex_event(u8 port, u8 *d, u16 l) {
-	idle_time = global_timer + idle_timeout;
+	idle_exit();
 
 	handle_sysex(port, d, l);
 }
