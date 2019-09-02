@@ -4,17 +4,17 @@
 #define piano_color_invalid_g 0
 #define piano_color_invalid_b 0
 
-#define piano_color_base_r 63
-#define piano_color_base_g 0
-#define piano_color_base_b 63
+#define piano_color_base_r 0
+#define piano_color_base_g 77
+#define piano_color_base_b 38
 
 #define piano_color_white_r 0
-#define piano_color_white_g 41
-#define piano_color_white_b 63
+#define piano_color_white_g 77
+#define piano_color_white_b 77
 
-#define piano_color_black_r 0
-#define piano_color_black_g 10
-#define piano_color_black_b 63
+#define piano_color_black_r 77
+#define piano_color_black_g 0
+#define piano_color_black_b 77
 
 #define piano_color_empty_r 0
 #define piano_color_empty_g 0
