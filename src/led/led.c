@@ -3,12 +3,24 @@
 u8 flash_screen[100] = {};
 u8 pulse_screen[100] = {};
 
-void rgb_led(u8 p, u8 r, u8 g, u8 b) {
+double apply_led_brightness(u8 c) {
+	if (c == 0) return 0;
+
+	u32 x = (u32)led_brightness;
+	return ((c - 1) * (63 * (x + 5) * (x + 5) - 144) / (62 * 144)) + 1;
+}
+
+void direct_led(u8 p, u8 r, u8 g, u8 b) {
 	if (p == 99) {
-		hal_plot_led(TYPESETUP, 0, r, g, b);
+		hal_plot_led(TYPESETUP, 0, apply_led_brightness(r), apply_led_brightness(g), apply_led_brightness(b));
 	} else {
-		hal_plot_led(TYPEPAD, p, r, g, b);
+		hal_plot_led(TYPEPAD, p, apply_led_brightness(r), apply_led_brightness(g), apply_led_brightness(b));
 	}
+}
+
+void rgb_led(u8 p, u8 r, u8 g, u8 b) {
+	direct_led(p, r, g, b);
+
 	flash_screen[p] = 0;
 	pulse_screen[p] = 0;
 }

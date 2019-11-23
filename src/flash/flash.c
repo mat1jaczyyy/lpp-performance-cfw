@@ -48,6 +48,9 @@ void flash_read() {
 
 	idle_enabled = flash[fp++];
 	if (idle_enabled >> 1) idle_enabled = 1;
+
+	led_brightness = flash[fp++];
+	if (led_brightness >> 3) led_brightness = 7;
 }
 
 void flash_write() {
@@ -73,6 +76,7 @@ void flash_write() {
 		flash[fp++] = aftertouch_enabled;
 		flash[fp++] = direct_enabled;
 		flash[fp++] = idle_enabled;
+		flash[fp++] = led_brightness;
 		
 		hal_write_flash(0, &flash[0], USER_AREA_SIZE);
 		

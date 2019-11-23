@@ -36,6 +36,14 @@
 #define setup_idle_g 31
 #define setup_idle_b 63
 
+#define setup_brightness_selected_r 63
+#define setup_brightness_selected_g 63
+#define setup_brightness_selected_b 63
+
+#define setup_brightness_r 7
+#define setup_brightness_g 7
+#define setup_brightness_b 23
+
 #define setup_tick 33
 #define setup_rainbow_length 48
 #define konami_length 11
@@ -108,6 +116,14 @@ void setup_init() {
 			rgb_led(22, setup_direct_r, setup_direct_g, setup_direct_b); // Direct MIDI enabled
 		} else {
 			rgb_led(22, setup_direct_r >> 2, setup_direct_g >> 2, setup_direct_b >> 2); // Direct MIDI disabled
+		}
+	}
+
+	for (int i = 0; i < 8; i++) { 
+		if (led_brightness == i) { 
+			rgb_led(i + 1, setup_brightness_selected_r, setup_brightness_selected_g, setup_brightness_selected_b); // Selected LED brightness
+		} else {
+			rgb_led(i + 1, setup_brightness_r, setup_brightness_g, setup_brightness_b); // LED Brightness slider
 		}
 	}
 
@@ -192,6 +208,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 		} else if (mode_default != mode_ableton && p == 22) { // Toggle direct MIDI
 			direct_enabled = (direct_enabled)? 0 : 1;
+			dirty = 1;
+			mode_refresh();
+
+		} else if (1 <= y && y <= 8 && x == 0) { // LED brightness adjust
+			led_brightness = y - 1;
 			dirty = 1;
 			mode_refresh();
 

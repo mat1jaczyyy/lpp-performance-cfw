@@ -8,6 +8,7 @@
 
 u8 flash_screen[100], pulse_screen[100];
 
+void direct_led(u8 p, u8 r, u8 g, u8 b);
 void rgb_led(u8 p, u8 r, u8 g, u8 b);
 void clear_led();
 void palette_led(u8 p, u8 v);
