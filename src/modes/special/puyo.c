@@ -12,17 +12,13 @@
 #define puyo_chaining 0x3
 #define puyo_dead 0x4
 
-#define puyo_x_r 3
-#define puyo_x_g 0
-#define puyo_x_b 0
+#define puyo_x 7
 
 #define puyo_chain_r 63
 #define puyo_chain_g 47
 #define puyo_chain_b 0
 
-#define puyo_allclear_r 63
-#define puyo_allclear_g 15
-#define puyo_allclear_b 0
+#define puyo_allclear 9
 
 #define puyo_moveleft 6
 #define puyo_moveright 8
@@ -140,33 +136,33 @@ void puyo_make_piece() {
 }
 
 void puyo_draw_next() {
-    hal_plot_led(TYPEPAD, 89, puyo_colors[puyo_pieces[1].top][0] >> 2, puyo_colors[puyo_pieces[1].top][1] >> 2, puyo_colors[puyo_pieces[1].top][2] >> 2);
-    hal_plot_led(TYPEPAD, 79, puyo_colors[puyo_pieces[1].bottom][0] >> 2, puyo_colors[puyo_pieces[1].bottom][1] >> 2, puyo_colors[puyo_pieces[1].bottom][2] >> 2);
-    hal_plot_led(TYPEPAD, 69, puyo_colors[puyo_pieces[2].top][0] >> 4, puyo_colors[puyo_pieces[2].top][1] >> 4, puyo_colors[puyo_pieces[2].top][2] >> 4);
-    hal_plot_led(TYPEPAD, 59, puyo_colors[puyo_pieces[2].bottom][0] >> 4, puyo_colors[puyo_pieces[2].bottom][1] >> 4, puyo_colors[puyo_pieces[2].bottom][2] >> 4);
+    rgb_led(89, puyo_colors[puyo_pieces[1].top][0] >> 2, puyo_colors[puyo_pieces[1].top][1] >> 2, puyo_colors[puyo_pieces[1].top][2] >> 2);
+    rgb_led(79, puyo_colors[puyo_pieces[1].bottom][0] >> 2, puyo_colors[puyo_pieces[1].bottom][1] >> 2, puyo_colors[puyo_pieces[1].bottom][2] >> 2);
+    rgb_led(69, puyo_colors[puyo_pieces[2].top][0] >> 4, puyo_colors[puyo_pieces[2].top][1] >> 4, puyo_colors[puyo_pieces[2].top][2] >> 4);
+    rgb_led(59, puyo_colors[puyo_pieces[2].bottom][0] >> 4, puyo_colors[puyo_pieces[2].bottom][1] >> 4, puyo_colors[puyo_pieces[2].bottom][2] >> 4);
 }
 
 void puyo_draw_board() {
     for (u8 x = 0; x < 8; x++) {
         for (u8 y = 0; y < 8; y++) {
             if (puyo_board[x][y] == puyo_empty) {
-                hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), 0, 0, 0);
+                rgb_led((x + 1) * 10 + (y + 1), 0, 0, 0);
             } else {
-                hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), puyo_colors[puyo_board[x][y]][0], puyo_colors[puyo_board[x][y]][1], puyo_colors[puyo_board[x][y]][2]);
+                rgb_led((x + 1) * 10 + (y + 1), puyo_colors[puyo_board[x][y]][0], puyo_colors[puyo_board[x][y]][1], puyo_colors[puyo_board[x][y]][2]);
             }
         }
     }
     if (puyo_board[7][3] == puyo_empty) {
-        hal_plot_led(TYPEPAD, 84, puyo_x_r, puyo_x_g, puyo_x_b);
+        pulse_led(84, puyo_x);
     }
 }
 
 void puyo_draw_current() {
-    if (puyo_current.x <= 7) hal_plot_led(TYPEPAD, (puyo_current.x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0], puyo_colors[puyo_pieces[0].bottom][1], puyo_colors[puyo_pieces[0].bottom][2]);
+    if (puyo_current.x <= 7) rgb_led((puyo_current.x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0], puyo_colors[puyo_pieces[0].bottom][1], puyo_colors[puyo_pieces[0].bottom][2]);
     
     s8 top_offset = puyo_top_offset(puyo_current.r, 0);
     if (top_offset < 1 || puyo_current.x != 7) {
-        hal_plot_led(TYPEPAD, (puyo_current.x + 1) * 10 + (puyo_current.y + 1) + puyo_top_offset(puyo_current.r, 0), puyo_colors[puyo_pieces[0].top][0], puyo_colors[puyo_pieces[0].top][1], puyo_colors[puyo_pieces[0].top][2]);
+        rgb_led((puyo_current.x + 1) * 10 + (puyo_current.y + 1) + puyo_top_offset(puyo_current.r, 0), puyo_colors[puyo_pieces[0].top][0], puyo_colors[puyo_pieces[0].top][1], puyo_colors[puyo_pieces[0].top][2]);
     }
 }
 
@@ -177,40 +173,40 @@ void puyo_draw_ghost() {
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
-            if (++x < 7) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
+            if (++x < 7) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
             break;
 
         case 1: // 90 degrees
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
 
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y + 1] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 2), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 2), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
             break;
         
         case 2: // 180 degrees
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
             break;
         
         case 3: // 270 degrees
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0] >> 3, puyo_colors[puyo_pieces[0].bottom][1] >> 3, puyo_colors[puyo_pieces[0].bottom][2] >> 3);
 
             for (x = 8; -1 < x; x--) {
                 if (puyo_board[x][puyo_current.y - 1] != puyo_empty) break;
             }
-            if (++x < 8) hal_plot_led(TYPEPAD, (x + 1) * 10 + (puyo_current.y), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
+            if (++x < 8) rgb_led((x + 1) * 10 + (puyo_current.y), puyo_colors[puyo_pieces[0].top][0] >> 3, puyo_colors[puyo_pieces[0].top][1] >> 3, puyo_colors[puyo_pieces[0].top][2] >> 3);
             break;
     }
 }
@@ -219,7 +215,7 @@ void puyo_draw_chains(u8 b) {
     for (u8 x = 0; x < 8; x++) {
         for (u8 y = 0; y < 8; y++) {
             if (puyo_chains[x][y] && puyo_chains_length[puyo_chains[x][y]] >= puyo_pop) {
-                hal_plot_led(TYPEPAD, (x + 1) * 10 + (y + 1), puyo_colors[puyo_board[x][y]][0] * b, puyo_colors[puyo_board[x][y]][1] * b, puyo_colors[puyo_board[x][y]][2] * b);
+                rgb_led((x + 1) * 10 + (y + 1), puyo_colors[puyo_board[x][y]][0] * b, puyo_colors[puyo_board[x][y]][1] * b, puyo_colors[puyo_board[x][y]][2] * b);
             }
         }
     }
@@ -359,7 +355,7 @@ void puyo_rotate(u8 a) {
 
 void puyo_control(u8 p, u8 v) {
     v = (v)? 63 : 0;
-    hal_plot_led(TYPEPAD, p, v, v, v);
+    rgb_led(p, v, v, v);
 }
 
 void puyo_down() {
@@ -425,7 +421,7 @@ u8 puyo_check_fall() {
     }
     if (y == 8) {
         for (u8 i = 92; i < 98; i++) {
-            hal_plot_led(TYPEPAD, i, puyo_allclear_r, puyo_allclear_g, puyo_allclear_b);
+            pulse_led(i, puyo_allclear);
         }
     }
 
@@ -474,7 +470,7 @@ u8 puyo_check_chain() {
     if (chain_exists) {
         puyo_chain_combo++;
         for (u8 i = 92; i < 98; i++) { // Send All Clear
-            hal_plot_led(TYPEPAD, i, 0, 0, 0);
+            rgb_led(i, 0, 0, 0);
         }
     }
     display_u8(puyo_chain_combo, 1, 0, puyo_chain_r, puyo_chain_g, puyo_chain_b);
@@ -559,7 +555,7 @@ void puyo_timer_event() {
                 puyo_dead_counter = 0;
                 if (puyo_dead_frame <= 9) {
                     for (u8 y = 0; y < 10; y++) {
-                        hal_plot_led(TYPEPAD, (puyo_dead_frame * 10) + y, puyo_dead_r, puyo_dead_g, puyo_dead_b);
+                        rgb_led((puyo_dead_frame * 10) + y, puyo_dead_r, puyo_dead_g, puyo_dead_b);
                     }
                 }
                 puyo_dead_frame++;

@@ -95,26 +95,26 @@ void idle_timer_event() {
                         p = x * 10 + y;
 
                         if (idle_validate(x, y, p))
-                            hal_plot_led(TYPEPAD, p, r, g, b);
+                            rgb_led(p, r, g, b);
 
                         x = idle_effects[i].x - j;
                         p = x * 10 + y;
 
                         if (idle_validate(x, y, p))
-                            hal_plot_led(TYPEPAD, p, r, g, b);
+                            rgb_led(p, r, g, b);
 
                         x = idle_effects[i].x;
                         y = idle_effects[i].y + j;
                         p = x * 10 + y;
 
                         if (idle_validate(x, y, p))
-                            hal_plot_led(TYPEPAD, p, r, g, b);
+                            rgb_led(p, r, g, b);
 
                         y = idle_effects[i].y - j;
                         p = x * 10 + y;
 
                         if (idle_validate(x, y, p))
-                            hal_plot_led(TYPEPAD, p, r, g, b);
+                            rgb_led(p, r, g, b);
                     }
                 }
             }
