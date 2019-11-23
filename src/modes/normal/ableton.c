@@ -72,7 +72,7 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			case ableton_layout_note_drum: // Note mode - Drum Rack layout
 				if (x == 0 || x == 9 || y == 0 || y == 9) {
 					send_midi(USBMIDI, 0xB0, p, v);
-				} else {
+				} else if (mode != mode_scale_setup) {
 					send_midi(USBMIDI, (v == 0)? 0x80 : 0x90, xy_dr[p], v);
 				}
 				break;
@@ -118,7 +118,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == ableton_layout_note_chromatic && (ch >> 4) != 0xB) {
+		if (ableton_layout == ableton_layout_note_chromatic && mode != mode_scale_setup && (ch >> 4) != 0xB) {
 			note_midi_event(port, t, ch, p, v);
 			return;
 		}

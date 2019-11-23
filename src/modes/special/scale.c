@@ -72,10 +72,12 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 	} else if (p == 96) {
 		if (v == 0) {
-			rgb_led(96, 0, 7, 7);
+			novation_led(96, 39);
 		} else {
-			rgb_led(96, 0, 63, 0);
 			mode_update(mode_default); // Enter Note/Live mode
+			if (mode_default == mode_note) {
+				rgb_led(96, 0, 63, 0);
+			}
 		}
 
 	} else if (p == 80) { // Shift button
