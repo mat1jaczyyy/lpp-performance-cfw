@@ -571,9 +571,11 @@ void puyo_surface_event(u8 p, u8 v, u8 x, u8 y) {
         return;
     }
 
-    if (puyo_state == puyo_preparing && p == 10 && !v) {
+    if (puyo_state == puyo_preparing && p == 94 && !v) {
         puyo_spawn();
         puyo_state = puyo_placing;
+
+        rgb_led(p, 0, 0, 0);
         return;
     }
 

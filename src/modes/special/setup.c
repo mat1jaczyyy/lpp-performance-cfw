@@ -44,12 +44,16 @@
 #define setup_brightness_g 7
 #define setup_brightness_b 23
 
+#define konami_r 63
+#define konami_g 0
+#define konami_b 0
+
 #define setup_tick 33
 #define setup_rainbow_length 48
-#define konami_length 11
+#define konami_length 8
 
 const u8 setup_rainbow[setup_rainbow_length][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
-const u8 konami[konami_length] = {91, 91, 92, 92, 93, 94, 93, 94, 79, 89, 10};
+const u8 konami[konami_length] = {91, 91, 92, 92, 93, 94, 93, 94};
 
 u8 setup_elapsed = setup_tick;
 u8 setup_mode_counter = 0;
@@ -257,6 +261,8 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				mode_update(mode_puyo);
 				setup_jump = 0;
 			}
+			rgb_led(p, konami_r, konami_g, konami_b);
+
 		} else {
 			konami_counter = 0;
 		}
@@ -265,6 +271,9 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (p == 0 && setup_jump) { // Quickly jump back to main mode
 			mode_update(mode_default);
 			setup_jump = 0;
+		
+		} else if (91 <= p && p <= 94) {
+			rgb_led(p, 0, 0, 0);
 		}
 	}
 }
