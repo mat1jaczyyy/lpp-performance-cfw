@@ -489,6 +489,7 @@ void puyo_init() {
     puyo_dead_frame = 0;
 
     puyo_automove_active = 0;
+    puyo_drop_increment = puyo_drop_slow;
 
     puyo_make_piece();
     puyo_make_piece();
