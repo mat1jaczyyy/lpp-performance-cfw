@@ -25,7 +25,6 @@ void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
 				pulse_led(p, v);
 				break;
 		}
-		
 	}
 
 	if (ch == 0x0 && s) ableton_screen[p] = v;
@@ -118,7 +117,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
-		if (ableton_layout == ableton_layout_note_chromatic && mode != mode_scale_setup && (ch >> 4) != 0xB) {
+		if (ableton_layout == ableton_layout_note_chromatic && mode != mode_scale_setup && t != 0xB) {
 			note_midi_event(port, t, ch, p, v);
 			return;
 		}
