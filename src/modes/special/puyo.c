@@ -257,6 +257,7 @@ void puyo_move(u8 a) {
                 case 2: // 180 degrees
                     if (puyo_current.y == 0) return;
                     if (puyo_board[puyo_current.x - 1][puyo_current.y - 1] != puyo_empty) return;
+                    break;
                 
                 case 3: // 270 degrees
                     if (puyo_current.y == 1) return;
