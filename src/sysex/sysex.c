@@ -92,7 +92,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 		if (mode < mode_normal) {
 			u8 y = *(d + 7);
-			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led((i - 8) * 10 + y, *(d + i));
+			for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
+				if (mode == mode_performance) {
+					performance_led(0xF, (i - 8) * 10 + y, *(d + i), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0x0, (i - 8) * 10 + y, *(d + i), 1);
+				} else {
+					novation_led((i - 8) * 10 + y, *(d + i));
+				}
+			}
 		}
 		return;
 	}
@@ -103,7 +111,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 		if (mode < mode_normal) {
 			u8 x = *(d + 7) * 10;
-			for (u8 i = 8; i <= l - 2 && i <= 17; i++) novation_led(x + i - 8, *(d + i));
+			for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
+				if (mode == mode_performance) {
+					performance_led(0xF, x + i - 8, *(d + i), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0x0, x + i - 8, *(d + i), 1);
+				} else {
+					novation_led(x + i - 8, *(d + i));
+				}
+			}
 		}
 		return;
 	}
