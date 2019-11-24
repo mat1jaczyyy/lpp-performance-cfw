@@ -1,5 +1,8 @@
 #include "modes/normal/note.h"
 
+#define note_octave_start 3
+#define note_transpose_start 0
+
 #define note_color_invalid_r 7
 #define note_color_invalid_g 0
 #define note_color_invalid_b 0
@@ -74,9 +77,11 @@ const u8 scales[32][13] = {
 };
 const u8 scale_keys[12] = {51, 62, 52, 63, 53, 54, 65, 55, 66, 56, 67, 57};
 
-s8 note_octave = 3;
-s8 note_transpose = 0;
+s8 note_octave = note_octave_start;
+s8 note_transpose = note_transpose_start;
+
 u8 note_shift = 0;
+u8 note_nav_pressed[4] = {};
 
 u8 scale_enabled = 0;
 u8 translate_enabled = 1;
@@ -206,6 +211,31 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 	return n;
 }
 
+void note_draw_navigation() {
+	u8 o = note_octave + 1; // Octave navigation
+	if (o < 5) {
+		rgb_led(91, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+		rgb_led(92, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+	} else {
+		rgb_led(91, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
+		rgb_led(92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
+	}
+
+	if (scale_enabled && note_shift) {
+		rgb_led(93, 7 + 56 * note_nav_pressed[2], 7 + 56 * note_nav_pressed[2], 7 + 56 * note_nav_pressed[2]);
+		rgb_led(94, 7 + 56 * note_nav_pressed[3], 7 + 56 * note_nav_pressed[3], 7 + 56 * note_nav_pressed[3]);
+
+	} else {
+		if (note_transpose > 0) { // Transpose navigation
+			rgb_led(93, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
+			rgb_led(94, note_transpose_colors[note_transpose][0], note_transpose_colors[note_transpose][1], note_transpose_colors[note_transpose][2]);
+		} else {
+			rgb_led(93, note_transpose_colors[-note_transpose][0], note_transpose_colors[-note_transpose][1], note_transpose_colors[-note_transpose][2]);
+			rgb_led(94, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
+		}
+	}
+}
+
 void note_scale_button() {
 	if (note_shift) { // Shift button pressed
 		rgb_led(80, 63, 63, 63);
@@ -213,11 +243,16 @@ void note_scale_button() {
 
 	} else { // Shift button released
 		rgb_led(80, 7, 7, 7);
+
 		if (mode_default == mode_ableton) {
 			rgb_led(96, 0, 63, 63);
 		} else if (mode_default == mode_note) {
 			rgb_led(96, 0, 0, 0);
 		}
+	}
+
+	if (scale_enabled) {
+		note_draw_navigation();
 	}
 }
 
@@ -232,22 +267,7 @@ void note_draw() {
 		send_midi(2 - mode_default, 0x80, i, 0);
 	}
 
-	u8 o = note_octave + 1; // Octave navigation
-	if (o < 5) {
-		rgb_led(91, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
-		rgb_led(92, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
-	} else {
-		rgb_led(91, note_octave_colors[o][0], note_octave_colors[o][1], note_octave_colors[o][2]);
-		rgb_led(92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
-	}
-
-	if (note_transpose > 0) { // Transpose navigation
-		rgb_led(93, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
-		rgb_led(94, note_transpose_colors[note_transpose][0], note_transpose_colors[note_transpose][1], note_transpose_colors[note_transpose][2]);
-	} else {
-		rgb_led(93, note_transpose_colors[-note_transpose][0], note_transpose_colors[-note_transpose][1], note_transpose_colors[-note_transpose][2]);
-		rgb_led(94, note_transpose_colors[0][0], note_transpose_colors[0][1], note_transpose_colors[0][2]);
-	}
+	note_draw_navigation();
 }
 
 void note_init() {
@@ -311,8 +331,17 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 						break;
 				}
 			}
-			note_draw();
 		}
+
+		note_nav_pressed[p - 91] = (v)? 1 : 0;
+		
+		if (note_nav_pressed[0] && note_nav_pressed[1]) { // Reset offset. Note: Undocumented in Programmer's reference
+			note_octave = note_octave_start;
+		} else if (note_nav_pressed[2] && note_nav_pressed[3]) { // Reset transpose
+			note_transpose = note_transpose_start;
+		}
+
+		note_draw();
 
 	} else { // Main grid
 		s8 n = note_press(x, y, v, -1);
