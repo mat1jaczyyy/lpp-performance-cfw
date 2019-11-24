@@ -161,7 +161,7 @@ void puyo_draw_current() {
     if (puyo_current.x <= 7) rgb_led((puyo_current.x + 1) * 10 + (puyo_current.y + 1), puyo_colors[puyo_pieces[0].bottom][0], puyo_colors[puyo_pieces[0].bottom][1], puyo_colors[puyo_pieces[0].bottom][2]);
     
     s8 top_offset = puyo_top_offset(puyo_current.r, 0);
-    if (top_offset < 1 || puyo_current.x != 7) {
+    if (top_offset < 1 || puyo_current.x < 7) {
         rgb_led((puyo_current.x + 1) * 10 + (puyo_current.y + 1) + puyo_top_offset(puyo_current.r, 0), puyo_colors[puyo_pieces[0].top][0], puyo_colors[puyo_pieces[0].top][1], puyo_colors[puyo_pieces[0].top][2]);
     }
 }
