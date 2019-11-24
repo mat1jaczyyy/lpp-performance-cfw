@@ -73,7 +73,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (active_port != port) return;
 
 		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) novation_led(*(d + i), *(d + i + 1));
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
+				if (mode == mode_performance) {
+					performance_led(0xF, *(d + i), *(d + i + 1), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0x0, *(d + i), *(d + i + 1), 1);
+				} else {
+					novation_led(*(d + i), *(d + i + 1));
+				}
+			}
 		}
 		return;
 	}
@@ -106,7 +114,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 		if (mode < mode_normal) {
 			u8 v = *(d + 7);
-			for (u8 p = 1; p < 99; p++)	novation_led(p, v);
+			for (u8 p = 1; p < 99; p++)	{
+				if (mode == mode_performance) {
+					performance_led(0xF, p, v, 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0xF, p, v, 1);
+				} else {
+					novation_led(p, v);
+				}
+			}
 		}
 		return;
 	}
@@ -116,7 +132,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (active_port != port) return;
 
 		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) flash_led(*(d + i), *(d + i + 1));
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
+				if (mode == mode_performance) {
+					performance_led(0xB, *(d + i), *(d + i + 1), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0xB, *(d + i), *(d + i + 1), 1);
+				} else {
+					flash_led(*(d + i), *(d + i + 1));
+				}
+			}
 		}
 		return;
 	}
@@ -126,7 +150,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (active_port != port) return;
 
 		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) pulse_led(*(d + i), *(d + i + 1));
+			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
+				if (mode == mode_performance) {
+					performance_led(0xC, *(d + i), *(d + i + 1), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led(0xC, *(d + i), *(d + i + 1), 1);
+				} else {
+					pulse_led(*(d + i), *(d + i + 1));
+				}
+			}
 		}
 		return;
 	}
@@ -136,7 +168,15 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (active_port != port) return;
 
 		if (mode < mode_normal) {
-			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
+			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) {
+				if (mode == mode_performance) {
+					performance_led_rgb(0xF, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led_rgb(0xF, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
+				} else {
+					rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
+				}
+			}
 		}
 		return;
 	}
@@ -146,7 +186,13 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (active_port != port) return;
 
 		if (mode < mode_normal) {
-			rgb_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
+			if (mode == mode_performance) {
+				performance_led_rgb(0xF, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
+			} else if (mode == mode_programmer) {
+				programmer_led_rgb(0xF, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
+			} else {
+				rgb_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
+			}
 		}
 		return;
 	}
@@ -168,7 +214,13 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 			}
 
 			for (u16 i = 8; i <= l - 4 && i <= ceil; i += 3) {
-				rgb_led(p, *(d + i), *(d + i + 1), *(d + i + 2));
+				if (mode == mode_performance) {
+					performance_led_rgb(0xF, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
+				} else if (mode == mode_programmer) {
+					programmer_led_rgb(0xF, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
+				} else {
+					rgb_led(p, *(d + i), *(d + i + 1), *(d + i + 2));
+				}
 
 				if (++p % 10 == 9 && t) {
 					p += 2;

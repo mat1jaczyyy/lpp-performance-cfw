@@ -1,6 +1,6 @@
 #include "modes/normal/performance.h"
 
-u8 performance_screen[100][2] = {};
+u8 performance_screen[100][4] = {};
 
 void performance_led(u8 ch, u8 p, u8 v, u8 s) {
 	switch (ch) {
@@ -17,15 +17,43 @@ void performance_led(u8 ch, u8 p, u8 v, u8 s) {
 			break;
 	}
 
-	if (ch == 0xB && ch == 0xC && ch == 0xF && s) performance_screen[p][ch] = 0;
+	if ((ch == 0xB || ch == 0xC || ch == 0xF) && s) {
+		performance_screen[p][0] = ch;
+		for (int i = 0; i < 3; i++) {
+			performance_screen[p][i + 1] = palette_value(palette_selected, v, i);
+		}
+	}
+}
+
+void performance_led_rgb(u8 ch, u8 p, u8 r, u8 g, u8 b, u8 s) {
+	switch (ch) {
+		case 0xB:
+			flash_rgb_led(p, r, g, b);
+			break;
+
+		case 0xC:
+			pulse_rgb_led(p, r, g, b);
+			break;
+
+		case 0xF:
+			rgb_led(p, r, g, b);
+			break;
+	}
+
+	if ((ch == 0xB || ch == 0xC || ch == 0xF) && s) {
+		performance_screen[p][0] = ch;
+		performance_screen[p][1] = r;
+		performance_screen[p][2] = g;
+		performance_screen[p][3] = b;
+	}
 }
 
 void performance_init() {
 	for (u8 i = 0; i < 100; i++) {
-		performance_led(performance_screen[i][0], i, performance_screen[i][1], 0);
+		performance_led_rgb(performance_screen[i][0], i, performance_screen[i][1], performance_screen[i][2], performance_screen[i][3], 0);
 	}
 	
-	if (!performance_screen[98][1]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
+	if (!performance_screen[98][1] && !performance_screen[98][2] && !performance_screen[98][3]) rgb_led(98, mode_performance_r, mode_performance_g, mode_performance_b); // Performance User LED
 
 	send_midi(USBSTANDALONE, 0xB0, 121, 0); // Reset All Controllers message, triggers Multi Reset
 
