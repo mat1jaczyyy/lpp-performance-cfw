@@ -41,12 +41,12 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 
 		if (mode == mode_ableton) {
 			if (ableton_layout == ableton_layout_user) {
-				for (u8 i = 0; i < 100; i++) ableton_screen[i] = 0;
+				for (u8 i = 0; i < 100; i++) ableton_screen[i][1] = 0;
 			}
 			
 			if (ableton_layout == ableton_layout_note_blank) {
 				for (u8 x = 10; x < 90; x += 10) {
-					for (u8 y = 1; y < 9; y++) ableton_screen[x + y] = 0;
+					for (u8 y = 1; y < 9; y++) ableton_screen[x + y][1] = 0;
 				}
 			}
 			

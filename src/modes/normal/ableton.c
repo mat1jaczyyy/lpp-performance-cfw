@@ -4,12 +4,12 @@
 #define user_g 0
 #define user_b 63
 
-u8 ableton_screen[100] = {};
+u8 ableton_screen[100][2] = {};
 u8 ableton_layout = 0x0;
 
 void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
 	if (ch == 0x5) ch = 0x0;
-	ch %= 3;
+	if (ch >= 3) return;
 
 	if (mode == mode_ableton) {
 		switch (ch) {
@@ -27,14 +27,17 @@ void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
 		}
 	}
 
-	if (ch == 0x0 && s) ableton_screen[p] = v;
+	if (s) {
+		ableton_screen[p][0] = ch;
+		ableton_screen[p][1] = v;
+	}
 }
 
 void ableton_init() {
 	rgb_led(99, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Live mode LED
 	
 	for (u8 i = 0; i < 100; i++) {
-		ableton_led(0x0, i, ableton_screen[i], 0);
+		ableton_led(ableton_screen[i][0], i, ableton_screen[i][1], 0);
 	}
 	
 	if (ableton_layout == ableton_layout_note_chromatic) note_init();

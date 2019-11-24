@@ -27,7 +27,7 @@
 #define ableton_layout_fader_sends 0xC
 #define ableton_layout_session_stop 0xD
 
-u8 ableton_screen[100], ableton_layout;
+u8 ableton_screen[100][2], ableton_layout;
 
 void ableton_init();
 void ableton_timer_event();
