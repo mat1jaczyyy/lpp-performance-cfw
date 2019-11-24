@@ -125,9 +125,9 @@ void setup_init() {
 
 	for (int i = 0; i < 8; i++) { 
 		if (led_brightness == i) { 
-			rgb_led(i + 1, setup_brightness_selected_r, setup_brightness_selected_g, setup_brightness_selected_b); // Selected LED brightness
+			rgb_led(10 * i + 19, setup_brightness_selected_r, setup_brightness_selected_g, setup_brightness_selected_b); // Selected LED brightness
 		} else {
-			rgb_led(i + 1, setup_brightness_r, setup_brightness_g, setup_brightness_b); // LED Brightness slider
+			rgb_led(10 * i + 19, setup_brightness_r, setup_brightness_g, setup_brightness_b); // LED Brightness slider
 		}
 	}
 
@@ -215,8 +215,8 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 
-		} else if (1 <= y && y <= 8 && x == 0) { // LED brightness adjust
-			led_brightness = y - 1;
+		} else if (1 <= x && x <= 8 && y == 9) { // LED brightness adjust
+			led_brightness = x - 1;
 			dirty = 1;
 			mode_refresh();
 
