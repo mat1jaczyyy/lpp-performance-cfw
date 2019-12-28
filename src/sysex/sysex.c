@@ -134,7 +134,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				if (mode == mode_performance) {
 					performance_led(0xF, p, v, 1);
 				} else if (mode == mode_programmer) {
-					programmer_led(0xF, p, v, 1);
+					programmer_led(0x0, p, v, 1);
 				} else {
 					novation_led(p, v);
 				}
@@ -152,7 +152,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				if (mode == mode_performance) {
 					performance_led(0xB, *(d + i), *(d + i + 1), 1);
 				} else if (mode == mode_programmer) {
-					programmer_led(0xB, *(d + i), *(d + i + 1), 1);
+					programmer_led(0x1, *(d + i), *(d + i + 1), 1);
 				} else {
 					flash_led(*(d + i), *(d + i + 1));
 				}
@@ -170,7 +170,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				if (mode == mode_performance) {
 					performance_led(0xC, *(d + i), *(d + i + 1), 1);
 				} else if (mode == mode_programmer) {
-					programmer_led(0xC, *(d + i), *(d + i + 1), 1);
+					programmer_led(0x2, *(d + i), *(d + i + 1), 1);
 				} else {
 					pulse_led(*(d + i), *(d + i + 1));
 				}
@@ -188,7 +188,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				if (mode == mode_performance) {
 					performance_led_rgb(0xF, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
 				} else if (mode == mode_programmer) {
-					programmer_led_rgb(0xF, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
+					programmer_led_rgb(0x0, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
 				} else {
 					rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
 				}
@@ -205,7 +205,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 			if (mode == mode_performance) {
 				performance_led_rgb(0xF, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
 			} else if (mode == mode_programmer) {
-				programmer_led_rgb(0xF, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
+				programmer_led_rgb(0x0, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
 			} else {
 				rgb_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
 			}
@@ -233,7 +233,7 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				if (mode == mode_performance) {
 					performance_led_rgb(0xF, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
 				} else if (mode == mode_programmer) {
-					programmer_led_rgb(0xF, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
+					programmer_led_rgb(0x0, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
 				} else {
 					rgb_led(p, *(d + i), *(d + i + 1), *(d + i + 2));
 				}
