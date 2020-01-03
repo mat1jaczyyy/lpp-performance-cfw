@@ -12,10 +12,10 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 		if (port == USBMIDI) {
 			if (l == 12) {
 				u32 result = (*         // wtf?
-					(u32 (*)(u32))      // cast to function pointer
-					*(u32*)0x080000EC   // grab pointer to challenge function from table
+				    (u32 (*)(u32))      // cast to function pointer
+				    *(u32*)0x080000EC   // grab pointer to challenge function from table
 				)(                      // call
-					*(u32*)(d + 7)      // grab Live's challenge value
+				    *(u32*)(d + 7)      // grab Live's challenge value
 				);                      // :b1:
 
 				syx_challenge_response[7] = result & 0x7F;
