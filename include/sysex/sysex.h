@@ -6,7 +6,6 @@
 
 #include "string.h"
 #include "modes/mode.h"
-#include "other/challenge.h"
 
 void handle_sysex(u8 port, u8 * d, u16 l);
 

@@ -11,8 +11,17 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 	if (!memcmp(d, &syx_challenge[0], syx_challenge_length)) {
 		if (port == USBMIDI) {
 			if (l == 12) {
-				challenge_do = 1;
-				challenge_counter = 0;
+				u32 result = (*         // wtf?
+					(u32 (*)(u32))      // cast to function pointer
+					*(u32*)0x080000EC   // grab pointer to challenge function from table
+				)(                      // call
+					*(u32*)(d + 7)      // grab Live's challenge value
+				);                      // :b1:
+
+				syx_challenge_response[7] = result & 0x7F;
+				syx_challenge_response[8] = (result >> 8) & 0x7F;
+				
+				hal_send_sysex(USBMIDI, &syx_challenge_response[0], syx_challenge_response_length);
 			
 			} else if (l == 8) { // Live Quit Message
 				mode_default_update(mode_performance);

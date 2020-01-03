@@ -54,8 +54,6 @@ void app_timer_event() {
 
 	tempo_timer++; tempo_tick();
 
-	if (challenge_do) challenge_timer_event();
-
 	(*mode_timer_event[mode])();
 }
 
