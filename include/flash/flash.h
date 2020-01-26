@@ -4,6 +4,7 @@
 #include "app.h"
 
 #include "flash/settings.h"
+#include "flash/write.h"
 #include "led/led.h"
 
 u8 dirty;
