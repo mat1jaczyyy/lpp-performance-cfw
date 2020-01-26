@@ -86,6 +86,7 @@ The new Piano mode is similar to the Note mode, but employs a classical piano-li
 ## Issues
 
 Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
+    
     * Channel selection for all modes
     * Pad Lighting setting for stock Standalone modes
 
