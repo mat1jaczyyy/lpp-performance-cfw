@@ -18,12 +18,12 @@ You will find the build at `build/cfw.syx`, ready for uploading.
 
 ## Installation
 
-To install the firmware, simply send ("flash") the generated SysEx messages from the file to the Launchpad Pro while it is in Bootloader mode (hold Setup while powering on). While it isn't required that you close down other programs that use the Launchpad while flashing, it is recommended to do so. There's a number of ways to flash:
+The simplest and easiest way to install the firmware is via the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) with the `Launchpad Pro (CFW)` option selected. While it isn't required that you close down other programs that use the Launchpad while installing, it is recommended to do so.
+
+To install the firmware offline, simply send ("flash") the generated SysEx messages from the file to the Launchpad Pro while it is in Bootloader mode (hold Setup while powering on). There's a number of ways to flash:
 
 * macOS only: [SysEx Librarian](https://www.snoize.com/SysExLibrarian/)
 * Windows only: [MIDI-OX](http://www.midiox.com/moxdown.htm)
-* Universal method: `max/CFW Flash Tool.maxpat`
-    * To flash the firmware using my tool, simply load it up in Max (any version should work). Boot the Launchpad into Bootloader mode, click the Upload button and select the firmware SysEx file you want to upload.
 
 ## Usage
 
