@@ -46,8 +46,8 @@ OBJECTS = $(addprefix $(BUILDDIR)/, $(addsuffix .o, $(basename $(SOURCES))))
 # output files
 SYX = $(BUILDDIR)/cfw.syx
 ELF = $(BUILDDIR)/cfw.elf
-HEX = $(BUILDDIR)/cfw.hex
-HEXTOSYX = $(BUILDDIR)/hextosyx
+BIN = $(BUILDDIR)/cfw.bin
+BINTOSYX = $(TOOLS)/bintosyx
 
 # tools
 HOST_GPP = g++
@@ -68,15 +68,11 @@ LDFLAGS += -T$(LDSCRIPT) -u _start -u _Minimum_Stack_Size  -mcpu=cortex-m3 -mthu
 all: $(SYX)
 
 # build the final sysex file from the ELF - run the simulator first
-$(SYX): $(HEX) $(HEXTOSYX)
-	./$(HEXTOSYX) $(HEX) $(SYX)
+$(SYX): $(BIN)
+	./$(BINTOSYX) /pro 000 $(BIN) $(SYX)
 
-# build the tool for conversion of ELF files to sysex, ready for upload to the unit
-$(HEXTOSYX):
-	$(HOST_GPP) -Ofast -std=c++0x -I./$(TOOLS)/libintelhex/include ./$(TOOLS)/libintelhex/src/intelhex.cc $(TOOLS)/hextosyx.cpp -o $(HEXTOSYX)
-
-$(HEX): $(ELF)
-	$(OBJCOPY) -O ihex $< $@
+$(BIN): $(ELF)
+	$(OBJCOPY) -O binary $< $@
 
 $(ELF): $(OBJECTS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJECTS) $(LIB)
