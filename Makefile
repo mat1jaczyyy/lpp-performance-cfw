@@ -1,3 +1,25 @@
+ifeq ($(OS),Windows_NT)
+
+define rmdir
+	if exist "$(1)" rd /s /q "$(1)"
+endef
+
+define mkdir
+	if not exist "$(1)" mkdir "$(1)"
+endef
+
+else
+
+define rmdir
+	rm -rf "$(1)"
+endef
+
+define mkdir
+	md "$(1)"
+endef
+
+endif
+
 BUILDDIR = build
 
 TOOLS = tools
@@ -64,8 +86,8 @@ DEPENDS := $(OBJECTS:.o=.d)
 -include $(DEPENDS)
 
 $(BUILDDIR)/%.o: %.c
-	mkdir -p $(dir $@)
+	$(call mkdir,$(dir $@))
 	$(CC) -c $(CFLAGS) -MMD -o $@ $<
 
 clean:
-	rm -rf $(BUILDDIR)
+	$(call rmdir,$(BUILDDIR))
