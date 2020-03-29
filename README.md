@@ -2,20 +2,6 @@
 
 This repository contains the source code of my custom firmware for the Launchpad Pro. The firmware retains all functionality (even Ableton Live integration) from the stock firmware in addition to the all-new Performance mode. The modification is easy to install, free to use and works with every currently existing project or DAW.
 
-## Building
-
-The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
-
-To build the firmware, set up the development environment according to dvhdr's [Launchpad Pro open-source firmware repository](https://github.com/dvhdr/launchpad-pro). I've removed the Vagrant and Docker methods since I prefer using make and gcc to build locally, however you may set those up by pulling the relevant files from dvhdr's repository. On macOS you can easily install the GCC ARM toolchain using the [homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first. They can probably also be installed on Windows somehow, but I haven't looked into it yet. Then, to directly compile the code:
-
-```
-brew tap PX4/homebrew-px4
-brew install gcc-arm-none-eabi
-make
-```
-
-You will find the build at `build/cfw.syx`, ready for uploading.
-
 ## Installation
 
 The simplest and easiest way to install the firmware is via the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) with the `Launchpad Pro (CFW)` option selected. While it isn't required that you close down other programs that use the Launchpad while installing, it is recommended to do so.
@@ -82,6 +68,36 @@ To download a palette from the Launchpad to the computer, load `max/CFW Palette 
 ### Piano mode
 
 The new Piano mode is similar to the Note mode, but employs a classical piano-like rows per octave layout. Note that it doesn't support Scale mode due to the vastly different layout. The navigation buttons change octaves and transpose the keys.
+
+## Building
+
+The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
+
+### Windows
+
+First install make (preferably using [Chocolatey](https://chocolatey.org/install)):
+
+```
+choco install make
+```
+
+Next, install the [GCC ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). Make sure your PATH contains `arm-none-eabi-gcc\bin` (the installer can do this for you) and you can invoke `arm-none-eabi-gcc.exe` from the command line.
+
+Then, to directly compile the code:
+
+```
+make
+```
+
+### macOS
+
+On macOS you can easily install the GCC ARM toolchain using the [Homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first. Then, to directly compile the code:
+
+```
+brew tap PX4/homebrew-px4
+brew install gcc-arm-none-eabi
+make
+```
 
 ## Issues
 
