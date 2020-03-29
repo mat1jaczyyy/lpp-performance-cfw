@@ -81,9 +81,7 @@ First install make (preferably using [Chocolatey](https://chocolatey.org/install
 choco install make
 ```
 
-Next, install the [GCC ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). Make sure your PATH contains `arm-none-eabi-gcc\bin` (the installer can do this for you) and you can invoke `arm-none-eabi-gcc.exe` from the command line.
-
-Then, to directly compile the code:
+Next, install the [GCC ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). Make sure your PATH contains `arm-none-eabi-gcc\bin` (the installer can do this for you) and you can invoke `arm-none-eabi-gcc.exe` from the command line. Then, to directly compile the code:
 
 ```
 make
@@ -91,11 +89,16 @@ make
 
 ### macOS
 
-On macOS you can easily install the GCC ARM toolchain using the [Homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first. Then, to directly compile the code:
+On macOS you can easily install the GCC ARM toolchain using the [Homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first.
 
 ```
 brew tap PX4/homebrew-px4
 brew install gcc-arm-none-eabi
+```
+
+Then, to directly compile the code:
+
+```
 make
 ```
 
