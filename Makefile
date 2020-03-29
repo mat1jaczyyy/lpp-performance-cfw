@@ -15,7 +15,7 @@ define rmdir
 endef
 
 define mkdir
-	md "$(1)"
+	mkdir -p "$(1)"
 endef
 
 endif
