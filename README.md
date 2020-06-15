@@ -61,9 +61,9 @@ The left column displays the amount of red, the bottom row displays the amount o
 
 To save and exit, press the Setup button.
 
-You can also use the palette uploader found at `max/CFW Palette Uploader.maxpat` to upload a Retina palette into one of the palette slots on the Launchpad. Simply load it up in Max (any version should work) and select your Launchpad's Standalone Port and the desired Palette Index. Then, click Upload and select your Retina palette file.
+You can also use the Palette Utility as part of the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) to upload a Retina palette into one of the palette slots on the Launchpad. Simply import your Retina palette and select the desired Palette Index. Then, click Upload.
 
-To download a palette from the Launchpad to the computer, load `max/CFW Palette Downloader.maxpat` in Max (probably requires 8, older versions were not tested) and select your Launchpad's Standalone Port. Then, press Up on your Launchpad to send the palette.
+To download a palette from the Launchpad to the computer, press Up on your Launchpad to send the palette to the Palette Utility. where you can then export it into a file.
 
 ### Piano mode
 
