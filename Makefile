@@ -39,7 +39,7 @@ SOURCES += src/app.c
 
 INCLUDES += -Iinclude -I
 
-LIB = lib/launchpad_pro.a
+LIB = lib/launchpad_pro.a # mk2.a
 
 OBJECTS = $(addprefix $(BUILDDIR)/, $(addsuffix .o, $(basename $(SOURCES))))
 
@@ -56,7 +56,7 @@ LD = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 
 CFLAGS  = -O2 -Wall -I.\
--D_STM32F103RBT6_  -D_STM3x_  -D_STM32x_ -mthumb -mcpu=cortex-m3 \
+-D_STM32F103CBT6_  -D_STM3x_  -D_STM32x_ -mthumb -mcpu=cortex-m3 \
 -fsigned-char  -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER -DHSE_VALUE=6000000UL \
 -DCMSIS -DUSE_GLOBAL_CONFIG -ffunction-sections -std=c99  -mlittle-endian \
 $(INCLUDES) -o
@@ -69,7 +69,7 @@ all: $(SYX)
 
 # build the final sysex file from the ELF - run the simulator first
 $(SYX): $(BIN)
-	./$(BINTOSYX) /pro 000 $(BIN) $(SYX)
+	./$(BINTOSYX) /mk2 000 $(BIN) $(SYX)
 
 $(BIN): $(ELF)
 	$(OBJCOPY) -O binary $< $@
