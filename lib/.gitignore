@@ -1,2 +1,4 @@
-# IDA database
-*.idb
+# IDA files
+*.id*
+*.nam
+*.til
