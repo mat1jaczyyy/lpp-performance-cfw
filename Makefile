@@ -37,9 +37,11 @@ SOURCES += src/modes/special/boot.c src/modes/special/setup.c src/modes/special/
 
 SOURCES += src/app.c
 
+SOURCES += src/mk2.c
+
 INCLUDES += -Iinclude -I
 
-LIB = lib/launchpad_pro.a # mk2.a
+LIB = lib/all.o # mk2.a
 
 OBJECTS = $(addprefix $(BUILDDIR)/, $(addsuffix .o, $(basename $(SOURCES))))
 
