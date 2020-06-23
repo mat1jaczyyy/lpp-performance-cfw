@@ -12,7 +12,7 @@ extern void RCC_APB1PeriphClockCmd(u32 RCC_APB1Periph, FunctionalState state);
 extern void init_gpios();
 extern void init_device();
 extern void init_exti();
-extern void init_surface();
+// void init_surface();
 extern void init_timers();
 extern void init_adc();
 extern void init_midi();
@@ -48,6 +48,8 @@ extern u16 flush_msg_delay;
 
 extern void midi_flush_windows_buffer();
 
+void custom_init_surface();
+
 // Redefine main :b1:
 int main() {
     NVIC_SetVectorTable(0x8000000,0x6400);  // base vector
@@ -60,15 +62,15 @@ int main() {
     
     init_device();  // this sets up device descriptor (0x0051 + device id from BL)
     init_exti();    // might be for midi jacks, idk
-    init_surface();    // we have buttons not sensitive pads!
-    init_timers();
-    init_adc();
-    init_midi();
-    midi_parsers_init();
-    usb_unconnected();
-    init_usbconfig();
-    adc_init();
-    pad_setcalibration(0x100,0x3ff,0x200,0x301);  // definitely dont need this
+    custom_init_surface();    // we have buttons not sensitive pads!
+    // init_timers();
+    // init_adc();
+    // init_midi();
+    // midi_parsers_init();
+    // usb_unconnected();
+    // init_usbconfig();
+    // adc_init();
+    // pad_setcalibration(0x100,0x3ff,0x200,0x301);  // definitely dont need this
     app_init(ADC_Direct);
     // POGGGG
 
@@ -122,4 +124,54 @@ int main() {
         }
     }
     */
+}
+
+// Register mappings: https://www.st.com/resource/en/reference_manual/cd00171190-stm32f101xx-stm32f102xx-stm32f103xx-stm32f105xx-and-stm32f107xx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf
+// + https://github.com/Focusrite-Novation/launchpad-firmware/blob/master/cortex/cxm3_registers.h
+void custom_init_surface(){
+    // Set SPI timers to reset
+    // RCC_APB2RSTR     SPI1 timer flag
+    *(u32*)0x4002100C = 0x1000;
+    // RCC_APB1ENR      SPI2 reset flag
+    *(u32*)0x40021010 = 0x4000;
+    
+    // Clear reset registers
+    *(u32*)0x4002100C = 0;
+    *(u32*)0x40021010 = 0;
+    
+    // Enable DMA1 timer
+    *(u32*)0x40021014 = *(u32*)0x40021014 | 1;
+    
+    // Connect DMA1 channel 4 to SPI2 (Some peripheral)
+    //     CPAR4        Peripheral address
+    *(u32*)0x4002004C = 0x4000380C;
+    //     CMAR4        Memory address 
+    *(u32*)0x40020050 = 0x20000B9F;
+    
+    // Reference manual pg 278 'Channel configuration procedure'
+    // Describes configuring DMA channels
+    // Theres probably a struct + STM HAL function that does this nicer
+    *(u32*)0x40020048 = 8;
+    /*
+      2: High Priority
+      1: 16 bit
+      8: Memory Increment Mode Enabled
+      2: Transfer Complete Interrupt Enabled
+    */
+    *(u32*)0x40020044 = 0x2182;
+    
+    // ¯\_(ツ)_/¯ Something to do with interrupt addresses
+    *(u32*)0xE000E100 = *(u32*)0xE000E100 | 0x4000;
+    
+    // Set DMA1 channel 4 enabled
+    *(u32*)0x40020044 = *(u32*)0x40020044 | 1;
+    
+    // Connect DMA1 channel 5 to SPI2 (Idk why it gets 2 channels, maybe lots of data?)
+    //     CPAR5        Peripheral address
+    *(u32*)0x40020060 = 0x4000380C;
+    //     CMAR5        Memory address - note that it's 4 bytes from CMAR4
+    *(u32*)0x40020064 = 0x20000BBF;
+    // Configure channel, see stuff about reference manual above
+    *(u32*)0x4002005C = 8;
+    
 }
