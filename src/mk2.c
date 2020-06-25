@@ -52,7 +52,7 @@ void custom_init_surface();
 
 // Redefine main :b1:
 int main() {
-    NVIC_SetVectorTable(0x8000000,0x6400);  // base vector
+    NVIC_SetVectorTable(0x8000000,0x3400);  // base vector
     __asm__("cpsie i");    // enableIRQinterrupts();
 
     NVIC_PriorityGroupConfig(0x300);
