@@ -14,9 +14,9 @@ extern void RCC_APB2PeriphResetCmd(u32 RCC_APB2Periph, FunctionalState NewState)
 
 // Novation launchpad_pro.a
 extern void init_gpios();
-extern void init_device();
+// extern void init_device();
 extern void init_exti();
-// void init_surface();dr
+// extern void init_surface();
 extern void init_timers();
 extern void init_adc();
 extern void init_midi();
@@ -104,6 +104,44 @@ extern void TIM_UpdateRequestConfig (u32 TIMx, u16 TIM_UpdateSource);
 extern void TIM_Cmd(u32 TIMx, FunctionalState NewState);
 extern void GPIO_ResetBits(u32 GPIOx, u16 GPIO_Pin);
 void custom_init_surface();
+// extern void device_setuppid(u8 id);
+extern u8 DeviceDescriptor[18];  // No need to override
+u8 USBDesc_StringSerial[20] = {'L', 'a', 'u', 'n', 'c', 'h', 'p', 'a', 'd', ' ', 'M', 'K', '2', 'O'};
+
+void device_setuppid(u8 id) {
+    id = 0; // TEMPORARY: HARDCODE TO 0 TO IDENTIFY AS 0x0069 REGULAR LP MK2
+    
+    if (id > 0xF) id = 0;  // protect against invalid value
+
+    DeviceDescriptor[10] = id + 0x69;
+
+    if (id) {   // Add number to USB Device Name
+        USBDesc_StringSerial[14] = ' ';
+
+        if (id >= 9) {
+            USBDesc_StringSerial[15] = '1';
+            USBDesc_StringSerial[16] = '1' + id - 10;
+
+        } else USBDesc_StringSerial[15] = '1' + id;
+    }
+}
+
+void init_device() {
+    /* This code was previously pretty bloated...
+    
+        u8 TempMemory[64]; // [sp+0h] [bp-48h]
+
+        memset(TempMemory, 0, 0x40u);
+        init_copymemory(0x801FC00u, TempMemory, 0x40u);
+        device_setuppid(TempMemory[1]);
+        
+    I'll just directly read the u8 from flash.
+    Changed 0x0801FC00 to 0x0800FC00 because Novation uses that in MK2 stock
+    Although the C00 storage regions don't seem to match... not sure
+    TODO when done: see what changing this to 1FC does */
+
+    device_setuppid(*(u8*)0x0800FC01);
+}
 
 void custom_init_gpios();
 
@@ -111,12 +149,12 @@ extern volatile u8 LedStatus[10];
 
 // Redefine main :b1:
 int main() {
-    NVIC_SetVectorTable(0x8000000,0x6400);  // base vector
+    NVIC_SetVectorTable(0x8000000, 0x3400);  // base vector
     __asm__("cpsie i");    // enableIRQinterrupts();
 
     NVIC_PriorityGroupConfig(0x300);
 
-    RCC_APB1PeriphClockCmd(0x18000000,1);
+    RCC_APB1PeriphClockCmd(0x18000000u, ENABLE);   // Verified to match MK2 stock
     
     init_device();  // this sets up device descriptor (0x0051 + device id from BL)
     custom_init_gpios();
