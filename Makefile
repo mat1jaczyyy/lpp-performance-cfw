@@ -37,7 +37,7 @@ SOURCES += src/modes/special/boot.c src/modes/special/setup.c src/modes/special/
 
 SOURCES += src/app.c
 
-SOURCES += src/mk2.c
+SOURCES += mk2/main.c mk2/mk2.c
 
 INCLUDES += -Iinclude -I
 

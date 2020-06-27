@@ -4,3 +4,4 @@
 *.bin
 build/cfw-*.syx
 build/src/
+build/mk2/
