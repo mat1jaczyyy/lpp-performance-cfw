@@ -125,6 +125,6 @@ void app_init(const u16 *adc_raw) {
 	hal_plot_led(TYPEPAD, 11, 63, 0, 0);
 	while (1);
 
-	flash_read();
-	mode_update(mode_boot);
+	//flash_read();
+	//mode_update(mode_boot);
 }

@@ -121,8 +121,10 @@ void init_surface() {
     
     SPI_Init(0x40003800, &SPI2_Config);
     SPI_I2S_DMACmd(0x40003800, 3, 1); // Enable send/receive over DMA
-    SPI_Cmd(0x40003800, 1); // Enable SPI2
-    
+    SPI_Cmd(0x40003800, 1); // Enable SPI2   
+}
+
+void init_timers() {
     RCC_APB1PeriphClockCmd(0x40000000, 1); // Enable TIM2 timer
     TIM_ITConfig(0x40000000, 1, 1); // Enable TIM2 Update interrupt
     *(u32*)0x40000010 = 0;// Reset Timer 2 interrupt status
