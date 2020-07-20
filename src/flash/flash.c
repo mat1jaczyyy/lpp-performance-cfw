@@ -6,12 +6,14 @@
 
 #define flash_user_size (palette_custom * 3 * 32 * 3 + 8)
 
+#define flash_user_start 0xC00
+
 u8 flash[flash_user_size] = {};
 
 u8 dirty = 0;
 
 void flash_read() {
-	u16 fp = 2048;
+	u16 fp = flash_user_start;
 	
 	for (u8 p = 0; p < palette_custom; p++) {
 		for (u8 i = 0; i < 3; i++) {
@@ -82,7 +84,7 @@ void flash_write() {
 	flash[fp++] = idle_enabled;
 	flash[fp++] = led_brightness;
 	
-	flash_direct_write(&flash[0], fp);
+	flash_direct_write(flash_user_start, &flash[0], fp);
 	
 	rgb_led(99, 0, 0, 0);
 	dirty = 0;

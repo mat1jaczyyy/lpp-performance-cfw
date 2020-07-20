@@ -26,19 +26,19 @@ u8 flash_direct_read(u16 offset) {
 	return flash_rom[offset];
 }
 
-void flash_direct_write(u8 *data, u16 length) {
-	if (length >= FLASH_SIZE) length = FLASH_SIZE;
+void flash_direct_write(u16 start, u8 *data, u16 length) {
+	if (start + length >= FLASH_SIZE) length = FLASH_SIZE;
 
 	FLASH_Unlock();
 	FLASH_ClearFlag(0x35);
 
-	for (u32 i = FLASH_START; i < FLASH_START + length; i += FLASH_PAGE_SIZE) {
+	for (u32 i = start + FLASH_START; i < start + FLASH_START + length; i += FLASH_PAGE_SIZE) {
 		FLASH_ErasePage(i);
 	}
 
 	for (u32 i = 0; i < length; i += 2) {
 		FLASH_ProgramHalfWord(
-			FLASH_START + i,
+			FLASH_START + start + i,
 			(u16)data[i] | ((u16)data[i + 1] << 8)
 		);
 	}
