@@ -1,6 +1,102 @@
 #include "sysex/sysex.h"
 
-void handle_sysex(u8 port, u8 * d, u16 l) {
+s8 fast_delta(u8 d, u8 use_x) {
+	if (use_x) d = modulo(d - 2, 8);
+
+	if (d % 4 == 0) return 0;
+	else return d < 4? 1 : -1;
+}
+
+void fast_led(u8 p, u8 r, u8 g, u8 b) {
+	if (mode < mode_normal) {
+		if (mode == mode_performance) {
+			performance_led_rgb(0xF, p, r, g, b, 1);
+		} else if (mode == mode_programmer) {
+			programmer_led_rgb(0x0, p, r, g, b, 1);
+		} else {
+			rgb_led(p, r, g, b);
+		}
+	}
+}
+
+void handle_sysex(u8 port, u8* d, u16 l) {
+	// TODO &xxx[0] => xxx
+
+	// Light LEDs using SysEx (for Heaven)
+	if (!memcmp(d, &syx_led_rgb_heaven[0], syx_led_rgb_heaven_length)) {
+		if (active_port != port) return;
+
+		/*
+		Stock firmware uses the format PP RR GG BB repeatable in a single SysEx message. It's ok but doesn't reach maximum efficiency.
+		Max SysEx message size on Pro is 320 bytes, meaning it'd be impossible to pack a full screen update (as is the case on stock firmware too).
+
+		I propose the following format for CFY:
+		NN RR GG BB {XX XX XX... (NN times)}
+
+		NN is the number of LEDs that we are updating to some color.
+		RR GG BB is the color
+		XX XX XX... are the pitches of all the LEDs that we want to update to the same color.
+		1-99 control normal grid, 99 is mode light. 100-107 defines direction, and following 2 bytes define start point and count.
+		108-117 sets an entire row, while 118-127 sets an entire column. 0 sets the entire grid of LEDs.
+
+		This set is repeatable in a single message, and I believe to be the best compression format that we can do.
+		*/
+
+		for (u8* i = d + 2; *i != 0xF7;) {
+			u8 n = *i++;
+			u8 r = *i++;
+			u8 g = *i++;
+			u8 b = *i++;
+
+			for (u8 j = 0; j < n; j++) {
+				u8 x = *i++;
+
+				if (x == 0)
+					for (u8 k = 0; k < 100; k++)
+						fast_led(k, r, g, b);
+
+				else if (x <= 99)
+					fast_led(x, r, g, b);
+				
+				else if (x <= 107) {
+					u8 p = *i++;
+					u8 m = *i++ + 1;
+					x -= 100;
+
+					u8 dx = fast_delta(x, 1);
+					u8 dy = fast_delta(x, 0);
+
+					for (
+						u8 _x = p / 10, _y = p % 10;
+						m >= 1 && 0 <= _x && _x <= 9 && 0 <= _y && _y <= 9 && p != 0 && p != 9 && p != 90 && p != 99;
+						m--, _x += dx, _y += dy, p = _x * 10 + _y
+					) fast_led(p, r, g, b);
+
+				} else if (x <= 117) {
+					x = (x - 108) * 10;
+
+					for (u8 k = x; k < x + 10 && k != 99; k++)
+						fast_led(k, r, g, b);
+
+				} else if (x <= 127) {
+					x -= 118;
+
+					for (u8 k = x; k < 100 && k != 99; k += 10)
+						fast_led(k, r, g, b);
+				}
+			}
+		}
+		return;
+	}
+
+	// Light LED using SysEx (RGB mode) - custom fast message
+	if (!memcmp(d, &syx_led_rgb_fast[0], syx_led_rgb_fast_length)) {
+		if (active_port != port) return;
+
+		fast_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
+		return;
+	}
+
     // Device Inquiry - Read information about the connected device
 	if (!memcmp(d, &syx_device_inquiry[0], syx_device_inquiry_length)) {
 		hal_send_sysex(port, &syx_device_inquiry_response[0], syx_device_inquiry_response_length);
@@ -201,22 +297,6 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				} else {
 					rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
 				}
-			}
-		}
-		return;
-	}
-
-	// Light LED using SysEx (RGB mode) - custom fast message
-	if (!memcmp(d, &syx_led_rgb_fast[0], syx_led_rgb_fast_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			if (mode == mode_performance) {
-				performance_led_rgb(0xF, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
-			} else if (mode == mode_programmer) {
-				programmer_led_rgb(0x0, *(d + 2), *(d + 3), *(d + 4), *(d + 5), 1);
-			} else {
-				rgb_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
 			}
 		}
 		return;

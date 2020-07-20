@@ -1,5 +1,7 @@
 #include "sysex/messages.h"
 
+// TODO See if this can be memory optimized
+
 const u8 syx_device_inquiry[syx_device_inquiry_length] = {0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7};
 const u8 syx_device_inquiry_response[syx_device_inquiry_response_length] = {0xF0, 0x7E,
                                                                       0x00,                                                  // Device ID
@@ -29,6 +31,8 @@ const u8 syx_led_pulse[syx_led_pulse_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x
 
 const u8 syx_led_rgb[syx_led_rgb_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0B};
 const u8 syx_led_rgb_fast[syx_led_rgb_fast_length] = {0xF0, 0x6F};
+const u8 syx_led_rgb_heaven[syx_led_rgb_heaven_length] = {0xF0, 0x5F};
+
 const u8 syx_led_grid[syx_led_grid_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x0F};
 
 const u8 syx_text[syx_text_length] = {0xF0, 0x00, 0x20, 0x29, 0x02, 0x10, 0x14};
