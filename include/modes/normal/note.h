@@ -11,7 +11,10 @@
 #define mode_note_g 63
 #define mode_note_b 63
 
-const u8 scales[32][13], scale_keys[12];
+const u8 scale_keys[12];
+
+u8 scales(u8 s, u8 i);
+u8 scales_length(u8 s);
 
 s8 note_octave;
 u8 note_shift, scale_enabled, translate_enabled, scale_segment, scale_selected, scale_root;

@@ -2,28 +2,14 @@
 
 This repository contains the source code of my custom firmware for the Launchpad Pro. The firmware retains all functionality (even Ableton Live integration) from the stock firmware in addition to the all-new Performance mode. The modification is easy to install, free to use and works with every currently existing project or DAW.
 
-## Building
-
-The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
-
-To build the firmware, set up the development environment according to dvhdr's [Launchpad Pro open-source firmware repository](https://github.com/dvhdr/launchpad-pro). I've removed the Vagrant and Docker methods since I prefer using make and gcc to build locally, however you may set those up by pulling the relevant files from dvhdr's repository. On macOS you can easily install the GCC ARM toolchain using the [homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first. They can probably also be installed on Windows somehow, but I haven't looked into it yet. Then, to directly compile the code:
-
-```
-brew tap PX4/homebrew-px4
-brew install gcc-arm-none-eabi
-make
-```
-
-You will find the build at `build/cfw.syx`, ready for uploading.
-
 ## Installation
 
-To install the firmware, simply send ("flash") the generated SysEx messages from the file to the Launchpad Pro while it is in Bootloader mode (hold Setup while powering on). While it isn't required that you close down other programs that use the Launchpad while flashing, it is recommended to do so. There's a number of ways to flash:
+The simplest and easiest way to install the firmware is via the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) with the `Launchpad Pro (CFW)` option selected. While it isn't required that you close down other programs that use the Launchpad while installing, it is recommended to do so.
+
+To install the firmware offline, simply send ("flash") the generated SysEx messages from the file to the Launchpad Pro while it is in Bootloader mode (hold Setup while powering on). There's a number of ways to flash:
 
 * macOS only: [SysEx Librarian](https://www.snoize.com/SysExLibrarian/)
 * Windows only: [MIDI-OX](http://www.midiox.com/moxdown.htm)
-* Universal method: `max/CFW Flash Tool.maxpat`
-    * To flash the firmware using my tool, simply load it up in Max (any version should work). Boot the Launchpad into Bootloader mode, click the Upload button and select the firmware SysEx file you want to upload.
 
 ## Usage
 
@@ -75,20 +61,54 @@ The left column displays the amount of red, the bottom row displays the amount o
 
 To save and exit, press the Setup button.
 
-You can also use the palette uploader found at `max/CFW Palette Uploader.maxpat` to upload a Retina palette into one of the palette slots on the Launchpad. Simply load it up in Max (any version should work) and select your Launchpad's Standalone Port and the desired Palette Index. Then, click Upload and select your Retina palette file.
+You can also use the Palette Utility as part of the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) to upload a Retina palette into one of the palette slots on the Launchpad. Simply import your Retina palette and select the desired Palette Index. Then, click Upload.
 
-To download a palette from the Launchpad to the computer, load `max/CFW Palette Downloader.maxpat` in Max (probably requires 8, older versions were not tested) and select your Launchpad's Standalone Port. Then, press Up on your Launchpad to send the palette.
+To download a palette from the Launchpad to the computer, press Up on your Launchpad to send the palette to the Palette Utility. where you can then export it into a file.
 
 ### Piano mode
 
 The new Piano mode is similar to the Note mode, but employs a classical piano-like rows per octave layout. Note that it doesn't support Scale mode due to the vastly different layout. The navigation buttons change octaves and transpose the keys.
 
+## Building
+
+The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
+
+### Windows
+
+First install make (preferably using [Chocolatey](https://chocolatey.org/install)):
+
+```
+choco install make
+```
+
+Next, install the [GCC ARM toolchain](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads). Make sure your PATH contains `arm-none-eabi-gcc\bin` (the installer can do this for you) and you can invoke `arm-none-eabi-gcc.exe` from the command line. Then, to directly compile the code:
+
+```
+make
+```
+
+### macOS
+
+On macOS you can easily install the GCC ARM toolchain using the [Homebrew package manager](http://brew.sh). The EABI tools are maintained in an external repository which you need to put on tap first.
+
+```
+brew tap PX4/homebrew-px4
+brew install gcc-arm-none-eabi
+```
+
+Then, to directly compile the code:
+
+```
+make
+```
+
 ## Issues
 
 Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
-    * Channel selection for all modes
-    * Pad Lighting setting for stock Standalone modes
+    
+* Channel selection for all modes
+* Pad Lighting setting for stock Standalone modes
 
 For any other issues or new feature requests, submit an issue report.
 
-If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://customer.novationmusic.com/support/downloads?brand=Novation&product_by_range=527&download_type=all) or flash the latest stock firmware .syx file found at `stock/Launchpad Pro-1.0.182.syx` to roll back to the stock firmware.
+If you don't like the firmware and want to roll back, you can use [Novation's Firmware Updater](https://customer.novationmusic.com/support/downloads?brand=Novation&product_by_range=527&download_type=all) or the [Launchpad Firmware Utility](https://fw.mat1jaczyyy.com) with the `Launchpad Pro` option selected to roll back to the stock firmware.

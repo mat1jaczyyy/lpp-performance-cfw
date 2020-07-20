@@ -1,7 +1,6 @@
 .DS_Store
 .vscode
 *.elf
-*.hex
+*.bin
 build/cfw-*.syx
 build/src/
-build/hextosyx

@@ -52,7 +52,32 @@
 #define setup_rainbow_length 48
 #define konami_length 8
 
-const u8 setup_rainbow[setup_rainbow_length][3] = {{63, 0, 0}, {63, 7, 0}, {63, 15, 0}, {63, 23, 0}, {63, 31, 0}, {63, 39, 0}, {63, 47, 0}, {63, 55, 0}, {63, 63, 0}, {55, 63, 0}, {47, 63, 0}, {39, 63, 0}, {31, 63, 0}, {23, 63, 0}, {15, 63, 0}, {7, 63, 0}, {0, 63, 0}, {0, 63, 7}, {0, 63, 15}, {0, 63, 23}, {0, 63, 31}, {0, 63, 39}, {0, 63, 47}, {0, 63, 55}, {0, 63, 63}, {0, 55, 63}, {0, 47, 63}, {0, 39, 63}, {0, 31, 63}, {0, 23, 63}, {0, 15, 63}, {0, 7, 63}, {0, 0, 63}, {7, 0, 63}, {15, 0, 63}, {23, 0, 63}, {31, 0, 63}, {39, 0, 63}, {47, 0, 63}, {55, 0, 63}, {63, 0, 63}, {63, 0, 55}, {63, 0, 47}, {63, 0, 39}, {63, 0, 31}, {63, 0, 23}, {63, 0, 15}, {63, 0, 7}};
+u8 setup_rainbow(u8 i, u8 c) {
+	if (c == 0) {
+		if (i < 9) return 63;
+		if (i < 16) return 127 - 8 * i;
+		if (i < 33) return 0;
+		if (i < 40) return 8 * i - 257;
+		return 63;
+
+	} else if (c == 1) {
+		if (i == 0) return 0;
+		if (i < 8) return 8 * i - 1;
+		if (i < 25) return 63;
+		if (i < 32) return 255 - 8 * i;
+		return 0;
+
+	} else if (c == 2) {
+		if (i < 17) return 0;
+		if (i < 24) return 8 * i - 129;
+		if (i < 41) return 63;
+		if (i < 48) return 383 - 8 * i;
+		return 0;
+	}
+
+	return 0;
+}
+
 const u8 konami[konami_length] = {91, 91, 92, 92, 93, 94, 93, 94};
 
 u8 setup_elapsed = setup_tick;
@@ -175,11 +200,11 @@ void setup_init() {
 
 void setup_timer_event() {
 	if (++setup_elapsed >= setup_tick) {
-		rgb_led(99, setup_rainbow[setup_mode_counter][0], setup_rainbow[setup_mode_counter][1], setup_rainbow[setup_mode_counter][2]); // Mode LED indicator animation
+		rgb_led(99, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2)); // Mode LED indicator animation
 		setup_mode_counter++; setup_mode_counter %= setup_rainbow_length;
 		
 		if (mode_default == mode_performance && palette_selected < palette_custom) {
-			rgb_led(25, setup_rainbow[setup_editor_counter][0], setup_rainbow[setup_editor_counter][1], setup_rainbow[setup_editor_counter][2]);  // Enter palette editor button animation
+			rgb_led(25, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2));  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= setup_rainbow_length;
 		}
 		

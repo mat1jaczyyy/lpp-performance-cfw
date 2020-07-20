@@ -11,7 +11,12 @@
 #define drum_color_pressed_b 0
 
 const u8 drum_colors[9][3] = {{21, 0, 21}, {0, 0, 63}, {63, 15, 0}, {63, 63, 0}, {56, 20, 15}, {0, 41, 63}, {24, 63, 7}, {33, 18, 63}, {21, 0, 7}};
-const u8 drum_align[17] = {1, 1, 1, 1, 5, 5, 5, 5, 9, 9, 9, 9, 13, 13, 13, 13, 13};
+
+u8 drum_align(u8 i) {
+	u8 ret = (i & 0xFC) + 1;
+	if (ret > 13) ret = 13;
+	return ret;
+}
 
 u8 drum_offset = drum_offset_start;
 u8 drum_nav_pressed[4] = {};
@@ -91,7 +96,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (drum_nav_pressed[0] && drum_nav_pressed[1]) { // Reset offset. Note: Undocumented in Programmer's reference
 			drum_offset = drum_offset_start;
 		} else if (drum_nav_pressed[2] && drum_nav_pressed[3]) { // Align offset
-			drum_offset = drum_align[drum_offset];
+			drum_offset = drum_align(drum_offset);
 		}
 		drum_init(); // Redraw grid
 	
