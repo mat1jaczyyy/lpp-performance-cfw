@@ -41,41 +41,51 @@
 const u8 note_octave_colors[10][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}, {0, 0, 31}, {0, 0, 63}, {20, 0, 63}, {40, 0, 63}, {63, 0, 63}};
 const u8 note_transpose_colors[13][3] = {{0, 7, 0}, {0, 21, 0}, {0, 31, 0}, {0, 42, 0}, {0, 52, 0}, {0, 63, 0}, {15, 63, 0}, {23, 63, 0}, {31, 63, 0}, {39, 63, 0}, {47, 63, 0}, {55, 63, 0}, {63, 63, 0}};
 
-const u8 scales[32][13] = {
-	{5, 0, 1, 5, 7, 10}, // In Sen
-	{5, 0, 2, 5, 7, 9}, // Yo scale
-	{5, 0, 1, 5, 6, 10}, // Iwato
-	{8, 0, 2, 3, 5, 6, 8, 9, 11}, // Whole Half
-	{8, 0, 2, 3, 5, 7, 8, 10, 11}, // BeBop Minor
-	{6, 0, 2, 3, 4, 7, 9}, // Major blues
-	{5, 0, 2, 3, 7, 9}, // Kumoi
-	{8, 0, 2, 4, 5, 7, 8, 9, 11}, // BeBop Major
-	{7, 0, 2, 4, 6, 7, 9, 11}, // Lydian
-	{7, 0, 1, 3, 5, 6, 8, 10}, // Locrian
-	{5, 0, 2, 4, 7, 9}, // Major Pentatonic
-	{7, 0, 1, 4, 5, 7, 8, 10}, // Phyrigian Dominant
-	{8, 0, 1, 3, 4, 6, 7, 9, 10}, // Half-Whole Diminished
-	{8, 0, 2, 4, 5, 7, 9, 10, 11}, // Mixolydian BeBop
-	{7, 0, 1, 3, 4, 6, 8, 10}, // Super Locrian
-	{5, 0, 2, 3, 6, 7}, // Hirajoshi
-	{6, 0, 3, 5, 6, 7, 10}, // Blues
-	{5, 0, 3, 5, 7, 10}, // Minor Pentatonic
-	{7, 0, 2, 3, 6, 7, 8, 11}, // Hungarian Minor
-	{7, 0, 2, 3, 6, 7, 9, 10}, // Ukrainian Dorian
-	{7, 0, 1, 4, 6, 7, 9, 11}, // Marva
-	{7, 0, 1, 3, 5, 6, 7, 11}, // Todi
-	{6, 0, 2, 4, 6, 8, 10}, // Whole Tone
-	{12, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, // Chromatic
-	{7, 0, 2, 3, 5, 7, 8, 10}, // Minor
-	{7, 0, 2, 4, 5, 7, 9, 11}, // Major
-	{7, 0, 2, 3, 5, 7, 9, 10}, // Dorian
-	{7, 0, 1, 3, 5, 7, 8, 10}, // Phrygian
-	{7, 0, 2, 4, 5, 7, 9, 10}, // Mixolydian
-	{7, 0, 2, 3, 5, 7, 9, 11}, // Melodic Minor (ascending)
-	{7, 0, 2, 3, 5, 7, 8, 11}, // Harmonic Minor
-	{8, 0, 2, 3, 4, 5, 7, 9, 10} // BeBop Dorian
+const u8 scale_points[33] = {0, 4, 8, 12, 19, 26, 31, 35, 42, 48, 54, 58, 64, 71, 78, 84, 88, 93, 97, 103, 109, 115, 121, 126, 137, 143, 149, 155, 161, 167, 173, 179, 186};
+const u8 scale_data[186] = {
+	1, 5, 7, 10, // In Sen
+	2, 5, 7, 9, // Yo scale
+	1, 5, 6, 10, // Iwato
+	2, 3, 5, 6, 8, 9, 11, // Whole Half
+	2, 3, 5, 7, 8, 10, 11, // BeBop Minor
+	2, 3, 4, 7, 9, // Major blues
+	2, 3, 7, 9, // Kumoi
+	2, 4, 5, 7, 8, 9, 11, // BeBop Major
+	2, 4, 6, 7, 9, 11, // Lydian
+	1, 3, 5, 6, 8, 10, // Locrian
+	2, 4, 7, 9, // Major Pentatonic
+	1, 4, 5, 7, 8, 10, // Phyrigian Dominant
+	1, 3, 4, 6, 7, 9, 10, // Half-Whole Diminished
+	2, 4, 5, 7, 9, 10, 11, // Mixolydian BeBop
+	1, 3, 4, 6, 8, 10, // Super Locrian
+	2, 3, 6, 7, // Hirajoshi
+	3, 5, 6, 7, 10, // Blues
+	3, 5, 7, 10, // Minor Pentatonic
+	2, 3, 6, 7, 8, 11, // Hungarian Minor
+	2, 3, 6, 7, 9, 10, // Ukrainian Dorian
+	1, 4, 6, 7, 9, 11, // Marva
+	1, 3, 5, 6, 7, 11, // Todi
+	2, 4, 6, 8, 10, // Whole Tone
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, // Chromatic
+	2, 3, 5, 7, 8, 10, // Minor
+	2, 4, 5, 7, 9, 11, // Major
+	2, 3, 5, 7, 9, 10, // Dorian
+	1, 3, 5, 7, 8, 10, // Phrygian
+	2, 4, 5, 7, 9, 10, // Mixolydian
+	2, 3, 5, 7, 9, 11, // Melodic Minor (ascending)
+	2, 3, 5, 7, 8, 11, // Harmonic Minor
+	2, 3, 4, 5, 7, 9, 10 // BeBop Dorian
 };
 const u8 scale_keys[12] = {51, 62, 52, 63, 53, 54, 65, 55, 66, 56, 67, 57};
+
+u8 scales(u8 s, u8 i) {
+	if (i == 0) return 0;
+	return scale_data[scale_points[s] + i - 1];
+}
+
+u8 scales_length(u8 s) {
+	return scale_points[s + 1] - scale_points[s] + 1; 
+}
 
 s8 note_octave = note_octave_start;
 s8 note_transpose = note_transpose_start;
@@ -96,14 +106,14 @@ void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
 }
 
 s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
-	u8 length = (scale_enabled)? scales[scale_selected][0] : note_length;
+	u8 length = (scale_enabled)? scales_length(scale_selected) : note_length;
 	u8 segment = (scale_enabled)? scale_segment : note_segment;
 
 	u8 offset = (x - 1) * segment + (y - 1); // Note pressed in relation to lowest
 	u8 up = offset / length; // Octaves above lowest
 
 	offset %= length; // Note pressed in relation to its octave
-	if (scale_enabled) offset = scales[scale_selected][1 + offset]; // Translate for Scale mode
+	if (scale_enabled) offset = scales(scale_selected, offset); // Translate for Scale mode
 
 	s8 c = (note_octave + up) * 12 + offset; // Note in relation to C
 	s8 n = c + note_transpose + ((scale_enabled)? scale_root : 0); // Actual note (transposition applied)
@@ -157,16 +167,20 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 							note_single(&p[0], l, note_color_base_r, note_color_base_g, note_color_base_b);
 						} else {
 							u8 out_of_scale = 1;
-							for(u8 i = 1; i <= scales[scale_selected][0]; ++i) {
-								if(local_m == scales[scale_selected][i]) {
+							for (u8 i = 0; i < scales_length(scale_selected); i++) {
+								u8 s = scales(scale_selected, i);
+
+								if (local_m == s) {
 									// White note
 									note_single(&p[0], l, note_color_white_r, note_color_white_g, note_color_white_b);
 									out_of_scale = 0;
 									break;
-								} else if(local_m < scales[scale_selected][i]) {
+
+								} else if (local_m < s) {
 									break;
 								}
 							}
+
 							if (out_of_scale) {
 								// Black note
 								note_single(&p[0], l, note_color_black_r, note_color_black_g, note_color_black_b);

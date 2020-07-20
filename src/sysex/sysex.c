@@ -268,6 +268,8 @@ void handle_sysex(u8 port, u8 * d, u16 l) {
 				text_color = *(d + 7) & 127;
 				text_loop = *(d + 8) != 0;
 
+				// TODO Optimize RAM
+
 				u16 bp = 1;
 
 				for (u16 i = 9; i < l - 1; i++) {
