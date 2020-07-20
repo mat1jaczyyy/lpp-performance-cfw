@@ -51,8 +51,8 @@ void scale_setup_init() {
 	for (u8 i = 0; i < 12; i++) {
 		rgb_led(scale_keys[i], scale_setup_color_notes_r >> 3, scale_setup_color_notes_g >> 3, scale_setup_color_notes_b >> 3); // Root note selector and scale preview
 	}
-	for (u8 i = 2; i <= scales[scale_selected][0]; i++) {
-		rgb_led(scale_keys[modulo(scales[scale_selected][i] + scale_root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
+	for (u8 i = 1; i < scales_length(scale_selected); i++) {
+		rgb_led(scale_keys[modulo(scales(scale_selected, i) + scale_root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
 	}
 	rgb_led(scale_keys[scale_root], scale_setup_color_root_r, scale_setup_color_root_g, scale_setup_color_root_b); // Scale root note
 

@@ -5,7 +5,7 @@ u8 programmer_screen[100][4] = {};
 void programmer_led(u8 ch, u8 p, u8 v, u8 s) {
 	switch (ch) {
 		case 0x0:
-			palette_led(p, v);
+			novation_led(p, v);
 			break;
 
 		case 0x1:
