@@ -31,22 +31,29 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		Max SysEx message size on Pro is 320 bytes, meaning it'd be impossible to pack a full screen update (as is the case on stock firmware too).
 
 		I propose the following format for CFY:
-		NN RR GG BB {XX XX XX... (NN times)}
+		RR GG BB NN {XX XX XX... (NN times)}
 
-		NN is the number of LEDs that we are updating to some color.
-		RR GG BB is the color
+		RR GG BB is the color.
+		NN is the number of LEDs that we are updating to that color.
 		XX XX XX... are the pitches of all the LEDs that we want to update to the same color.
 		1-99 control normal grid, 99 is mode light. 100-107 defines direction, and following 2 bytes define start point and count.
 		108-117 sets an entire row, while 118-127 sets an entire column. 0 sets the entire grid of LEDs.
+
+		If RR has bit 6 set to 1, then we can assume XX occurs only once (skip over NN).
 
 		This set is repeatable in a single message, and I believe to be the best compression format that we can do.
 		*/
 
 		for (u8* i = d + 2; *i != 0xF7;) {
-			u8 n = *i++;
 			u8 r = *i++;
 			u8 g = *i++;
 			u8 b = *i++;
+
+			u8 n = (r & 0x40)? 1 : *i++;
+
+			r &= 0x3F;
+			g &= 0x3F;
+			b &= 0x3F;
 
 			for (u8 j = 0; j < n; j++) {
 				u8 x = *i++;
