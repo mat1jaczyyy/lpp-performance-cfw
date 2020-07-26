@@ -1,12 +1,5 @@
 #include "sysex/sysex.h"
 
-s8 fast_delta(u8 d, u8 use_x) {
-	if (use_x) d = modulo(d - 2, 8);
-
-	if (d % 4 == 0) return 0;
-	else return d < 4? 1 : -1;
-}
-
 void fast_led(u8 p, u8 r, u8 g, u8 b) {
 	if (mode < mode_normal) {
 		if (mode == mode_performance) {
@@ -36,20 +29,26 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		RR GG BB is the color.
 		NN is the number of LEDs that we are updating to that color.
 		XX XX XX... are the pitches of all the LEDs that we want to update to the same color.
-		1-99 control normal grid, 99 is mode light. 100-107 defines direction, and following 2 bytes define start point and count.
-		108-117 sets an entire row, while 118-127 sets an entire column. 0 sets the entire grid of LEDs.
+		1-99 control normal grid, 99 is mode light. 0 sets the entire grid of LEDs.
+		100-109 sets an entire row, while 110-119 sets an entire column.
 
-		If RR has bit 6 set to 1, then we can assume XX occurs only once (skip over NN).
+		If RR, GG, or BB have 7th bits set, read them out for up to 7 pitch entries.
+		Otherwise, read NN.
 
-		This set is repeatable in a single message, and I believe to be the best compression format that we can do.
+		This set is repeatable in a single message, and I believe to be the best *feasible* compression format that we can do.
+		Other stuff just requires too much CPU on Apollo's side to work.
 		*/
 
-		for (u8* i = d + 2; *i != 0xF7;) {
+		u8* max = d + 2;
+		for (; *max != 0xF7; max++);
+
+		for (u8* i = d + 2; i < max;) {
 			u8 r = *i++;
 			u8 g = *i++;
 			u8 b = *i++;
 
-			u8 n = (r & 0x40)? 1 : *i++;
+			u8 n = ((r & 0x40) >> 4) | ((g & 0x40) >> 5) | ((b & 0x40) >> 6);
+			if (n == 0) n = *i++;
 
 			r &= 0x3F;
 			g &= 0x3F;
@@ -59,36 +58,22 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 				u8 x = *i++;
 
 				if (x == 0)
-					for (u8 k = 0; k < 100; k++)
+					for (u8 k = 0; k < 99; k++)
 						fast_led(k, r, g, b);
 
 				else if (x <= 99)
 					fast_led(x, r, g, b);
 				
-				else if (x <= 107) {
-					u8 p = *i++;
-					u8 m = *i++ + 1;
-					x -= 100;
+				else if (x <= 109) {
+					x = (x - 100) * 10 + 1;
 
-					u8 dx = fast_delta(x, 1);
-					u8 dy = fast_delta(x, 0);
-
-					for (
-						u8 _x = p / 10, _y = p % 10;
-						m >= 1 && 0 <= _x && _x <= 9 && 0 <= _y && _y <= 9 && p != 0 && p != 9 && p != 90 && p != 99;
-						m--, _x += dx, _y += dy, p = _x * 10 + _y
-					) fast_led(p, r, g, b);
-
-				} else if (x <= 117) {
-					x = (x - 108) * 10;
-
-					for (u8 k = x; k < x + 10 && k != 99; k++)
+					for (u8 k = x; k < x + 8; k++)
 						fast_led(k, r, g, b);
 
-				} else if (x <= 127) {
-					x -= 118;
+				} else if (x <= 119) {
+					x -= 100;
 
-					for (u8 k = x; k < 100 && k != 99; k += 10)
+					for (u8 k = x; k < 90; k += 10)
 						fast_led(k, r, g, b);
 				}
 			}
