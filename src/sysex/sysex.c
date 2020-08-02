@@ -85,7 +85,12 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	if (!memcmp(d, &syx_led_rgb_fast[0], syx_led_rgb_fast_length)) {
 		if (active_port != port) return;
 
-		fast_led(*(d + 2), *(d + 3), *(d + 4), *(d + 5));
+		u8* max = d + 2;
+		for (; *max != 0xF7; max++);
+
+		for (u8* i = d + 2; i < max; i += 4)
+			fast_led(i[0], i[1], i[2], i[3]);
+
 		return;
 	}
 
