@@ -27,35 +27,38 @@
 #define mode_piano 6
 #include "modes/normal/piano.h"
 
-#define mode_text 7
+#define mode_custom 7
+#include "modes/normal/custom.h"
+
+#define mode_text 8
 #include "modes/normal/text.h"
 
-#define mode_normal 8
+#define mode_normal 9
 
-#define mode_scale_setup 8
+#define mode_scale_setup 9
 #include "modes/special/scale.h"
 
-#define mode_editor 9
+#define mode_editor 10
 #include "modes/special/editor.h"
 
-#define mode_setup 10
+#define mode_setup 11
 #include "modes/special/setup.h"
 
-#define mode_boot 11
+#define mode_boot 12
 #include "modes/special/boot.h"
 
-#define mode_puyo 12
+#define mode_puyo 13
 #include "modes/special/puyo.h"
 
-#define mode_idle 13
+#define mode_idle 14
 #include "modes/special/idle.h"
 
-void (*const mode_init[14])();
-void (*const mode_timer_event[14])();
-void (*const mode_surface_event[14])(u8 p, u8 v, u8 x, u8 y);
-void (*const mode_midi_event[14])(u8 port, u8 t, u8 ch, u8 p, u8 v);
-void (*const mode_aftertouch_event[14])(u8 v);
-void (*const mode_poly_event[14])(u8 p, u8 v);
+void (*const mode_init[15])();
+void (*const mode_timer_event[15])();
+void (*const mode_surface_event[15])(u8 p, u8 v, u8 x, u8 y);
+void (*const mode_midi_event[15])(u8 port, u8 t, u8 ch, u8 p, u8 v);
+void (*const mode_aftertouch_event[15])(u8 v);
+void (*const mode_poly_event[15])(u8 p, u8 v);
 
 u8 mode, mode_default;
 
