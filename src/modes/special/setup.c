@@ -44,6 +44,14 @@
 #define setup_brightness_g 7
 #define setup_brightness_b 23
 
+#define setup_custom_on_r 0
+#define setup_custom_on_g 63
+#define setup_custom_on_b 37
+
+#define setup_custom_off_r 10
+#define setup_custom_off_g 0
+#define setup_custom_off_b 0
+
 #define konami_r 63
 #define konami_g 0
 #define konami_b 0
@@ -117,6 +125,26 @@ void setup_init() {
 			rgb_led(78, setup_performance_xy_r >> 2, setup_performance_xy_g >> 2, setup_performance_xy_b >> 2); // Drum Rack layout selected
 		} else {
 			rgb_led(78, setup_performance_xy_r, setup_performance_xy_g, setup_performance_xy_b); // XY layout selected
+		}
+	}
+
+	if (mode_default == mode_custom) {
+		if (custom_surface_led) {
+			rgb_led(15, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(15, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
+		}
+
+		if (custom_midi_led) {
+			rgb_led(16, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(16, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
+		}
+		
+		if (custom_fader_vel_sensitive) {
+			rgb_led(18, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(18, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
 		}
 	}
 
@@ -281,6 +309,23 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			} else if (p == 78) { // Change DR or XY layout
 				performance_xy_enabled = (performance_xy_enabled)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+			}
+		
+		} else if (mode_default == mode_custom) {
+			if (p == 15) {
+				custom_surface_led = (custom_surface_led)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+
+			} else if (p == 16) {
+				custom_midi_led = (custom_midi_led)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+
+			} else if (p == 18) {
+				custom_fader_vel_sensitive = (custom_fader_vel_sensitive)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 			}

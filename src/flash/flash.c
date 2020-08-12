@@ -55,6 +55,15 @@ void flash_read() {
 
 	led_brightness = flash_direct_read(fp++);
 	if (led_brightness >> 3) led_brightness = 7;
+
+	custom_surface_led = flash_direct_read(fp++);
+	if (custom_surface_led >> 1) custom_surface_led = 1;
+
+	custom_midi_led = flash_direct_read(fp++);
+	if (custom_midi_led >> 1) custom_midi_led = 1;
+
+	custom_fader_vel_sensitive = flash_direct_read(fp++);
+	if (custom_fader_vel_sensitive >> 1) custom_fader_vel_sensitive = 1;
 }
 
 void flash_write() {
@@ -83,6 +92,9 @@ void flash_write() {
 	flash[fp++] = direct_enabled;
 	flash[fp++] = idle_enabled;
 	flash[fp++] = led_brightness;
+	flash[fp++] = custom_surface_led;
+	flash[fp++] = custom_midi_led;
+	flash[fp++] = custom_fader_vel_sensitive;
 	
 	flash_direct_write(flash_user_start, &flash[0], fp);
 	
