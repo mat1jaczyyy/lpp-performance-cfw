@@ -12,6 +12,13 @@ void fast_led(u8 p, u8 r, u8 g, u8 b) {
 	}
 }
 
+u8 palette_modifying = 0;
+
+u8 custom_modifying = 0;
+u8 custom_index = 0;
+u8 custom_buffer[1024] = {};
+u16 custom_offset = 0;
+
 void handle_sysex(u8 port, u8* d, u16 l) {
 	// TODO &xxx[0] => xxx
 
@@ -338,7 +345,7 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 
 		if (mode < mode_normal) {
 			if (l <= 10) { // Empty message
-				if (mode == mode_text && port == text_port && !text_palette) mode_update(mode_default); // Stops the text scrolling
+				if (mode == mode_text && port == text_port) mode_update(mode_default); // Stops the text scrolling
 
 			} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port != USBMIDI)) { // Valid message
 				text_port = port;
@@ -365,32 +372,26 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		}
 		return;
 	}
-	
+
 	// Retina palette download start
 	if (!memcmp(d, &syx_palette_start[0], syx_palette_start_length)) {
 		if (mode < mode_normal) {
-			if (!text_palette) {
-				text_palette = 1;
-
-				app_sysex_event(port, &syx_palette_text[0], syx_palette_text_length);
-			}
+			palette_modifying = 1;
 		}
 		return;
 	}
 	
 	// Retina palette download write
 	if (!memcmp(d, &syx_palette_write[0], syx_palette_write_length)) {
-		if (mode < mode_normal) {
-			if (text_palette) {
-				u8 j = *(d + 8);
+		if (mode < mode_normal && palette_modifying) {
+			u8 j = *(d + 8);
 
-				if (j < 3) {
-					for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
-						dirty = 1;
+			if (j < 3) {
+				for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
+					dirty = 1;
 
-						for (u8 k = 0; k < 3; k++) {
-							palette[j][k][*(d + i)] = *(d + i + k + 1);
-						}
+					for (u8 k = 0; k < 3; k++) {
+						palette[j][k][*(d + i)] = *(d + i + k + 1);
 					}
 				}
 			}
@@ -400,11 +401,44 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	
 	// Retina palette download end
 	if (!memcmp(d, &syx_palette_end[0], syx_palette_end_length)) {
+		if (mode < mode_normal && palette_modifying) {
+			palette_modifying = 0;
+			mode_update(mode_default);
+		}
+		return;
+	}
+	
+	// Custom mode download start
+	if (!memcmp(d, &syx_custom_start[0], syx_custom_start_length)) {
 		if (mode < mode_normal) {
-			if (text_palette) {
-				text_palette = 0;
-				mode_update(mode_default);
+			if (d[8] < 8) {
+				custom_index = d[8];
+				custom_modifying = 1;
+				custom_offset = 0;
 			}
+		}
+		return;
+	}
+	
+	// Custom mode download write
+	if (!memcmp(d, &syx_custom_write[0], syx_custom_write_length)) {
+		if (mode < mode_normal && custom_modifying) {
+			for (d += 8; *d != 0xF7; d++)
+				custom_buffer[custom_offset++] = *d;
+		}
+		return;
+	}
+	
+	// Custom mode download end
+	if (!memcmp(d, &syx_custom_end[0], syx_custom_end_length)) {
+		if (mode < mode_normal && custom_modifying) {
+			for (u16 i = custom_offset; i < 1024; i++)
+				custom_buffer[i] = 0;
+			
+			flash_write_custom(custom_index, custom_buffer);
+			
+			custom_modifying = 0;
+			mode_refresh();
 		}
 		return;
 	}

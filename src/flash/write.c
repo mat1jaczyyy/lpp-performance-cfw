@@ -14,8 +14,8 @@ FLASH_Status FLASH_ErasePage(u32 Page_Address); // Erases a specified FLASH page
 FLASH_Status FLASH_ProgramHalfWord(u32 Address, u16 Data); // Programs a half word at a specified address.
 void FLASH_Lock(void); // Locks the FLASH Program Erase Controller.
 
-#define FLASH_START 0x0801EC00
-#define FLASH_SIZE 0x1000
+#define FLASH_START 0x0801D800
+#define FLASH_SIZE 0x2400
 #define FLASH_PAGE_SIZE 0x0400
 
 const u8* flash_rom = (u8*)FLASH_START;
@@ -26,7 +26,7 @@ u8 flash_direct_read(u16 offset) {
 	return flash_rom[offset];
 }
 
-void flash_direct_write(u16 start, u8 *data, u16 length) {
+void flash_direct_write(u16 start, const u8 *data, u16 length) {
 	if (start + length >= FLASH_SIZE) length = FLASH_SIZE;
 
 	FLASH_Unlock();

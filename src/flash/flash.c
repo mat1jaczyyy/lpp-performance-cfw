@@ -6,7 +6,7 @@
 
 #define flash_user_size (palette_custom * 3 * 32 * 3 + 8)
 
-#define flash_user_start 0xC00
+#define flash_user_start 0x2000
 
 u8 flash[flash_user_size] = {};
 
@@ -100,4 +100,12 @@ void flash_write() {
 	
 	rgb_led(99, 0, 0, 0);
 	dirty = 0;
+}
+
+void flash_write_custom(u8 index, const u8* buffer) {
+	rgb_led(99, flash_indicator_r, flash_indicator_g, flash_indicator_b);
+
+	flash_direct_write(0x400 * index, buffer, 1024);
+	
+	rgb_led(99, 0, 0, 0);
 }

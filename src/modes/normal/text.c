@@ -129,8 +129,6 @@ u8 text_subcounter = 0;
 u8 text_frame[10] = {};
 u8 text_done = 0;
 
-u8 text_palette = 0;
-
 void text_init() {
 	text_elapsed = text_ticks[text_speed];
 	text_counter = 1;
@@ -211,7 +209,7 @@ void text_timer_event() {
 }
 
 void text_surface_event(u8 p, u8 v, u8 x, u8 y) {
-	if (!text_palette) mode_update(mode_default);
+	mode_update(mode_default);
 }
 
 void text_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {}

@@ -7,7 +7,7 @@
 #include "string.h"
 #include "sysex/messages.h"
 
-u8 text_port, text_color, text_loop, text_bytes[323], text_palette;
+u8 text_port, text_color, text_loop, text_bytes[323];
 
 void text_init();
 void text_timer_event();

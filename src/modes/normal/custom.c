@@ -10,6 +10,9 @@
 
 u8 active_slot = 0;
 
+#define custom_rom_start 0x0801D800
+#define custom_rom_size 0x400
+
 void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
 
@@ -20,6 +23,12 @@ void custom_init() {
 	}
 
 	active_port = USBSTANDALONE;
+
+	for (u8 i = 0; i < 8; i++) {
+		u8 c = ((u8*)(custom_rom_start + custom_rom_size * active_slot))[i];
+
+		display_u8(c, 0, i + 1, 63, 63, 63);
+	}
 }
 
 void custom_timer_event() {}

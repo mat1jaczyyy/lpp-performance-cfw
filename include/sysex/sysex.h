@@ -7,6 +7,8 @@
 #include "string.h"
 #include "modes/mode.h"
 
+u8 custom_modifying;
+
 void handle_sysex(u8 port, u8 * d, u16 l);
 
 #endif
