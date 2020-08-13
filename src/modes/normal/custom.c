@@ -8,10 +8,31 @@
 #define active_slot_g 63
 #define active_slot_b 27
 
-u8 active_slot = 0;
-
 #define custom_rom_start 0x0801D800
 #define custom_rom_size 0x400
+
+typedef struct {
+	u8 ch, kind, p, trig, v_on, v_off, bg;
+} custom_blob;
+
+typedef struct {
+	u8 xy;
+	custom_blob blob;
+} custom_bin_blob;
+
+typedef struct {
+	u8 t, s, e;
+} custom_special;
+
+u8 blob_valid(const custom_blob* blob) {
+	return blob->ch != 0x7F && blob->kind != 0x00;
+}
+
+u8 prev_active_slot = 255, active_slot = 0;
+
+const custom_blob* map[8][8] = {};
+
+u8 custom_on;
 
 void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
@@ -24,11 +45,48 @@ void custom_init() {
 
 	active_port = USBSTANDALONE;
 
-	for (u8 i = 0; i < 8; i++) {
-		u8 c = ((u8*)(custom_rom_start + custom_rom_size * active_slot))[i];
+	if (prev_active_slot != active_slot) {
+		prev_active_slot = active_slot;
 
-		display_u8(c, 0, i + 1, 63, 63, 63);
+		const u8* skip_name = (const u8*)custom_rom_start + custom_rom_size * active_slot;
+		skip_name += strlen((const char*)skip_name) + 2;
+
+		const u8* on = skip_name;
+		while (*on != 0x7F) on++;
+		custom_on = on[3];
+
+		const custom_bin_blob* blobs = (const custom_bin_blob*)(on + 4);
+
+		for (u8 i = 0; i < 64; i++) {
+			const custom_bin_blob* blob = blobs + i;
+
+			u8 x = blob->xy / 10 - 1;
+			u8 y = blob->xy % 10 - 1;
+
+			map[x][y] = blob_valid(&blob->blob)? &blob->blob : NULL;
+		}
+
+		/*for (const custom_special* special = (const custom_special*)skip_name; special < on; special++) {
+			switch (special->t) {
+				case 0x04: // Drum Grid
+
+					break;
+
+				case 0x08: // Chromatic Keyboard
+
+					break;
+				
+				case 0x09: // Scale Keyboard
+
+					break;
+			}
+		}*/
 	}
+
+	for (u8 x = 0; x < 8; x++)
+		for (u8 y = 0; y < 8; y++)
+			if (map[x][y] != NULL)
+				novation_led((x + 1) * 10 + y + 1, map[x][y]->bg);
 }
 
 void custom_timer_event() {}
