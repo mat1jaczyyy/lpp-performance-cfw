@@ -9,7 +9,7 @@ u8 aftertouch_update(u8 p, u8 v) {
 
     if (x < 1 || 8 < x || y < 1 || 8 < y) return -1;
 
-    p = x * 10 + y;
+    p = (x - 1) * 8 + y - 1;
 
     aftertouch_screen[p] = v;
 
