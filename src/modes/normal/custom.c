@@ -21,12 +21,17 @@ typedef struct {
 } custom_bin_blob;
 
 typedef struct {
+	u8 state;
+	const custom_blob* blob;
+} custom_map_blob;
+
+typedef struct {
 	u8 t, s, e;
 } custom_special;
 
 u8 custom_prev_active_slot = 255, custom_active_slot = 0;
 
-const custom_blob* map[8][8] = {};
+custom_map_blob map[8][8] = {};
 
 u8 custom_on;
 
@@ -62,7 +67,7 @@ void custom_init() {
 			u8 y = blob->xy % 10 - 1;
 
 			if (blob->blob.kind)
-				map[x][y] = &blob->blob;
+				map[x][y].blob = &blob->blob;
 		}
 
 		/*for (const custom_special* special = (const custom_special*)skip_name; special < on; special++) {
@@ -84,8 +89,8 @@ void custom_init() {
 
 	for (u8 x = 0; x < 8; x++)
 		for (u8 y = 0; y < 8; y++)
-			if (map[x][y])
-				novation_led((x + 1) * 10 + y + 1, map[x][y]->bg);
+			if (map[x][y].blob)
+				novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
 }
 
 void custom_timer_event() {}
@@ -100,7 +105,44 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
                 custom_active_slot = 8 - x;
                 mode_refresh();
             }
-        }
+        
+		} else if (1 <= x && x <= 8 && 1 <= y && y <= 8) {
+			x--;
+			y--;
+
+			if (map[x][y].blob) {
+				switch (map[x][y].blob->kind) {
+					u8 t;
+
+					case 0x01: // MIDI note
+						t = 0x90 | (map[x][y].blob->ch & 0xF);
+
+						if (map[x][y].blob->trig == 0x01) {
+							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
+							
+						} else send_midi(USBSTANDALONE, t, map[x][y].blob->p, v);
+						break;
+					
+					case 0x02: // Control Change
+						t = 0xB0 | (map[x][y].blob->ch & 0xF);
+
+						if (map[x][y].blob->trig == 0x01) {
+							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
+
+						} else if (map[x][y].blob->trig == 0x02) {
+							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, map[x][y].blob->v_on);
+							
+						} else send_midi(USBSTANDALONE, t, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
+						break;
+					
+					case 0x03: // Program Change
+						t = 0xC0 | (map[x][y].blob->ch & 0xF);
+
+						if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, 0);
+						break;
+				}
+			}
+		}
 	}
 }
 
