@@ -24,10 +24,6 @@ typedef struct {
 	u8 t, s, e;
 } custom_special;
 
-u8 blob_valid(const custom_blob* blob) {
-	return blob->ch != 0x7F && blob->kind != 0x00;
-}
-
 u8 prev_active_slot = 255, active_slot = 0;
 
 const custom_blob* map[8][8] = {};
@@ -63,7 +59,7 @@ void custom_init() {
 			u8 x = blob->xy / 10 - 1;
 			u8 y = blob->xy % 10 - 1;
 
-			map[x][y] = blob_valid(&blob->blob)? &blob->blob : NULL;
+			map[x][y] = blob->blob.kind? &blob->blob : NULL;
 		}
 
 		/*for (const custom_special* special = (const custom_special*)skip_name; special < on; special++) {
