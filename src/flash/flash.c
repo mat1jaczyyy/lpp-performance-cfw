@@ -4,7 +4,7 @@
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 
-#define flash_user_size (palette_custom * 3 * 32 * 3 + 8)
+#define flash_user_size (palette_custom * 3 * 32 * 3 + 11)
 
 #define flash_user_start 0x2000
 
