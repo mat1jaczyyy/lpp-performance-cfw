@@ -179,5 +179,9 @@ void custom_aftertouch_event(u8 v) {
 }
 
 void custom_poly_event(u8 p, u8 v) {
-	
+	u8 x = p / 10 - 1;
+	u8 y = p % 10 - 1;
+
+	if (0 <= x && x <= 7 && 0 <= y && y <= 7 && map[x][y].blob && map[x][y].blob->kind == 0x01 && map[x][y].blob->trig != 0x01)
+		custom_send(0xA0 | (map[x][y].blob->ch & 0xF), map[x][y].blob->p, v);
 }
