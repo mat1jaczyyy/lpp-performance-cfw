@@ -1,9 +1,9 @@
 #include "aftertouch/aftertouch.h"
 
 u8 aftertouch_screen[64] = {};
-u8 aftertouch_current = 0;
+s8 aftertouch_current = 0;
 
-u8 aftertouch_update(u8 p, u8 v) {
+s8 aftertouch_update(u8 p, u8 v) {
     u8 x = p / 10;
     u8 y = p % 10;
 
@@ -13,13 +13,13 @@ u8 aftertouch_update(u8 p, u8 v) {
 
     aftertouch_screen[p] = v;
 
-    int v_max = 0;
-    for (int i = 0; i < 64; i++) {
+    s8 v_max = 0;
+    for (s8 i = 0; i < 64; i++) {
         if (aftertouch_screen[i] > v_max)
             v_max = aftertouch_screen[i];
     }
 
-    int ret = (v_max != aftertouch_current)? v_max : -1;
+    s8 ret = (v_max != aftertouch_current)? v_max : -1;
     aftertouch_current = v_max;
 
     return ret;

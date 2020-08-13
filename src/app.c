@@ -101,10 +101,10 @@ void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
 void app_aftertouch_event(u8 p, u8 v) {
 	idle_exit();
 
-	u8 result = aftertouch_update(p, v);
+	s8 result = aftertouch_update(p, v);
 
-	if (result != -1 && aftertouch_enabled == 1)
-		(*mode_aftertouch_event[mode])(result);
+	if (result >= 0 && aftertouch_enabled == 1)
+		(*mode_aftertouch_event[mode])((u8)result);
 	
 	if (aftertouch_enabled == 2)
 		(*mode_poly_event[mode])(p, v);
