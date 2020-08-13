@@ -30,10 +30,10 @@ typedef struct {
 } custom_special;
 
 u8 custom_prev_active_slot = 255, custom_active_slot = 0;
+u8 custom_on;
 
 custom_map_blob map[8][8] = {};
-
-u8 custom_on;
+s8 outputting[16] = {};
 
 void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
@@ -59,6 +59,7 @@ void custom_init() {
 		const custom_bin_blob* blobs = (const custom_bin_blob*)(on + 4);
 
 		memset(map, 0, sizeof(map));
+		memset(outputting, 0, sizeof(outputting));
 
 		for (u8 i = 0; i < 64; i++) {
 			const custom_bin_blob* blob = blobs + i;
@@ -95,6 +96,10 @@ void custom_init() {
 
 void custom_timer_event() {}
 
+void custom_send(u8 t, u8 p, u8 v) {
+	send_midi(USBSTANDALONE, t, p, v);
+}
+
 void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(mode_setup);
@@ -111,34 +116,41 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			y--;
 
 			if (map[x][y].blob) {
+				u8 ch = map[x][y].blob->ch & 0xF;
+				
 				switch (map[x][y].blob->kind) {
 					u8 t;
 
 					case 0x01: // MIDI note
-						t = 0x90 | (map[x][y].blob->ch & 0xF);
+						t = 0x90 | ch;
 
 						if (map[x][y].blob->trig == 0x01) {
-							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
+							if (v) custom_send(t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
 							
-						} else send_midi(USBSTANDALONE, t, map[x][y].blob->p, v);
+						} else {
+							outputting[ch] = v? 1 : -1;
+							if (outputting[ch] < 0) outputting[ch] = 0;
+
+							custom_send(t, map[x][y].blob->p, v);
+						}
 						break;
 					
 					case 0x02: // Control Change
-						t = 0xB0 | (map[x][y].blob->ch & 0xF);
+						t = 0xB0 | ch;
 
 						if (map[x][y].blob->trig == 0x01) {
-							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
+							if (v) custom_send(t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
 
 						} else if (map[x][y].blob->trig == 0x02) {
-							if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, map[x][y].blob->v_on);
+							if (v) custom_send(t, map[x][y].blob->p, map[x][y].blob->v_on);
 							
-						} else send_midi(USBSTANDALONE, t, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
+						} else custom_send(t, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
 						break;
 					
 					case 0x03: // Program Change
-						t = 0xC0 | (map[x][y].blob->ch & 0xF);
+						t = 0xC0 | ch;
 
-						if (v) send_midi(USBSTANDALONE, t, map[x][y].blob->p, 0);
+						if (v) custom_send(t, map[x][y].blob->p, 0);
 						break;
 				}
 			}
@@ -161,7 +173,9 @@ void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void custom_aftertouch_event(u8 v) {
-
+	for (u8 i = 0; i < 16; i++)
+		if (outputting[i])
+			aftertouch_send(USBSTANDALONE, 0xD0 | i, v);
 }
 
 void custom_poly_event(u8 p, u8 v) {
