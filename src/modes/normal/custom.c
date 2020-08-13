@@ -24,7 +24,7 @@ typedef struct {
 	u8 t, s, e;
 } custom_special;
 
-u8 prev_active_slot = 255, active_slot = 0;
+u8 custom_prev_active_slot = 255, custom_active_slot = 0;
 
 const custom_blob* map[8][8] = {};
 
@@ -34,17 +34,17 @@ void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
 
     for (u8 i = 0; i < 8; i++) {
-		if (active_slot == i)
+		if (custom_active_slot == i)
        		rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
 		else rgb_led(89 - i * 10, inactive_slot_r, inactive_slot_g, inactive_slot_b);
 	}
 
 	active_port = USBSTANDALONE;
 
-	if (prev_active_slot != active_slot) {
-		prev_active_slot = active_slot;
+	if (custom_prev_active_slot != custom_active_slot) {
+		custom_prev_active_slot = custom_active_slot;
 
-		const u8* skip_name = (const u8*)custom_rom_start + custom_rom_size * active_slot;
+		const u8* skip_name = (const u8*)custom_rom_start + custom_rom_size * custom_active_slot;
 		skip_name += strlen((const char*)skip_name) + 2;
 
 		const u8* on = skip_name;
@@ -97,7 +97,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	} else {
 		if (y == 9 && 1 <= x && x <= 8) {
             if (v != 0) {
-                active_slot = 8 - x;
+                custom_active_slot = 8 - x;
                 mode_refresh();
             }
         }
@@ -118,6 +118,10 @@ void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 	}
 }
 
-void custom_aftertouch_event(u8 v) {}
+void custom_aftertouch_event(u8 v) {
 
-void custom_poly_event(u8 p, u8 v) {}
+}
+
+void custom_poly_event(u8 p, u8 v) {
+	
+}

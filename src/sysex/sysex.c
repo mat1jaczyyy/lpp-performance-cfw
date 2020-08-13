@@ -435,6 +435,8 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 			for (u16 i = custom_offset; i < 1024; i++)
 				custom_buffer[i] = 0;
 			
+			custom_prev_active_slot = 255;
+
 			flash_write_custom(custom_index, custom_buffer);
 			
 			custom_modifying = 0;
