@@ -96,8 +96,37 @@ void custom_init() {
 
 void custom_timer_event() {}
 
-void custom_send(u8 t, u8 p, u8 v) {
-	send_midi(USBSTANDALONE, t, p, v);
+void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
+	if (s && !custom_midi_led) return;
+
+	u8 k;
+	if (t == 0x9) k = 0x01;
+	else if (t == 0xB && !s) k = 0x02;
+	else return;
+
+	u8 e = s? 1 : custom_surface_led;
+	
+	for (u8 x = 0; x < 8; x++) {
+		for (u8 y = 0; y < 8; y++) {
+			if (map[x][y].blob->kind == k && map[x][y].blob->ch == ch && map[x][y].blob->p == p) {
+				u8 p = (x + 1) * 10 + y + 1;
+
+				if (k == 1) {
+					if (map[x][y].blob->trig == 0x01) {
+						if (!s) novation_led(p, v == 127? custom_on : map[x][y].blob->bg);
+
+					} else if (e) novation_led(p, v? custom_on : map[x][y].blob->bg);
+
+				} else if (k == 0x02 && (map[x][y].blob->trig == 0x01 || (map[x][y].blob->trig == 0x00 && e)))
+					novation_led(p, v == map[x][y].blob->v_on? custom_on : map[x][y].blob->bg);
+			}
+		}
+	}
+}
+
+void custom_send(u8 t, u8 ch, u8 p, u8 v) {
+	send_midi(USBSTANDALONE, (t << 4) | (ch & 0xF), p, v);
+	custom_highlight(t, ch, p, v, 0);
 }
 
 void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
@@ -119,38 +148,30 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				u8 ch = map[x][y].blob->ch & 0xF;
 				
 				switch (map[x][y].blob->kind) {
-					u8 t;
-
 					case 0x01: // MIDI note
-						t = 0x90 | ch;
-
 						if (map[x][y].blob->trig == 0x01) {
-							if (v) custom_send(t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
+							if (v) custom_send(0x9, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
 							
 						} else {
 							outputting[ch] = v? 1 : -1;
 							if (outputting[ch] < 0) outputting[ch] = 0;
 
-							custom_send(t, map[x][y].blob->p, v);
+							custom_send(0x9, ch, map[x][y].blob->p, v);
 						}
 						break;
 					
 					case 0x02: // Control Change
-						t = 0xB0 | ch;
-
 						if (map[x][y].blob->trig == 0x01) {
-							if (v) custom_send(t, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
+							if (v) custom_send(0xB, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
 
 						} else if (map[x][y].blob->trig == 0x02) {
-							if (v) custom_send(t, map[x][y].blob->p, map[x][y].blob->v_on);
+							if (v) custom_send(0xB, ch, map[x][y].blob->p, map[x][y].blob->v_on);
 							
-						} else custom_send(t, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
+						} else custom_send(0xB, ch, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
 						break;
 					
 					case 0x03: // Program Change
-						t = 0xC0 | ch;
-
-						if (v) custom_send(t, map[x][y].blob->p, 0);
+						if (v) custom_send(0xC, ch, map[x][y].blob->p, 0);
 						break;
 				}
 			}
@@ -159,16 +180,13 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x4) {
+	if (port == USBSTANDALONE) {
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
 		}
 		
-		u8 x = p / 10;
-		u8 y = p % 10;
-		
-		
+		custom_highlight(t, ch, p, v, 1);
 	}
 }
 
@@ -183,5 +201,5 @@ void custom_poly_event(u8 p, u8 v) {
 	u8 y = p % 10 - 1;
 
 	if (0 <= x && x <= 7 && 0 <= y && y <= 7 && map[x][y].blob && map[x][y].blob->kind == 0x01 && map[x][y].blob->trig != 0x01)
-		custom_send(0xA0 | (map[x][y].blob->ch & 0xF), map[x][y].blob->p, v);
+		custom_send(0xA, map[x][y].blob->ch, map[x][y].blob->p, v);
 }
