@@ -53,13 +53,16 @@ void custom_init() {
 
 		const custom_bin_blob* blobs = (const custom_bin_blob*)(on + 4);
 
+		memset(map, 0, sizeof(map));
+
 		for (u8 i = 0; i < 64; i++) {
 			const custom_bin_blob* blob = blobs + i;
 
 			u8 x = blob->xy / 10 - 1;
 			u8 y = blob->xy % 10 - 1;
 
-			map[x][y] = blob->blob.kind? &blob->blob : NULL;
+			if (blob->blob.kind)
+				map[x][y] = &blob->blob;
 		}
 
 		/*for (const custom_special* special = (const custom_special*)skip_name; special < on; special++) {
@@ -81,7 +84,7 @@ void custom_init() {
 
 	for (u8 x = 0; x < 8; x++)
 		for (u8 y = 0; y < 8; y++)
-			if (map[x][y] != NULL)
+			if (map[x][y])
 				novation_led((x + 1) * 10 + y + 1, map[x][y]->bg);
 }
 
