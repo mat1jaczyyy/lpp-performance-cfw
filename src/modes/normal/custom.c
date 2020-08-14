@@ -89,7 +89,9 @@ void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	
 	for (u8 x = 0; x < 8; x++) {
 		for (u8 y = 0; y < 8; y++) {
-			if (map[x][y].blob->kind == k && map[x][y].blob->ch == ch && map[x][y].blob->p == p) {
+			u8 map_ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
+			
+			if (map[x][y].blob->kind == k && map_ch == ch && map[x][y].blob->p == p) {
 				u8 p = (x + 1) * 10 + y + 1;
 
 				if (k == 1) {
@@ -126,7 +128,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			y--;
 
 			if (map[x][y].blob) {
-				u8 ch = map[x][y].blob->ch & 0xF;
+				u8 ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
 				
 				switch (map[x][y].blob->kind) {
 					case 0x01: // MIDI note
