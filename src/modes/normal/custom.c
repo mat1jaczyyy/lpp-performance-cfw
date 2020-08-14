@@ -40,12 +40,15 @@ const u8 custom_fader_stops[2][8] = {
 	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
 };
 
-struct {
+typedef struct {
 	u8 value, type, color;
 	u16 tick, elapsed;
 	u8 counter, final;
 	s8 change;
-} custom_faders[8];
+	const custom_blob* blob;
+} custom_fader;
+
+custom_fader custom_faders[8];
 
 u8 custom_fader_orientation = 0;
 
@@ -54,7 +57,7 @@ void custom_fader_led(u8 x, u8 y, u8 v) {
 }
 
 void custom_fader_draw(u8 i) {
-	if (!custom_faders[i].color) return;
+	if (!custom_faders[i].blob) return;
 
 	const u8* stops = custom_fader_stops[custom_faders[i].type];
 
@@ -74,6 +77,40 @@ void custom_fader_draw(u8 i) {
 	} else   // Linear
 		for (u8 x = 0; x < 8; x++)
 			custom_fader_led(x, i, custom_faders[i].value >= stops[x] && custom_faders[i].value? custom_faders[i].color : 0);
+}
+
+void custom_fader_send(custom_fader* fader) {
+	u8 ch = fader->blob->ch <= 0xF? fader->blob->ch : 0x0;
+	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, fader->value);
+}
+
+void custom_fader_trigger(u8 x, u8 y, u8 v) {
+	u8 i = custom_fader_orientation? x : y;
+	u8 c = custom_fader_orientation? y : x;
+
+	if (!custom_faders[i].blob) return;
+
+	u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
+	
+	custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c]; // Save final value of the line
+	
+	s8 direction = 2 * (custom_faders[i].value < custom_faders[i].final) - 1; // Direction of line - {-1} = down, {1} = up
+	u16 diff = (direction > 0)? (custom_faders[i].final - custom_faders[i].value) : (custom_faders[i].value - custom_faders[i].final); // Difference between current value and new value
+	
+	custom_faders[i].elapsed = 0; // Stop current line
+	
+	if (diff == 0) custom_fader_send(custom_faders + i);
+
+	else if (time >= diff) { // Enough time to do line smoothly
+		custom_faders[i].tick = time / diff;
+		custom_faders[i].counter = diff;
+		custom_faders[i].change = direction;
+		
+	} else { // Not enough time - compensate with smaller steps
+		custom_faders[i].tick = 1;
+		custom_faders[i].counter = time;
+		custom_faders[i].change = direction * (diff / time);
+	}
 }
 
 void custom_init() {
@@ -107,7 +144,7 @@ void custom_init() {
 			} else if (blob->xy < 8) {   // Fader
 				u8 p = blob->xy;
 				
-				for (u8 i = 0; i < 7; i++) {
+				for (u8 i = 0; i < 8; i++) {
 					if (blob->blob.trig < 2)
 						map[i][p].blob = &blob->blob;
 
@@ -117,6 +154,7 @@ void custom_init() {
 				if ((custom_fader_orientation = blob->blob.trig >> 1))
 					p = 7 - p;
 
+				custom_faders[p].blob = &blob->blob;
 				custom_faders[p].type = blob->blob.trig & 1;
 				custom_faders[p].color = blob->blob.bg;
 				custom_faders[p].value = 127;
@@ -133,7 +171,24 @@ void custom_init() {
 		custom_fader_draw(i);
 }
 
-void custom_timer_event() {}
+void custom_timer_event() {
+	for (u8 i = 0; i < 8; i++) {
+		if (!custom_faders[i].blob || !custom_faders[i].counter) continue;
+
+		if (++custom_faders[i].elapsed >= custom_faders[i].tick) {
+			custom_faders[i].value += custom_faders[i].change; // Update fader line
+			
+			custom_faders[i].counter--;
+			if (!custom_faders[i].counter)
+				custom_faders[i].value = custom_faders[i].final; // Set fader to supposed final value
+			
+			custom_fader_send(custom_faders + i);
+			custom_fader_draw(i);
+			
+			custom_faders[i].elapsed = 0;
+		}
+	}
+}
 
 void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	if (s && !custom_midi_led) return;
@@ -186,6 +241,11 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			y--;
 
 			if (map[x][y].blob) {
+				if (!map[x][y].blob->kind) {
+					custom_fader_trigger(x, y, v);
+					return;
+				}
+
 				u8 ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
 				
 				switch (map[x][y].blob->kind) {
