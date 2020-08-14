@@ -13,6 +13,8 @@
 
 u8 custom_prev_active_slot;
 
+const u8* custom_data(u8 i);
+
 void custom_init();
 void custom_timer_event();
 void custom_surface_event(u8 p, u8 v, u8 x, u8 y);

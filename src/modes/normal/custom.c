@@ -1,8 +1,8 @@
 #include "modes/normal/custom.h"
 
-#define inactive_slot_r 3
-#define inactive_slot_g 3
-#define inactive_slot_b 3
+#define inactive_slot_r 5
+#define inactive_slot_g 5
+#define inactive_slot_b 5
 
 #define active_slot_r 21
 #define active_slot_g 63
@@ -25,15 +25,15 @@ typedef struct {
 	const custom_blob* blob;
 } custom_map_blob;
 
-typedef struct {
-	u8 t, s, e;
-} custom_special;
-
 u8 custom_prev_active_slot = 255, custom_active_slot = 0;
 u8 custom_on;
 
 custom_map_blob map[8][8] = {};
 s8 outputting[16] = {};
+
+const u8* custom_data(u8 i) {
+	return (const u8*)custom_rom_start + custom_rom_size * i;
+}
 
 void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
@@ -49,14 +49,11 @@ void custom_init() {
 	if (custom_prev_active_slot != custom_active_slot) {
 		custom_prev_active_slot = custom_active_slot;
 
-		const u8* skip_name = (const u8*)custom_rom_start + custom_rom_size * custom_active_slot;
-		skip_name += strlen((const char*)skip_name) + 2;
+		const u8* data = custom_data(custom_active_slot);
+		while (*data != 0x7F) data++;  // Skip web-editor region (name and object metadata)
+		custom_on = data[3];
 
-		const u8* on = skip_name;
-		while (*on != 0x7F) on++;
-		custom_on = on[3];
-
-		const custom_bin_blob* blobs = (const custom_bin_blob*)(on + 4);
+		const custom_bin_blob* blobs = (const custom_bin_blob*)(data + 4);
 
 		memset(map, 0, sizeof(map));
 		memset(outputting, 0, sizeof(outputting));
@@ -70,22 +67,6 @@ void custom_init() {
 			if (blob->blob.kind)
 				map[x][y].blob = &blob->blob;
 		}
-
-		/*for (const custom_special* special = (const custom_special*)skip_name; special < on; special++) {
-			switch (special->t) {
-				case 0x04: // Drum Grid
-
-					break;
-
-				case 0x08: // Chromatic Keyboard
-
-					break;
-				
-				case 0x09: // Scale Keyboard
-
-					break;
-			}
-		}*/
 	}
 
 	for (u8 x = 0; x < 8; x++)
