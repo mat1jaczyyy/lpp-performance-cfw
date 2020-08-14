@@ -85,10 +85,14 @@ void custom_fader_send(custom_fader* fader) {
 }
 
 void custom_fader_trigger(u8 x, u8 y, u8 v) {
+	if (!v) return;
+
 	u8 i = custom_fader_orientation? x : y;
 	u8 c = custom_fader_orientation? y : x;
 
 	if (!custom_faders[i].blob) return;
+
+	v = custom_fader_vel_sensitive? v : 127;
 
 	u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
 	
