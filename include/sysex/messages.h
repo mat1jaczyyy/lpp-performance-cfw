@@ -42,6 +42,8 @@
 
 #define syx_custom_start_length 8
 #define syx_custom_write_length 8
+#define syx_custom_request_length 8
+#define syx_custom_export_length 319
 #define syx_custom_end_length 9
 
 #define syx_fader_length 7
@@ -84,6 +86,8 @@ const u8 syx_palette_end[syx_palette_end_length];
 
 const u8 syx_custom_start[syx_custom_start_length];
 const u8 syx_custom_write[syx_custom_write_length];
+const u8 syx_custom_request[syx_custom_request_length];
+u8 syx_custom_export[syx_custom_export_length];
 const u8 syx_custom_end[syx_custom_end_length];
 
 const u8 syx_fader[syx_fader_length];

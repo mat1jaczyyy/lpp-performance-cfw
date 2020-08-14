@@ -375,9 +375,9 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 
 	// Retina palette download start
 	if (!memcmp(d, &syx_palette_start[0], syx_palette_start_length)) {
-		if (mode < mode_normal) {
+		if (mode < mode_normal)
 			palette_modifying = 1;
-		}
+
 		return;
 	}
 	
@@ -410,21 +410,47 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	
 	// Custom mode download start
 	if (!memcmp(d, &syx_custom_start[0], syx_custom_start_length)) {
-		if (mode < mode_normal) {
-			if (d[8] < 8) {
-				custom_index = d[8];
-				custom_modifying = 1;
-				custom_offset = 0;
-			}
+		if (mode < mode_normal && d[8] < 8) {
+			custom_index = d[8];
+			custom_modifying = 1;
+			custom_offset = 0;
 		}
 		return;
 	}
 	
 	// Custom mode download write
 	if (!memcmp(d, &syx_custom_write[0], syx_custom_write_length)) {
-		if (mode < mode_normal && custom_modifying) {
-			for (d += 8; *d != 0xF7; d++)
+		if (mode < mode_normal && custom_modifying)
+			for (d += 8; *d != 0xF7 && custom_offset < 1024; d++)
 				custom_buffer[custom_offset++] = *d;
+
+		return;
+	}
+	
+	// Custom mode upload request
+	if (!memcmp(d, &syx_custom_request[0], syx_custom_request_length)) {
+		if (d[8] < 8 && d[9] < 3) {
+			u16 i = 8;
+			
+			const u8* c = custom_data(d[8]);
+
+			if (d[9] == 0) {
+				u16 l = 0;
+				for (; *c != 0xF7; c++)
+					l++;
+
+				c -= l;
+
+				syx_custom_export[i++] = l >> 7;
+				syx_custom_export[i++] = l & 0x7F;
+			}
+
+			for (u16 j = d[9] == 0? 0 : 310 * d[9] - 2; i < syx_custom_export_length - 1 && c[j] != 0xF7; j++)
+				syx_custom_export[i++] = c[j];
+			
+			syx_custom_export[i++] = 0xF7;
+
+			hal_send_sysex(port, &syx_custom_export[0], i);
 		}
 		return;
 	}
@@ -432,8 +458,10 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	// Custom mode download end
 	if (!memcmp(d, &syx_custom_end[0], syx_custom_end_length)) {
 		if (mode < mode_normal && custom_modifying) {
-			for (u16 i = custom_offset; i < 1024; i++)
-				custom_buffer[i] = 0;
+			custom_buffer[custom_offset++] = 0xF7;
+
+			while (custom_offset < 1024)
+				custom_buffer[custom_offset++] = 0;
 			
 			custom_prev_active_slot = 255;
 
