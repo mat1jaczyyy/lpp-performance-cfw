@@ -25,14 +25,55 @@ typedef struct {
 	const custom_blob* blob;
 } custom_map_blob;
 
+const u8* custom_data(u8 i) {
+	return (const u8*)custom_rom_start + custom_rom_size * i;
+}
+
 u8 custom_prev_active_slot = 255, custom_active_slot = 0;
-u8 custom_on;
+u8 custom_on = 21;
 
 custom_map_blob map[8][8] = {};
 s8 outputting[16] = {};
 
-const u8* custom_data(u8 i) {
-	return (const u8*)custom_rom_start + custom_rom_size * i;
+const u8 custom_fader_stops[2][8] = {
+	{0, 17, 34, 52, 70, 89, 108, 127}, // Linear
+	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
+};
+
+struct {
+	u8 value, type, color;
+	u16 tick, elapsed;
+	u8 counter, final;
+	s8 change;
+} custom_faders[8];
+
+u8 custom_fader_orientation = 0;
+
+void custom_fader_led(u8 x, u8 y, u8 v) {
+	novation_led(((custom_fader_orientation? y : x) + 1) * 10 + (custom_fader_orientation? x : y) + 1, v);
+}
+
+void custom_fader_draw(u8 i) {
+	if (!custom_faders[i].color) return;
+
+	const u8* stops = custom_fader_stops[custom_faders[i].type];
+
+	if (custom_faders[i].type) {   // Pan
+		if (custom_faders[i].value < stops[3])
+			for (s8 x = 7; x >= 0; x--)
+				custom_fader_led(x, i, x <= 3 && custom_faders[i].value <= stops[x]? custom_faders[i].color : 0);
+
+		else if (custom_faders[i].value > stops[4])
+			for (u8 x = 0; x < 8; x++)
+				custom_fader_led(x, i, 4 <= x && custom_faders[i].value >= stops[x]? custom_faders[i].color : 0);
+
+		else
+			for (u8 x = 0; x < 8; x++)
+				custom_fader_led(x, i, x == 3 || x == 4? custom_faders[i].color : 0);
+
+	} else   // Linear
+		for (u8 x = 0; x < 8; x++)
+			custom_fader_led(x, i, custom_faders[i].value >= stops[x] && custom_faders[i].value? custom_faders[i].color : 0);
 }
 
 void custom_init() {
@@ -53,26 +94,43 @@ void custom_init() {
 		while (*data != 0x7F) data++;  // Skip web-editor region (name and object metadata)
 		custom_on = data[3];
 
-		const custom_bin_blob* blobs = (const custom_bin_blob*)(data + 4);
-
 		memset(map, 0, sizeof(map));
 		memset(outputting, 0, sizeof(outputting));
+		memset(custom_faders, 0, sizeof(custom_faders));
 
-		for (u8 i = 0; i < 64; i++) {
-			const custom_bin_blob* blob = blobs + i;
-
-			u8 x = blob->xy / 10 - 1;
-			u8 y = blob->xy % 10 - 1;
-
-			if (blob->blob.kind)
+		for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
+			if (blob->blob.kind) {   // Regular pad
+				u8 x = blob->xy / 10 - 1;
+				u8 y = blob->xy % 10 - 1;
 				map[x][y].blob = &blob->blob;
+			
+			} else if (blob->xy < 8) {   // Fader
+				u8 p = blob->xy;
+				
+				for (u8 i = 0; i < 7; i++) {
+					if (blob->blob.trig < 2)
+						map[i][p].blob = &blob->blob;
+
+					else map[p][i].blob = &blob->blob;
+				}
+
+				if ((custom_fader_orientation = blob->blob.trig >> 1))
+					p = 7 - p;
+
+				custom_faders[p].type = blob->blob.trig & 1;
+				custom_faders[p].color = blob->blob.bg;
+				custom_faders[p].value = 127;
+			}
 		}
 	}
 
 	for (u8 x = 0; x < 8; x++)
 		for (u8 y = 0; y < 8; y++)
-			if (map[x][y].blob)
+			if (map[x][y].blob && map[x][y].blob->kind)
 				novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
+
+	for (u8 i = 0; i < 8; i++)
+		custom_fader_draw(i);
 }
 
 void custom_timer_event() {}
