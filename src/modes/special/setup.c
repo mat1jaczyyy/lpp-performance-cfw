@@ -286,7 +286,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_default = p - 68;
 			mode_refresh();
 		
-		} else if (61 <= p && p <= 72) {
+		} else if (61 <= p && p <= 62) {
 			mode_default = p - 55;
 			mode_refresh();
 		
