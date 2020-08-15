@@ -12,6 +12,35 @@
 #define invalid_slot_g 0
 #define invalid_slot_b 0
 
+u8 custom_valid = 0;
+u8 custom_prev_active_slot = 255, custom_active_slot = 0;
+
+u8 custom_upload_index = 0;
+u8 custom_upload_buffer[1024] = {};
+u16 custom_upload_offset = 0;
+
+void custom_upload_start(u8 i) {
+	custom_upload_index = i;
+	custom_upload_offset = 0;
+}
+
+void custom_upload_push(const u8* d) {
+	for (d += 8; *d != 0xF7 && custom_upload_offset < 1024; d++)
+		custom_upload_buffer[custom_upload_offset++] = *d;
+}
+
+void custom_upload_end() {
+	if (custom_upload_offset < 1024)
+		custom_upload_buffer[custom_upload_offset++] = 0xF7;
+
+	while (custom_upload_offset < 1024)
+		custom_upload_buffer[custom_upload_offset++] = 0;
+	
+	custom_prev_active_slot = 255;
+
+	flash_write_custom(custom_upload_index, custom_upload_buffer);
+}
+
 #define custom_rom_start 0x0801D800
 #define custom_rom_size 0x400
 
@@ -33,10 +62,11 @@ const u8* custom_data(u8 i) {
 	return (const u8*)custom_rom_start + custom_rom_size * i;
 }
 
-u8 custom_valid = 0;
-
-u8 custom_prev_active_slot = 255, custom_active_slot = 0;
 u8 custom_on = 21;
+
+u8 custom_held_slot = 255;
+u8 custom_delete_counter = 0;
+u16 custom_delete_blink = 0;
 
 custom_map_blob map[8][8] = {};
 s8 outputting[16] = {};
@@ -251,6 +281,10 @@ void custom_init() {
 
 	active_port = USBSTANDALONE;
 
+	custom_held_slot = 255;
+	custom_delete_counter = 0;
+	custom_delete_blink = 0;
+
 	if (custom_prev_active_slot != custom_active_slot)
 		custom_valid = custom_load();
 
@@ -274,6 +308,17 @@ void custom_init() {
 
 void custom_timer_event() {
 	if (!custom_valid) return;
+
+	if (custom_held_slot < 8 && custom_delete_blink) {
+		if (++custom_delete_blink > 400) custom_delete_blink = 1;
+		
+		rgb_led(
+			89 - custom_held_slot * 10,
+			custom_delete_blink > 200? 0 : invalid_slot_r,
+			custom_delete_blink > 200? 0 : invalid_slot_g,
+			custom_delete_blink > 200? 0 : invalid_slot_b
+		);
+	}
 
 	for (u8 i = 0; i < 8; i++) {
 		if (!custom_faders[i].blob) continue;
@@ -336,49 +381,93 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else {
 		if (y == 9 && 1 <= x && x <= 8) {
-            if (v != 0) {
-                custom_active_slot = 8 - x;
-                mode_refresh();
-            }
-        
-		} else if (custom_valid && 1 <= x && x <= 8 && 1 <= y && y <= 8) {
-			x--;
-			y--;
+			u8 t = 8 - x;
 
-			if (map[x][y].blob) {
-				if (!map[x][y].blob->kind) {
-					custom_fader_trigger(x, y, v);
-					return;
+			if (v) {
+				if (custom_active_slot != t) {
+					custom_active_slot = t;
+					mode_refresh();
 				}
 
-				u8 ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
-				
-				switch (map[x][y].blob->kind) {
-					case 0x01: // MIDI note
-						if (map[x][y].blob->trig == 0x01) {
-							if (v) custom_send(0x9, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
-							
-						} else {
-							outputting[ch] = v? 1 : -1;
-							if (outputting[ch] < 0) outputting[ch] = 0;
+				custom_held_slot = t;
+			
+			} else if (custom_held_slot == t) {
+				if (custom_valid) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
 
-							custom_send(0x9, ch, map[x][y].blob->p, v);
+				custom_held_slot = 255;
+				custom_delete_counter = 0;
+				custom_delete_blink = 0;
+			}
+        
+		} else if (custom_valid) {
+			if (p == 50) { // Delete mode
+				if (v) {
+					if (custom_held_slot < 8) {
+						rgb_led(50, invalid_slot_r, invalid_slot_g, invalid_slot_b);
+
+						if (++custom_delete_counter == 1)
+							rgb_led(
+								89 - custom_held_slot * 10,
+								(active_slot_r + invalid_slot_r) / 2,
+								(active_slot_g + invalid_slot_g) / 2,
+								(active_slot_b + invalid_slot_b) / 2
+							);
+						
+						else if (custom_delete_counter == 2)
+							custom_delete_blink = 1;
+
+						if (custom_delete_counter >= 3) {
+							for (u16 i = 0; i < 1024; i++)
+								custom_upload_buffer[i] = 0xFF;
+
+							custom_prev_active_slot = 255;
+							flash_write_custom(custom_held_slot, custom_upload_buffer);
+
+							mode_refresh();
 						}
-						break;
-					
-					case 0x02: // Control Change
-						if (map[x][y].blob->trig == 0x01) {
-							if (v) custom_send(0xB, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
+					}
 
-						} else if (map[x][y].blob->trig == 0x02) {
-							if (v) custom_send(0xB, ch, map[x][y].blob->p, map[x][y].blob->v_on);
-							
-						} else custom_send(0xB, ch, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
-						break;
+				} else rgb_led(50, 0, 0, 0);
+
+			} else if (1 <= x && x <= 8 && 1 <= y && y <= 8) {
+				x--;
+				y--;
+
+				if (map[x][y].blob) {
+					if (!map[x][y].blob->kind) {
+						custom_fader_trigger(x, y, v);
+						return;
+					}
+
+					u8 ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
 					
-					case 0x03: // Program Change
-						if (v) custom_send(0xC, ch, map[x][y].blob->p, 0);
-						break;
+					switch (map[x][y].blob->kind) {
+						case 0x01: // MIDI note
+							if (map[x][y].blob->trig == 0x01) {
+								if (v) custom_send(0x9, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
+								
+							} else {
+								outputting[ch] = v? 1 : -1;
+								if (outputting[ch] < 0) outputting[ch] = 0;
+
+								custom_send(0x9, ch, map[x][y].blob->p, v);
+							}
+							break;
+						
+						case 0x02: // Control Change
+							if (map[x][y].blob->trig == 0x01) {
+								if (v) custom_send(0xB, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? map[x][y].blob->v_on : map[x][y].blob->v_off);
+
+							} else if (map[x][y].blob->trig == 0x02) {
+								if (v) custom_send(0xB, ch, map[x][y].blob->p, map[x][y].blob->v_on);
+								
+							} else custom_send(0xB, ch, map[x][y].blob->p, v? map[x][y].blob->v_on : map[x][y].blob->v_off);
+							break;
+						
+						case 0x03: // Program Change
+							if (v) custom_send(0xC, ch, map[x][y].blob->p, 0);
+							break;
+					}
 				}
 			}
 		}

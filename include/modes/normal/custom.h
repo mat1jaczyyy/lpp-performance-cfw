@@ -11,7 +11,9 @@
 #define mode_custom_g 63
 #define mode_custom_b 63
 
-u8 custom_prev_active_slot;
+void custom_upload_start(u8 i);
+void custom_upload_push(const u8* d);
+void custom_upload_end();
 
 const u8* custom_data(u8 i);
 

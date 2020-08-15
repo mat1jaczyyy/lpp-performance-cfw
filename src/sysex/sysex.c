@@ -13,11 +13,7 @@ void fast_led(u8 p, u8 r, u8 g, u8 b) {
 }
 
 u8 palette_modifying = 0;
-
 u8 custom_modifying = 0;
-u8 custom_index = 0;
-u8 custom_buffer[1024] = {};
-u16 custom_offset = 0;
 
 void handle_sysex(u8 port, u8* d, u16 l) {
 	// TODO &xxx[0] => xxx
@@ -411,18 +407,16 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	// Custom mode download start
 	if (!memcmp(d, &syx_custom_start[0], syx_custom_start_length)) {
 		if (mode < mode_normal && d[8] < 8) {
-			custom_index = d[8];
 			custom_modifying = 1;
-			custom_offset = 0;
+			custom_upload_start(d[8]);
 		}
-		return;
+		return;	
 	}
 	
 	// Custom mode download write
 	if (!memcmp(d, &syx_custom_write[0], syx_custom_write_length)) {
 		if (mode < mode_normal && custom_modifying)
-			for (d += 8; *d != 0xF7 && custom_offset < 1024; d++)
-				custom_buffer[custom_offset++] = *d;
+			custom_upload_push(d + 8);
 
 		return;
 	}
@@ -458,15 +452,8 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 	// Custom mode download end
 	if (!memcmp(d, &syx_custom_end[0], syx_custom_end_length)) {
 		if (mode < mode_normal && custom_modifying) {
-			custom_buffer[custom_offset++] = 0xF7;
+			custom_upload_end();
 
-			while (custom_offset < 1024)
-				custom_buffer[custom_offset++] = 0;
-			
-			custom_prev_active_slot = 255;
-
-			flash_write_custom(custom_index, custom_buffer);
-			
 			custom_modifying = 0;
 			mode_refresh();
 		}
