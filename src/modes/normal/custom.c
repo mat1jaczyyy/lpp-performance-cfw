@@ -25,7 +25,7 @@ void custom_upload_start(u8 i) {
 }
 
 void custom_upload_push(const u8* d) {
-	for (d += 8; *d != 0xF7 && custom_upload_offset < 1024; d++)
+	for (; *d != 0xF7 && custom_upload_offset < 1024; d++)
 		custom_upload_buffer[custom_upload_offset++] = *d;
 }
 
