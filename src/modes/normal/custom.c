@@ -148,15 +148,15 @@ void custom_init() {
 			} else if (blob->xy < 8) {   // Fader
 				u8 p = blob->xy;
 				
+				if ((custom_fader_orientation = blob->blob.trig >> 1))
+					p = 7 - p;
+					
 				for (u8 i = 0; i < 8; i++) {
 					if (blob->blob.trig < 2)
 						map[i][p].blob = &blob->blob;
 
 					else map[p][i].blob = &blob->blob;
 				}
-
-				if ((custom_fader_orientation = blob->blob.trig >> 1))
-					p = 7 - p;
 
 				custom_faders[p].blob = &blob->blob;
 				custom_faders[p].type = blob->blob.trig & 1;
