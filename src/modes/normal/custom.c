@@ -59,14 +59,19 @@ const u8 custom_fader_stops[2][8][4] = {
 };
 
 typedef struct {
-	u8 value, type, color;
-	u16 tick, elapsed;
-	u8 counter, final;
+	u8 value, final, counter;
 	s8 change;
+	u16 tick, elapsed;
+} custom_fader_anim;
+
+typedef struct {
+	u8 type, color;
+	custom_fader_anim* anim;
 	const custom_blob* blob;
 } custom_fader;
 
 custom_fader custom_faders[8];
+custom_fader_anim custom_fader_anims[8];
 
 u8 custom_fader_orientation = 0;
 
@@ -83,33 +88,33 @@ void custom_fader_draw(u8 i) {
 	if (!custom_faders[i].blob) return;
 
 	if (custom_faders[i].type) {   // Pan
-		if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][3][0] + (custom_faders[i].value != custom_faders[i].final))
+		if (custom_faders[i].anim->value < custom_fader_stops[custom_faders[i].type][3][0] + (custom_faders[i].anim->value != custom_faders[i].anim->final))
 			for (s8 x = 7; x >= 0; x--) {
 				u8 f = 0;
 
 				if (x >= 4) f = 7;
-				else if (x == 0) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][0][0]? 0 : 7;
-				else if (custom_faders[i].value <= custom_fader_stops[custom_faders[i].type][x - 1][0]) f = 0;
-				else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else if (x == 0) f = custom_faders[i].anim->value == custom_fader_stops[custom_faders[i].type][0][0]? 0 : 7;
+				else if (custom_faders[i].anim->value <= custom_fader_stops[custom_faders[i].type][x - 1][0]) f = 0;
+				else if (custom_faders[i].anim->value > custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
 				else for (u8 j = 0; j < 3; j++)
-					if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+					if (custom_faders[i].anim->value > custom_fader_stops[custom_faders[i].type][x][j + 1]) {
 						f = 3 - j;
 						break;
 					}
-
+				
 				custom_fader_led(x, i, custom_faders[i].color, f);
 			}
 
-		else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][4][0] - (custom_faders[i].value != custom_faders[i].final))
+		else if (custom_faders[i].anim->value > custom_fader_stops[custom_faders[i].type][4][0] - (custom_faders[i].anim->value != custom_faders[i].anim->final))
 			for (u8 x = 0; x < 8; x++) {
 				u8 f = 0;
 
 				if (x <= 3) f = 7;
-				else if (x == 7) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
-				else if (custom_faders[i].value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
-				else if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else if (x == 7) f = custom_faders[i].anim->value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
+				else if (custom_faders[i].anim->value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
+				else if (custom_faders[i].anim->value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
 				else for (u8 j = 0; j < 3; j++)
-					if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+					if (custom_faders[i].anim->value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
 						f = 3 - j;
 						break;
 					}
@@ -125,11 +130,11 @@ void custom_fader_draw(u8 i) {
 		for (u8 x = 0; x < 8; x++) {
 			u8 f = 0;
 
-			if (x == 7) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
-			else if (custom_faders[i].value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
-			else if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+			if (x == 7) f = custom_faders[i].anim->value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
+			else if (custom_faders[i].anim->value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
+			else if (custom_faders[i].anim->value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
 			else for (u8 j = 0; j < 3; j++)
-				if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+				if (custom_faders[i].anim->value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
 					f = 3 - j;
 					break;
 				}
@@ -140,7 +145,7 @@ void custom_fader_draw(u8 i) {
 
 void custom_fader_send(custom_fader* fader) {
 	u8 ch = fader->blob->ch <= 0xF? fader->blob->ch : 0x0;
-	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, fader->value);
+	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, fader->anim->value);
 }
 
 void custom_fader_trigger(u8 x, u8 y, u8 v) {
@@ -155,31 +160,31 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 
 	u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
 	
-	custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c][0]; // Save final value of the line
+	custom_faders[i].anim->final = custom_fader_stops[custom_faders[i].type][c][0]; // Save final value of the line
 
 	if ((custom_faders[i].type == 0 && c != 7) || (custom_faders[i].type == 1 && c != 0 && c != 7)) // Retrigger small steps
 		for (u8 j = 0; j < 3; j++)
-			if (custom_fader_stops[custom_faders[i].type][c][j] == custom_faders[i].value) {
-				custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c][j + 1];
+			if (custom_fader_stops[custom_faders[i].type][c][j] == custom_faders[i].anim->value) {
+				custom_faders[i].anim->final = custom_fader_stops[custom_faders[i].type][c][j + 1];
 				break;
 			}
 	
-	s8 direction = 2 * (custom_faders[i].value < custom_faders[i].final) - 1; // Direction of line - {-1} = down, {1} = up
-	u16 diff = (direction > 0)? (custom_faders[i].final - custom_faders[i].value) : (custom_faders[i].value - custom_faders[i].final); // Difference between current value and new value
+	s8 direction = 2 * (custom_faders[i].anim->value < custom_faders[i].anim->final) - 1; // Direction of line - {-1} = down, {1} = up
+	u16 diff = (direction > 0)? (custom_faders[i].anim->final - custom_faders[i].anim->value) : (custom_faders[i].anim->value - custom_faders[i].anim->final); // Difference between current value and new value
 	
-	custom_faders[i].elapsed = 0; // Stop current line
+	custom_faders[i].anim->elapsed = 0; // Stop current line
 	
 	if (diff == 0) custom_fader_send(custom_faders + i);
 
 	else if (time >= diff) { // Enough time to do line smoothly
-		custom_faders[i].tick = time / diff;
-		custom_faders[i].counter = diff;
-		custom_faders[i].change = direction;
+		custom_faders[i].anim->tick = time / diff;
+		custom_faders[i].anim->counter = diff;
+		custom_faders[i].anim->change = direction;
 		
 	} else { // Not enough time - compensate with smaller steps
-		custom_faders[i].tick = 1;
-		custom_faders[i].counter = time;
-		custom_faders[i].change = direction * (diff / time);
+		custom_faders[i].anim->tick = 1;
+		custom_faders[i].anim->counter = time;
+		custom_faders[i].anim->change = direction * (diff / time);
 	}
 }
 
@@ -204,6 +209,7 @@ void custom_init() {
 		memset(map, 0, sizeof(map));
 		memset(outputting, 0, sizeof(outputting));
 		memset(custom_faders, 0, sizeof(custom_faders));
+		memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
 
 		for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
 			if (blob->blob.kind) {   // Regular pad
@@ -216,18 +222,23 @@ void custom_init() {
 				
 				if ((custom_fader_orientation = blob->blob.trig >> 1))
 					p = 7 - p;
-					
+
+				custom_faders[p].anim = custom_fader_anims + p;
+				
 				for (u8 i = 0; i < 8; i++) {
 					if (blob->blob.trig < 2)
 						map[i][p].blob = &blob->blob;
 
 					else map[p][i].blob = &blob->blob;
+
+					if (custom_faders[i].blob && custom_faders[i].blob->ch == blob->blob.ch && custom_faders[i].blob->p == blob->blob.p)
+						custom_faders[p].anim = custom_faders[i].anim;
 				}
 
 				custom_faders[p].blob = &blob->blob;
 				custom_faders[p].type = blob->blob.trig & 1;
 				custom_faders[p].color = blob->blob.bg;
-				custom_faders[p].value = custom_faders[p].final = 127;
+				custom_faders[p].anim->value = custom_faders[p].anim->final = 127;
 			}
 		}
 	}
@@ -243,20 +254,20 @@ void custom_init() {
 
 void custom_timer_event() {
 	for (u8 i = 0; i < 8; i++) {
-		if (!custom_faders[i].blob || !custom_faders[i].counter) continue;
+		if (!custom_faders[i].blob) continue;
 
-		if (++custom_faders[i].elapsed >= custom_faders[i].tick) {
-			custom_faders[i].value += custom_faders[i].change; // Update fader line
+		if (custom_faders[i].anim->counter && ++custom_faders[i].anim->elapsed >= custom_faders[i].anim->tick) {
+			custom_faders[i].anim->value += custom_faders[i].anim->change; // Update fader line
 			
-			custom_faders[i].counter--;
-			if (!custom_faders[i].counter)
-				custom_faders[i].value = custom_faders[i].final; // Set fader to supposed final value
+			custom_faders[i].anim->counter--;
+			if (!custom_faders[i].anim->counter)
+				custom_faders[i].anim->value = custom_faders[i].anim->final; // Set fader to supposed final value
 			
 			custom_fader_send(custom_faders + i);
-			custom_fader_draw(i);
-			
-			custom_faders[i].elapsed = 0;
+			custom_faders[i].anim->elapsed = 0;
 		}
+		
+		custom_fader_draw(i);
 	}
 }
 
