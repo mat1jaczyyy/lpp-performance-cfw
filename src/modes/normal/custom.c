@@ -83,7 +83,7 @@ void custom_fader_draw(u8 i) {
 	if (!custom_faders[i].blob) return;
 
 	if (custom_faders[i].type) {   // Pan
-		if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][3][0])
+		if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][3][0] + (custom_faders[i].value != custom_faders[i].final))
 			for (s8 x = 7; x >= 0; x--) {
 				u8 f = 0;
 
@@ -100,7 +100,7 @@ void custom_fader_draw(u8 i) {
 				custom_fader_led(x, i, custom_faders[i].color, f);
 			}
 
-		else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][4][0])
+		else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][4][0] - (custom_faders[i].value != custom_faders[i].final))
 			for (u8 x = 0; x < 8; x++) {
 				u8 f = 0;
 
