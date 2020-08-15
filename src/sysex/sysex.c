@@ -1,26 +1,47 @@
 #include "sysex/sysex.h"
 
+const syx_declare(device_inquiry) = {0x7E, 0x7F, 0x06, 0x01, 0xF7};
+const syx_declare(device_inquiry_response) = {0x7E,
+                                              0x00,                                                  // Device ID
+                                              0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,  // Constant
+                                              0x00, 0x63, 0x66, 0x79};                               // Firmware rev. (4 bytes) - CFY (CFW++++)
+
+syx_declare_len(response_buffer, 319) = {0xF0};
+
+const syx_declare_len(novation_header, 5) = {0x00, 0x20, 0x29, 0x02, 0x10};
+const syx_declare_len(palette_header, 6) = {0x52, 0x45, 0x54, 0x49, 0x4E, 0x41};
+const syx_declare_len(custom_header, 7) = {0x43, 0x55, 0x53, 0x54, 0x4F, 0x4D};
+
+#define uploading_start 0x7B
+#define uploading_write 0x3D
+#define uploading_end 0x7D
+
 void fast_led(u8 p, u8 r, u8 g, u8 b) {
-	if (mode < mode_normal) {
-		if (mode == mode_performance) {
-			performance_led_rgb(0xF, p, r, g, b, 1);
-		} else if (mode == mode_programmer) {
-			programmer_led_rgb(0x0, p, r, g, b, 1);
-		} else {
-			rgb_led(p, r, g, b);
-		}
-	}
+	if (mode == mode_performance) performance_led_rgb(0xF, p, r, g, b, 1);
+	else if (mode == mode_programmer) programmer_led_rgb(0x0, p, r, g, b, 1);
+	else rgb_led(p, r, g, b);
+}
+
+void regular_led(u8 p, u8 v) {
+	if (mode == mode_performance) performance_led(0xF, p, v, 1);
+	else if (mode == mode_programmer) programmer_led(0x0, p, v, 1);
+	else novation_led(p, v);
 }
 
 u8 palette_modifying = 0;
 u8 custom_modifying = 0;
 
 void handle_sysex(u8 port, u8* d, u16 l) {
-	// TODO &xxx[0] => xxx
+	#define advance(x) d += x; l -= x
+
+	if (*d != 0xF0) return;
+	u8* end = d + l - 1;
+
+	advance(1);
 
 	// Light LEDs using SysEx (for Heaven)
-	if (!memcmp(d, &syx_led_rgb_heaven[0], syx_led_rgb_heaven_length)) {
-		if (active_port != port) return;
+	if (d[0] == 0x5F) {
+		if (active_port != port || mode >= mode_normal) return;
 
 		/*
 		Stock firmware uses the format PP RR GG BB repeatable in a single SysEx message. It's ok but doesn't reach maximum efficiency.
@@ -42,10 +63,7 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		Other stuff just requires too much CPU on Apollo's side to work.
 		*/
 
-		u8* max = d + 2;
-		for (; *max != 0xF7; max++);
-
-		for (u8* i = d + 2; i < max;) {
+		for (u8* i = d + 1; i < end;) {
 			u8 r = *i++;
 			u8 g = *i++;
 			u8 b = *i++;
@@ -81,371 +99,259 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 				}
 			}
 		}
-		return;
-	}
 
 	// Light LED using SysEx (RGB mode) - custom fast message
-	if (!memcmp(d, &syx_led_rgb_fast[0], syx_led_rgb_fast_length)) {
-		if (active_port != port) return;
+	} else if (d[0] == 0x6F) {
+		if (active_port != port || mode >= mode_normal) return;
 
-		u8* max = d + 2;
-		for (; *max != 0xF7; max++);
-
-		for (u8* i = d + 2; i < max; i += 4)
+		for (u8* i = d + 1; i < end; i += 4)
 			fast_led(i[0], i[1], i[2], i[3]);
 
-		return;
-	}
-
     // Device Inquiry - Read information about the connected device
-	if (!memcmp(d, &syx_device_inquiry[0], syx_device_inquiry_length)) {
-		hal_send_sysex(port, &syx_device_inquiry_response[0], syx_device_inquiry_response_length);
-		return;
-	}
+	} else if (syx_match(device_inquiry)) {
+		syx_resp_cpy(device_inquiry_response);
+		syx_response_buffer[sizeof(syx_device_inquiry_response) + 1] = 0xF7;
+		syx_send(port, sizeof(syx_device_inquiry_response) + 2);
 	
-	// Challenge from the Control Surface
-	if (!memcmp(d, &syx_challenge[0], syx_challenge_length)) {
-		if (port == USBMIDI) {
-			if (l == 12) {
+	// Novation stock SysEx messages
+	} else if (syx_match(novation_header)) {
+		advance(sizeof(syx_novation_header));
+
+		// Challenge from the Control Surface
+		if (d[0] == 0x40) {
+			if (port != USBMIDI) return;
+
+			if (l == 6) {
 				u32 result = (*         // wtf?
-				    (u32 (*)(u32))      // cast to function pointer
-				    *(u32*)0x080000EC   // grab pointer to challenge function from table
+					(u32 (*)(u32))      // cast to function pointer
+					*(u32*)0x080000EC   // grab pointer to challenge function from table
 				)(                      // call
-				    *(u32*)(d + 7)      // grab Live's challenge value
+					*(u32*)(d + 1)      // grab Live's challenge value
 				);                      // :b1:
-
-				syx_challenge_response[7] = result & 0x7F;
-				syx_challenge_response[8] = (result >> 8) & 0x7F;
 				
-				hal_send_sysex(USBMIDI, &syx_challenge_response[0], syx_challenge_response_length);
+				syx_resp_cpy(novation_header);
+				syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x40;
+				syx_response_buffer[sizeof(syx_novation_header) + 2] = result & 0x7F;
+				syx_response_buffer[sizeof(syx_novation_header) + 3] = (result >> 8) & 0x7F;
+				syx_response_buffer[sizeof(syx_novation_header) + 4] = 0xF7;
+				syx_send(USBMIDI, sizeof(syx_novation_header) + 5);
 			
-			} else if (l == 8) { // Live Quit Message
+			} else if (l == 2) // Also Live Quit Message!
 				mode_default_update(mode_performance);
-			}
-		}
-		return;
-	}
-	
-	// Mode selection - return the status
-	if (!memcmp(d, &syx_mode_selection[0], syx_mode_selection_length)) {
-		u8 new;
-		syx_mode_selection_response[7] = new = *(d + 7) & 1;
 		
-		hal_send_sysex(port, &syx_mode_selection_response[0], syx_mode_selection_response_length);
-		
-		if (!(mode != mode_ableton && new)) mode_default_update(mode_ableton - new); // This will interrupt boot animation!
-		
-		return;
-	}
-	
-	// Live layout selection - return the status
-	if (!memcmp(d, &syx_live_layout_selection[0], syx_live_layout_selection_length)) {
-		syx_live_layout_selection_response[7] = ableton_layout = *(d + 7);
-		
-		hal_send_sysex(port, &syx_live_layout_selection_response[0], syx_live_layout_selection_response_length);
-
-		if (mode == mode_ableton) {
-			if (ableton_layout == ableton_layout_user) {
-				for (u8 i = 0; i < 100; i++) ableton_screen[i][1] = 0;
-			}
+		// Mode selection - return the status
+		} else if (d[0] == 0x21) {
+			u8 new = d[1] & 1;
 			
-			if (ableton_layout == ableton_layout_note_blank) {
-				for (u8 x = 10; x < 90; x += 10) {
-					for (u8 y = 1; y < 9; y++) ableton_screen[x + y][1] = 0;
-				}
-			}
+			syx_resp_cpy(novation_header);
+			syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x2D;
+			syx_response_buffer[sizeof(syx_novation_header) + 2] = new;
+			syx_response_buffer[sizeof(syx_novation_header) + 3] = 0xF7;
+			syx_send(port, sizeof(syx_novation_header) + 4);
+			
+			if (!(mode != mode_ableton && new))
+				mode_default_update(mode_ableton - new); // This will interrupt boot animation!
+		
+		// Live layout selection - return the status
+		} else if (d[0] == 0x22) {
+			ableton_layout = d[1];
+			
+			syx_resp_cpy(novation_header);
+			syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x2E;
+			syx_response_buffer[sizeof(syx_novation_header) + 2] = d[1];
+			syx_response_buffer[sizeof(syx_novation_header) + 3] = 0xF7;
+			syx_send(port, sizeof(syx_novation_header) + 4);
+
+			if (mode != mode_ableton) return;
+
+			if (ableton_layout == ableton_layout_user)
+				for (u8 i = 0; i < 100; i++)
+					ableton_screen[i][1] = 0;
+			
+			if (ableton_layout == ableton_layout_note_blank)
+				for (u8 x = 10; x < 90; x += 10)
+					for (u8 y = 1; y < 9; y++)
+						ableton_screen[x + y][1] = 0;
 			
 			mode_refresh();
-		}
-		return;
-	}
-	
-	// Standalone layout selection - return the status
-	if (!memcmp(d, &syx_standalone_layout_selection[0], syx_standalone_layout_selection_length)) {
-		if (mode_default != 1) { // If not in Ableton mode
-			u8 new; 
-			syx_standalone_layout_selection_response[7] = new = *(d + 7);
+		
+		// Standalone layout selection - return the status
+		} else if (d[0] == 0x2C) {
+			if (mode_default == mode_ableton) return; // If not in Ableton mode
+
+			syx_resp_cpy(novation_header);
+			syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x2F;
+			syx_response_buffer[sizeof(syx_novation_header) + 2] = d[1];
+			syx_response_buffer[sizeof(syx_novation_header) + 3] = 0xF7;
+			syx_send(port, sizeof(syx_novation_header) + 4);
 			
-			hal_send_sysex(port, &syx_standalone_layout_selection_response[0], syx_standalone_layout_selection_response_length);
+			mode_default_update(d[1] < 4? d[1] + mode_note : mode_performance); // 4 for Performance mode (unavailable on stock)
+		
+		// Create fader control
+		} else if (d[0] == 0x2B) {
+			if ((mode == mode_fader && port == USBSTANDALONE) || (
+				mode == mode_ableton && port == USBMIDI && (
+					ableton_layout == ableton_layout_fader_device ||
+					ableton_layout == ableton_layout_fader_volume ||
+					ableton_layout == ableton_layout_fader_pan ||
+					ableton_layout == ableton_layout_fader_sends
+				)
+			))
+				for (u8 i = 1; i <= (s16)l - 5 && i <= 29; i += 4) {
+					u8 y = d[i] & 0x07;
+					
+					fader_counter[fader_mode][y] = 0;
+					fader_type[fader_mode][y] = d[i + 1] & 1;
+					fader_color[fader_mode][y] = d[i + 2];
+					faders[fader_mode][y] = d[i + 3];
+					
+					fader_draw(y);
+				}
+
+		} else {
+			if (active_port != port || mode >= mode_normal) return;
+
+			// Light LED using SysEx
+			if (d[0] == 0x0A)
+				for (u8 i = 1; i <= (s16)l - 3 && i <= 193; i += 2)
+					regular_led(d[i], d[i + 1]);
 			
-			mode_default_update((new < 4)? (new + mode_note) : mode_performance); // 4 for Performance mode (unavailable on stock)
-		}
-		return;
-	}
-	
-	// Light LED using SysEx
-	if (!memcmp(d, &syx_led_single[0], syx_led_single_length)) {
-		if (active_port != port) return;
+			// Flash LED using SysEx
+			else if (d[0] == 0x23) {
+				for (u8 i = 1; i <= (s16)l - 3 && i <= 193; i += 2) {
+					if (mode == mode_performance) performance_led(0xB, d[i], d[i + 1], 1);
+					else if (mode == mode_programmer) programmer_led(0x1, d[i], d[i + 1], 1);
+					else flash_led(d[i], d[i + 1]);
+				}
 
-		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
-				if (mode == mode_performance) {
-					performance_led(0xF, *(d + i), *(d + i + 1), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x0, *(d + i), *(d + i + 1), 1);
-				} else {
-					novation_led(*(d + i), *(d + i + 1));
+			// Pulse LED using SysEx
+			} else if (d[0] == 0x28) {
+				for (u8 i = 1; i <= (s16)l - 3 && i <= 193; i += 2) {
+					if (mode == mode_performance) performance_led(0xC, d[i], d[i + 1], 1);
+					else if (mode == mode_programmer) programmer_led(0x2, d[i], d[i + 1], 1);
+					else pulse_led(d[i], d[i + 1]);
+				}
+			
+			// Light a column of LEDs using SysEx
+			} else if (d[0] == 0x0C)
+				for (u8 i = 2; i <= (s16)l - 2 && i <= 11; i++)
+					regular_led((i - 8) * 10 + d[1], d[i]);
+			
+			// Light a row of LEDs using SysEx
+			else if (d[0] == 0x0D) {
+				u8 x = d[1] * 10;
+
+				for (u8 i = 2; i <= (s16)l - 2 && i <= 11; i++)
+					regular_led(x + i - 8, d[i]);
+			
+			// Light all LEDs using SysEx
+			} else if (d[0] == 0x0E)
+				for (u8 p = 1; p < 99; p++)
+					regular_led(p, d[1]);
+
+			// Light LED using SysEx (RGB mode)
+			else if (d[0] == 0x0B)
+				for (u16 i = 1; i <= (s16)l - 5 && i <= 309; i += 4)
+					fast_led(d[i], d[i + 1], d[i + 2], d[i + 3]);
+
+			// Light LED grid using SysEx (RGB mode)
+			else if (d[0] == 0x0F) {
+				u16 ceil = d[1]? 193 : 299;
+				u8 p = d[1]? 11 : 0;
+
+				for (u16 i = 2; i <= (s16)l - 4 && i <= ceil; i += 3) {
+					fast_led(p, d[i], d[i + 1], d[i + 2]);
+
+					if (++p % 10 == 9 && d[1])
+						p += 2;
+				}
+			
+			// Text scrolling
+			} else if (d[0] == 0x14) {
+				if (l <= 4) { // Empty message
+					if (mode == mode_text && port == text_port)
+						mode_update(mode_default); // Stops the text scrolling
+
+				} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port != USBMIDI)) { // Valid message
+					text_port = port;
+					text_color = d[1] & 0x7F;
+					text_loop = d[2] != 0;
+
+					u16 bp = 0;
+
+					for (u16 i = 3; i < l - 1; i++)
+						if ((1 <= d[i] && d[i] <= 7) || (32 <= d[i] && d[i] <= 127))
+							text_bytes[bp++] = d[i];
+
+					text_size = bp; // Stop reading bytes at this offset
+
+					for (; bp < sizeof(text_bytes); bp++)
+						text_bytes[bp] = 0; // Clear rest of array
+
+					mode_update(mode_text);
 				}
 			}
 		}
-		return;
-	}
-	
-	// Light a column of LEDs using SysEx
-	if (!memcmp(d, &syx_led_column[0], syx_led_column_length)) {
-		if (active_port != port) return;
 
-		if (mode < mode_normal) {
-			u8 y = *(d + 7);
-			for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
-				if (mode == mode_performance) {
-					performance_led(0xF, (i - 8) * 10 + y, *(d + i), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x0, (i - 8) * 10 + y, *(d + i), 1);
-				} else {
-					novation_led((i - 8) * 10 + y, *(d + i));
+	// Retina palette download
+	} else {
+		if (mode >= mode_normal) return;
+		
+		// Retina palette download
+		if (syx_match(palette_header)) {
+			advance(sizeof(syx_palette_header));
+
+			// Start
+			if (d[0] == uploading_start)
+				palette_modifying = 1;
+			
+			else {
+				if (!palette_modifying) return;
+
+				// Write
+				if (d[0] == uploading_write) {
+					if (d[1] >= 3) return;
+
+					for (u16 i = 2; i <= (s16)l - 5 && i <= 306; i += 4) {
+						dirty = 1;
+
+						for (u8 k = 0; k < 3; k++)
+							palette[d[1]][k][d[i] & 0x7F] = d[i + k + 1] & 0x3F;
+					}
+				
+				// End
+				} else if (d[0] == uploading_end) {
+					palette_modifying = 0;
+					mode_update(mode_default);
 				}
 			}
-		}
-		return;
-	}
-	
-	// Light a row of LEDs using SysEx
-	if (!memcmp(d, &syx_led_row[0], syx_led_row_length)) {
-		if (active_port != port) return;
+			
+		// Custom mode download
+		} else if (syx_match(custom_header)) {
+			advance(sizeof(syx_custom_header));
 
-		if (mode < mode_normal) {
-			u8 x = *(d + 7) * 10;
-			for (u8 i = 8; i <= l - 2 && i <= 17; i++) {
-				if (mode == mode_performance) {
-					performance_led(0xF, x + i - 8, *(d + i), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x0, x + i - 8, *(d + i), 1);
-				} else {
-					novation_led(x + i - 8, *(d + i));
-				}
-			}
-		}
-		return;
-	}
-	
-	// Light all LEDs using SysEx
-	if (!memcmp(d, &syx_led_all[0], syx_led_all_length)) {
-		if (active_port != port) return;
+			// Start
+			if (d[0] == uploading_start) {
+				if (d[1] >= 8) return;
 
-		if (mode < mode_normal) {
-			u8 v = *(d + 7);
-			for (u8 p = 1; p < 99; p++)	{
-				if (mode == mode_performance) {
-					performance_led(0xF, p, v, 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x0, p, v, 1);
-				} else {
-					novation_led(p, v);
-				}
-			}
-		}
-		return;
-	}
-	
-	// Flash LED using SysEx
-	if (!memcmp(d, &syx_led_flash[0], syx_led_flash_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
-				if (mode == mode_performance) {
-					performance_led(0xB, *(d + i), *(d + i + 1), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x1, *(d + i), *(d + i + 1), 1);
-				} else {
-					flash_led(*(d + i), *(d + i + 1));
-				}
-			}
-		}
-		return;
-	}
-
-	// Pulse LED using SysEx
-	if (!memcmp(d, &syx_led_pulse[0], syx_led_pulse_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			for (u8 i = 7; i <= l - 3 && i <= 199; i += 2) {
-				if (mode == mode_performance) {
-					performance_led(0xC, *(d + i), *(d + i + 1), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led(0x2, *(d + i), *(d + i + 1), 1);
-				} else {
-					pulse_led(*(d + i), *(d + i + 1));
-				}
-			}
-		}
-		return;
-	}
-
-	// Light LED using SysEx (RGB mode)
-	if (!memcmp(d, &syx_led_rgb[0], syx_led_rgb_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			for (u16 i = 7; i <= l - 5 && i <= 315; i += 4) {
-				if (mode == mode_performance) {
-					performance_led_rgb(0xF, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led_rgb(0x0, *(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3), 1);
-				} else {
-					rgb_led(*(d + i), *(d + i + 1), *(d + i + 2), *(d + i + 3));
-				}
-			}
-		}
-		return;
-	}
-	
-	// Light LED grid using SysEx (RGB mode)
-	if (!memcmp(d, &syx_led_grid[0], syx_led_grid_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			u8 t = *(d + 7);
-
-			u16 ceil; u8 p;
-			if (t) {
-				ceil = 197;
-				p = 11;
+				custom_modifying = 1;
+				custom_upload_start(d[1]);
+			
 			} else {
-				ceil = 305;
-				p = 0;
-			}
+				if (!custom_modifying) return;
 
-			for (u16 i = 8; i <= l - 4 && i <= ceil; i += 3) {
-				if (mode == mode_performance) {
-					performance_led_rgb(0xF, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
-				} else if (mode == mode_programmer) {
-					programmer_led_rgb(0x0, p, *(d + i), *(d + i + 1), *(d + i + 2), 1);
-				} else {
-					rgb_led(p, *(d + i), *(d + i + 1), *(d + i + 2));
-				}
-
-				if (++p % 10 == 9 && t) {
-					p += 2;
-				}
-			}
-		}
-		return;
-	}
-	
-	// Text scrolling
-	if (!memcmp(d, &syx_text[0], syx_text_length)) {
-		if (active_port != port) return;
-
-		if (mode < mode_normal) {
-			if (l <= 10) { // Empty message
-				if (mode == mode_text && port == text_port) mode_update(mode_default); // Stops the text scrolling
-
-			} else if ((mode_default == mode_ableton && port == USBMIDI) || (mode_default != mode_ableton && port != USBMIDI)) { // Valid message
-				text_port = port;
-				text_color = *(d + 7) & 127;
-				text_loop = *(d + 8) != 0;
-
-				// TODO Optimize RAM
-
-				u16 bp = 1;
-
-				for (u16 i = 9; i < l - 1; i++) {
-					u8 v = *(d + i);
-					if ((1 <= v && v <= 7) || (32 <= v && v <= 127)) {
-						text_bytes[bp++] = v;
-					}
-				}
-
-				for (u16 i = bp; i < text_bytes[0]; i++) text_bytes[i] = 0; // Clear rest of array
-
-				text_bytes[0] = bp; // Stop reading bytes at this offset
-
-				mode_update(mode_text);
-			}
-		}
-		return;
-	}
-
-	// Retina palette download start
-	if (!memcmp(d, &syx_palette_start[0], syx_palette_start_length)) {
-		if (mode < mode_normal)
-			palette_modifying = 1;
-
-		return;
-	}
-	
-	// Retina palette download write
-	if (!memcmp(d, &syx_palette_write[0], syx_palette_write_length)) {
-		if (mode < mode_normal && palette_modifying) {
-			u8 j = *(d + 8);
-
-			if (j < 3) {
-				for (u16 i = 9; i <= l - 5 && i <= 313; i += 4) {
-					dirty = 1;
-
-					for (u8 k = 0; k < 3; k++) {
-						palette[j][k][*(d + i)] = *(d + i + k + 1);
-					}
-				}
-			}
-		}
-		return;
-	}
-	
-	// Retina palette download end
-	if (!memcmp(d, &syx_palette_end[0], syx_palette_end_length)) {
-		if (mode < mode_normal && palette_modifying) {
-			palette_modifying = 0;
-			mode_update(mode_default);
-		}
-		return;
-	}
-	
-	// Custom mode download start
-	if (!memcmp(d, &syx_custom_start[0], syx_custom_start_length)) {
-		if (mode < mode_normal && d[8] < 8) {
-			custom_modifying = 1;
-			custom_upload_start(d[8]);
-		}
-		return;	
-	}
-	
-	// Custom mode download write
-	if (!memcmp(d, &syx_custom_write[0], syx_custom_write_length)) {
-		if (mode < mode_normal && custom_modifying)
-			custom_upload_push(d + 8);
-
-		return;
-	}
-	
-	// Custom mode download end
-	if (!memcmp(d, &syx_custom_end[0], syx_custom_end_length)) {
-		if (mode < mode_normal && custom_modifying) {
-			custom_upload_end();
-
-			custom_modifying = 0;
-			mode_refresh();
-		}
-		return;
-	}
-	
-	// Create fader control
-	if (!memcmp(d, &syx_fader[0], syx_fader_length)) {
-		if ((mode == mode_fader && port == USBSTANDALONE) || (mode == mode_ableton && port == USBMIDI && (ableton_layout == ableton_layout_fader_device || ableton_layout == ableton_layout_fader_volume || ableton_layout == ableton_layout_fader_pan || ableton_layout == ableton_layout_fader_sends))) {
-			for (u8 i = 7; i <= l - 5 && i <= 35; i += 4) {
-				u8 y = *(d + i) & 7;
+				// Write
+				if (d[0] == uploading_write)
+					custom_upload_push(d + 1);
 				
-				fader_counter[fader_mode][y] = 0;
-				fader_type[fader_mode][y] = *(d + i + 1) & 1;
-				fader_color[fader_mode][y] = *(d + i + 2);
-				faders[fader_mode][y] = *(d + i + 3);
-				
-				fader_draw(y);
+				// End
+				else if (d[0] == uploading_end) {
+					custom_upload_end();
+
+					custom_modifying = 0;
+					mode_refresh();
+				}
 			}
 		}
-		return;
 	}
 }

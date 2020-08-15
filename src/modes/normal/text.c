@@ -119,7 +119,8 @@ const u8 text_ticks[7] = {187, 141, 116, 95, 75, 58, 47};
 u8 text_port = 0;
 u8 text_color = 127;
 u8 text_loop = 0;
-u8 text_bytes[323] = {};
+u8 text_bytes[322] = {};
+u16 text_size = 0;
 
 u8 text_speed = 3; // Default speed gets overwritten after changed
 u8 text_elapsed = 80;
@@ -154,7 +155,7 @@ void text_timer_event() {
 				while (b < 8) {
 					text_speed = b - 1;
 					
-					if (++text_counter == text_bytes[0]) {
+					if (++text_counter == text_size) {
 						text_counter = 0;
 						break;
 					}
@@ -176,7 +177,7 @@ void text_timer_event() {
 				
 				if (text_subcounter == l + 2) { // Increment counters
 					text_subcounter = 0;
-					if (++text_counter == text_bytes[0]) {
+					if (++text_counter == text_size) {
 						text_counter = 0;
 					}
 				}
@@ -189,7 +190,10 @@ void text_timer_event() {
 					c += text_frame[i] == 0;
 				
 				if (c == 10) { // If frames empty
-					hal_send_sysex(text_port, &syx_text_response[0], syx_text_response_length);
+					syx_resp_cpy(novation_header);
+					syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x15;
+					syx_response_buffer[sizeof(syx_novation_header) + 2] = 0xF7;
+					syx_send(text_port, sizeof(syx_novation_header) + 3);
 					
 					if (text_loop) {
 						text_counter = 1;

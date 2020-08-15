@@ -2,12 +2,12 @@
 #define TEXT_H
 
 #include "app.h"
+#include "sysex/sysex.h"
+
 #include "modes/mode.h"
 
-#include "string.h"
-#include "sysex/messages.h"
-
-u8 text_port, text_color, text_loop, text_bytes[323];
+u8 text_port, text_color, text_loop, text_bytes[322];
+u16 text_size;
 
 void text_init();
 void text_timer_event();

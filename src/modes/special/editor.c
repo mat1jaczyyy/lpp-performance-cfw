@@ -81,8 +81,6 @@ void editor_select_flip(u8 i) {
 void editor_export() {
 	editor_export_do = 1;
 	editor_export_counter = 0;
-
-	hal_send_sysex(USBSTANDALONE, &syx_palette_start[0], syx_palette_start_length);
 }
 
 void editor_init() {
@@ -92,16 +90,19 @@ void editor_init() {
 
 void editor_timer_event() {
 	if (editor_export_do) {
+		syx_resp_cpy(palette_header);
+		
 		for (u8 i = 0; i < editor_export_speed; i++) {
-			syx_palette_export[8] = editor_export_counter;
-			for (u8 j = 0; j < 3; j++) syx_palette_export[j + 9] = palette[palette_selected][j][editor_export_counter];
-			
-			hal_send_sysex(USBSTANDALONE, &syx_palette_export[0], syx_palette_export_length);
+			syx_response_buffer[sizeof(syx_palette_header) + 1] = editor_export_counter;
+
+			for (u8 j = 0; j < 3; j++)
+				syx_response_buffer[sizeof(syx_palette_header) + 2 + j] = palette[palette_selected][j][editor_export_counter];
+
+			syx_response_buffer[sizeof(syx_palette_header) + 5] = editor_export_counter;
+			syx_send(USBSTANDALONE, sizeof(syx_novation_header) + 6);
 			
 			if (++editor_export_counter >= editor_export_max) {
 				editor_export_do = 0;
-				
-				hal_send_sysex(USBSTANDALONE, &syx_palette_end[0], syx_palette_end_length);
 				return;
 			}
 		}

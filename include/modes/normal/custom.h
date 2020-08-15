@@ -4,6 +4,7 @@
 #include "app.h"
 #include "modes/mode.h"
 #include "send/send.h"
+#include "sysex/sysex.h"
 
 #include "aftertouch/aftertouch.h"
 

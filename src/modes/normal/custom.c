@@ -313,7 +313,6 @@ void custom_timer_event() {
 	if (!custom_valid) return;
 
 	if (custom_export_slot < 8 && custom_export++ % 7 == 0) {
-		u16 i = 8;
 		u8 p = custom_export / 7;
 		
 		const u8* c = custom_data(custom_export_slot);
@@ -324,17 +323,19 @@ void custom_timer_event() {
 
 		c -= l;
 
+		syx_resp_cpy(custom_header);
+		u16 i = sizeof(syx_custom_header) + 1;
+
 		if (p == 0) {
-			syx_custom_export[i++] = l >> 7;
-			syx_custom_export[i++] = l & 0x7F;
+			syx_response_buffer[i++] = l >> 7;
+			syx_response_buffer[i++] = l & 0x7F;
 		}
 
-		for (u16 j = p == 0? 0 : 310 * p - 2; i < syx_custom_export_length - 1 && c[j] != 0xF7; j++)
-			syx_custom_export[i++] = c[j];
+		for (u16 j = p == 0? 0 : 310 * p - 2; i < sizeof(syx_response_buffer) - 1 && c[j] != 0xF7; j++)
+			syx_response_buffer[i++] = c[j];
 		
-		syx_custom_export[i++] = 0xF7;
-
-		hal_send_sysex(USBSTANDALONE, &syx_custom_export[0], i);
+		syx_response_buffer[i++] = 0xF7;
+		syx_send(USBSTANDALONE, i);
 
 		if (310 * (p + 1) - 2 >= l) custom_export_slot = 255;
 	}

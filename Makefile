@@ -28,7 +28,7 @@ SOURCES += src/aftertouch/aftertouch.c
 SOURCES += src/flash/write.c src/flash/flash.c src/flash/settings.c
 SOURCES += src/led/led.c src/led/palettes.c
 SOURCES += src/send/send.c
-SOURCES += src/sysex/sysex.c src/sysex/messages.c
+SOURCES += src/sysex/sysex.c
 SOURCES += src/other/conversion.c src/other/tempo.c
 
 SOURCES += src/modes/mode.c
