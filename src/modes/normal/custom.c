@@ -8,6 +8,10 @@
 #define active_slot_g 63
 #define active_slot_b 27
 
+#define invalid_slot_r 63
+#define invalid_slot_g 0
+#define invalid_slot_b 0
+
 #define custom_rom_start 0x0801D800
 #define custom_rom_size 0x400
 
@@ -28,6 +32,8 @@ typedef struct {
 const u8* custom_data(u8 i) {
 	return (const u8*)custom_rom_start + custom_rom_size * i;
 }
+
+u8 custom_valid = 0;
 
 u8 custom_prev_active_slot = 255, custom_active_slot = 0;
 u8 custom_on = 21;
@@ -188,71 +194,87 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	}
 }
 
-void custom_init() {
-	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
+u8 custom_load() {
+	custom_prev_active_slot = custom_active_slot;
 
-    for (u8 i = 0; i < 8; i++) {
-		if (custom_active_slot == i)
-       		rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
-		else rgb_led(89 - i * 10, inactive_slot_r, inactive_slot_g, inactive_slot_b);
-	}
+	const u8* data = custom_data(custom_active_slot);
+	const void* top = custom_data(custom_active_slot + 1);
 
-	active_port = USBSTANDALONE;
+	while (*data != 0x7F)// Skip web-editor region (name and object metadata)
+		if (*data > 0x7F || (void*)data++ >= top) return 0;
 
-	if (custom_prev_active_slot != custom_active_slot) {
-		custom_prev_active_slot = custom_active_slot;
+	custom_on = data[3];
 
-		const u8* data = custom_data(custom_active_slot);
-		while (*data != 0x7F) data++;  // Skip web-editor region (name and object metadata)
-		custom_on = data[3];
+	memset(map, 0, sizeof(map));
+	memset(outputting, 0, sizeof(outputting));
+	memset(custom_faders, 0, sizeof(custom_faders));
+	memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
 
-		memset(map, 0, sizeof(map));
-		memset(outputting, 0, sizeof(outputting));
-		memset(custom_faders, 0, sizeof(custom_faders));
-		memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
+	for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
+		if (blob->xy > 0x7F || (void*)blob >= top) return 0;
 
-		for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
-			if (blob->blob.kind) {   // Regular pad
-				u8 x = blob->xy / 10 - 1;
-				u8 y = blob->xy % 10 - 1;
-				map[x][y].blob = &blob->blob;
+		if (blob->blob.kind) {   // Regular pad
+			u8 x = blob->xy / 10 - 1;
+			u8 y = blob->xy % 10 - 1;
+			map[x][y].blob = &blob->blob;
+		
+		} else if (blob->xy < 8) {   // Fader
+			u8 p = blob->xy;
 			
-			} else if (blob->xy < 8) {   // Fader
-				u8 p = blob->xy;
-				
-				if ((custom_fader_orientation = blob->blob.trig >> 1))
-					p = 7 - p;
+			if ((custom_fader_orientation = blob->blob.trig >> 1))
+				p = 7 - p;
 
-				custom_faders[p].anim = custom_fader_anims + p;
-				
-				for (u8 i = 0; i < 8; i++) {
-					if (blob->blob.trig < 2)
-						map[i][p].blob = &blob->blob;
+			custom_faders[p].anim = custom_fader_anims + p;
+			
+			for (u8 i = 0; i < 8; i++) {
+				if (blob->blob.trig < 2)
+					map[i][p].blob = &blob->blob;
 
-					else map[p][i].blob = &blob->blob;
+				else map[p][i].blob = &blob->blob;
 
-					if (custom_faders[i].blob && custom_faders[i].blob->ch == blob->blob.ch && custom_faders[i].blob->p == blob->blob.p)
-						custom_faders[p].anim = custom_faders[i].anim;
-				}
-
-				custom_faders[p].blob = &blob->blob;
-				custom_faders[p].type = blob->blob.trig & 1;
-				custom_faders[p].color = blob->blob.bg;
-				custom_faders[p].anim->value = custom_faders[p].anim->final = 127;
+				if (custom_faders[i].blob && custom_faders[i].blob->ch == blob->blob.ch && custom_faders[i].blob->p == blob->blob.p)
+					custom_faders[p].anim = custom_faders[i].anim;
 			}
+
+			custom_faders[p].blob = &blob->blob;
+			custom_faders[p].type = blob->blob.trig & 1;
+			custom_faders[p].color = blob->blob.bg;
+			custom_faders[p].anim->value = custom_faders[p].anim->final = 127;
 		}
 	}
 
-	for (u8 x = 0; x < 8; x++)
-		for (u8 y = 0; y < 8; y++)
-			if (map[x][y].blob && map[x][y].blob->kind)
-				novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
+	return 1;
+}
 
+void custom_init() {
+	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
+
+	active_port = USBSTANDALONE;
+
+	if (custom_prev_active_slot != custom_active_slot)
+		custom_valid = custom_load();
+
+	if (custom_valid) {
+		for (u8 x = 0; x < 8; x++)
+			for (u8 y = 0; y < 8; y++)
+				if (map[x][y].blob && map[x][y].blob->kind)
+					novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
+
+		for (u8 i = 0; i < 8; i++)
+			custom_fader_draw(i);
+	}
+	
 	for (u8 i = 0; i < 8; i++)
-		custom_fader_draw(i);
+		if (custom_active_slot == i) {
+			if (custom_valid) rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
+			else rgb_led(89 - i * 10, invalid_slot_r, invalid_slot_g, invalid_slot_b);
+
+		} else rgb_led(89 - i * 10, inactive_slot_r, inactive_slot_g, inactive_slot_b);
 }
 
 void custom_timer_event() {
+	if (!custom_valid) return;
+
 	for (u8 i = 0; i < 8; i++) {
 		if (!custom_faders[i].blob) continue;
 
@@ -302,6 +324,8 @@ void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 }
 
 void custom_send(u8 t, u8 ch, u8 p, u8 v) {
+	if (!custom_valid) return;
+
 	send_midi(USBSTANDALONE, (t << 4) | (ch & 0xF), p, v);
 	custom_highlight(t, ch, p, v, 0);
 }
@@ -317,7 +341,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
                 mode_refresh();
             }
         
-		} else if (1 <= x && x <= 8 && 1 <= y && y <= 8) {
+		} else if (custom_valid && 1 <= x && x <= 8 && 1 <= y && y <= 8) {
 			x--;
 			y--;
 
@@ -362,7 +386,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE) {
+	if (custom_valid && port == USBSTANDALONE) {
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
@@ -373,12 +397,16 @@ void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void custom_aftertouch_event(u8 v) {
+	if (!custom_valid) return;
+
 	for (u8 i = 0; i < 16; i++)
 		if (outputting[i])
 			aftertouch_send(USBSTANDALONE, 0xD0 | i, v);
 }
 
 void custom_poly_event(u8 p, u8 v) {
+	if (!custom_valid) return;
+
 	u8 x = p / 10 - 1;
 	u8 y = p % 10 - 1;
 
