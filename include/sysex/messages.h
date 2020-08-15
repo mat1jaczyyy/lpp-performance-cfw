@@ -86,7 +86,6 @@ const u8 syx_palette_end[syx_palette_end_length];
 
 const u8 syx_custom_start[syx_custom_start_length];
 const u8 syx_custom_write[syx_custom_write_length];
-const u8 syx_custom_request[syx_custom_request_length];
 u8 syx_custom_export[syx_custom_export_length];
 const u8 syx_custom_end[syx_custom_end_length];
 

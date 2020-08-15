@@ -421,34 +421,6 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		return;
 	}
 	
-	// Custom mode upload request
-	if (!memcmp(d, &syx_custom_request[0], syx_custom_request_length)) {
-		if (d[8] < 8 && d[9] < 3) {
-			u16 i = 8;
-			
-			const u8* c = custom_data(d[8]);
-
-			if (d[9] == 0) {
-				u16 l = 0;
-				for (; *c != 0xF7; c++)
-					l++;
-
-				c -= l;
-
-				syx_custom_export[i++] = l >> 7;
-				syx_custom_export[i++] = l & 0x7F;
-			}
-
-			for (u16 j = d[9] == 0? 0 : 310 * d[9] - 2; i < syx_custom_export_length - 1 && c[j] != 0xF7; j++)
-				syx_custom_export[i++] = c[j];
-			
-			syx_custom_export[i++] = 0xF7;
-
-			hal_send_sysex(port, &syx_custom_export[0], i);
-		}
-		return;
-	}
-	
 	// Custom mode download end
 	if (!memcmp(d, &syx_custom_end[0], syx_custom_end_length)) {
 		if (mode < mode_normal && custom_modifying) {

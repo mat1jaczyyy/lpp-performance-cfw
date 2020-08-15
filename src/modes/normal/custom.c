@@ -41,6 +41,9 @@ void custom_upload_end() {
 	flash_write_custom(custom_upload_index, custom_upload_buffer);
 }
 
+u8 custom_export = 0;
+u8 custom_export_slot = 255;
+
 #define custom_rom_start 0x0801D800
 #define custom_rom_size 0x400
 
@@ -230,7 +233,7 @@ u8 custom_load() {
 	const u8* data = custom_data(custom_active_slot);
 	const void* top = custom_data(custom_active_slot + 1);
 
-	while (*data != 0x7F)// Skip web-editor region (name and object metadata)
+	while (*data != 0x7F)  // Skip web-editor region (name and object metadata)
 		if (*data > 0x7F || (void*)data++ >= top) return 0;
 
 	custom_on = data[3];
@@ -308,6 +311,33 @@ void custom_init() {
 
 void custom_timer_event() {
 	if (!custom_valid) return;
+
+	if (custom_export_slot < 8 && custom_export++ % 7 == 0) {
+		u16 i = 8;
+		u8 p = custom_export / 7;
+		
+		const u8* c = custom_data(custom_export_slot);
+
+		u16 l = 0;
+		for (; *c != 0xF7; c++)
+			l++;
+
+		c -= l;
+
+		if (p == 0) {
+			syx_custom_export[i++] = l >> 7;
+			syx_custom_export[i++] = l & 0x7F;
+		}
+
+		for (u16 j = p == 0? 0 : 310 * p - 2; i < syx_custom_export_length - 1 && c[j] != 0xF7; j++)
+			syx_custom_export[i++] = c[j];
+		
+		syx_custom_export[i++] = 0xF7;
+
+		hal_send_sysex(USBSTANDALONE, &syx_custom_export[0], i);
+
+		if (310 * (p + 1) - 2 >= l) custom_export_slot = 255;
+	}
 
 	if (custom_held_slot < 8 && custom_delete_blink) {
 		if (++custom_delete_blink > 400) custom_delete_blink = 1;
@@ -400,7 +430,13 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			}
         
 		} else if (custom_valid) {
-			if (p == 50) { // Delete mode
+			if (p == 91) { // Export mode
+				if (v) {
+					custom_export = 0;
+					custom_export_slot = custom_active_slot;
+				}
+
+			} else if (p == 50) { // Delete mode
 				if (v) {
 					if (custom_held_slot < 8) {
 						rgb_led(50, invalid_slot_r, invalid_slot_g, invalid_slot_b);
