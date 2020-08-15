@@ -35,9 +35,27 @@ u8 custom_on = 21;
 custom_map_blob map[8][8] = {};
 s8 outputting[16] = {};
 
-const u8 custom_fader_stops[2][8] = {
-	{0, 17, 34, 52, 70, 89, 108, 127}, // Linear
-	{0, 21, 42, 63, 64, 85, 106, 127}  // Pan
+const u8 custom_fader_stops[2][8][4] = {
+	{ // Linear
+		{0, 4, 8, 12},
+		{17, 21, 25, 29},
+		{34, 38, 42, 47},
+		{52, 56, 60, 65},
+		{70, 74, 79, 84},
+		{89, 93, 98, 103},
+		{108, 112, 117, 122},
+		{127}
+	},
+	{ // Pan
+		{0},
+		{21, 16, 11, 6},
+		{42, 37, 32, 27},
+		{63, 58, 53, 48},
+		{64, 69, 74, 79},
+		{85, 90, 95, 100},
+		{106, 111, 116, 121},
+		{127}
+	}
 };
 
 typedef struct {
@@ -52,31 +70,72 @@ custom_fader custom_faders[8];
 
 u8 custom_fader_orientation = 0;
 
-void custom_fader_led(u8 x, u8 y, u8 v) {
-	novation_led(((custom_fader_orientation? y : x) + 1) * 10 + (custom_fader_orientation? x : y) + 1, v);
+void custom_fader_led(u8 x, u8 y, u8 v, u8 f) {
+	rgb_led(
+		((custom_fader_orientation? y : x) + 1) * 10 + (custom_fader_orientation? x : y) + 1,
+		palette_value(palette_novation, v, 0) >> f,
+		palette_value(palette_novation, v, 1) >> f,
+		palette_value(palette_novation, v, 2) >> f
+	);
 }
 
 void custom_fader_draw(u8 i) {
 	if (!custom_faders[i].blob) return;
 
-	const u8* stops = custom_fader_stops[custom_faders[i].type];
-
 	if (custom_faders[i].type) {   // Pan
-		if (custom_faders[i].value < stops[3])
-			for (s8 x = 7; x >= 0; x--)
-				custom_fader_led(x, i, x <= 3 && custom_faders[i].value <= stops[x]? custom_faders[i].color : 0);
+		if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][3][0])
+			for (s8 x = 7; x >= 0; x--) {
+				u8 f = 0;
 
-		else if (custom_faders[i].value > stops[4])
-			for (u8 x = 0; x < 8; x++)
-				custom_fader_led(x, i, 4 <= x && custom_faders[i].value >= stops[x]? custom_faders[i].color : 0);
+				if (x >= 4) f = 7;
+				else if (x == 0) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][0][0]? 0 : 7;
+				else if (custom_faders[i].value <= custom_fader_stops[custom_faders[i].type][x - 1][0]) f = 0;
+				else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else for (u8 j = 0; j < 3; j++)
+					if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+						f = 3 - j;
+						break;
+					}
+
+				custom_fader_led(x, i, custom_faders[i].color, f);
+			}
+
+		else if (custom_faders[i].value > custom_fader_stops[custom_faders[i].type][4][0])
+			for (u8 x = 0; x < 8; x++) {
+				u8 f = 0;
+
+				if (x <= 3) f = 7;
+				else if (x == 7) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
+				else if (custom_faders[i].value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
+				else if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else for (u8 j = 0; j < 3; j++)
+					if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+						f = 3 - j;
+						break;
+					}
+				
+				custom_fader_led(x, i, custom_faders[i].color, f);
+			}
 
 		else
 			for (u8 x = 0; x < 8; x++)
-				custom_fader_led(x, i, x == 3 || x == 4? custom_faders[i].color : 0);
+				custom_fader_led(x, i, x == 3 || x == 4? custom_faders[i].color : 0, 0);
 
 	} else   // Linear
-		for (u8 x = 0; x < 8; x++)
-			custom_fader_led(x, i, custom_faders[i].value >= stops[x] && custom_faders[i].value? custom_faders[i].color : 0);
+		for (u8 x = 0; x < 8; x++) {
+			u8 f = 0;
+
+			if (x == 7) f = custom_faders[i].value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
+			else if (custom_faders[i].value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
+			else if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+			else for (u8 j = 0; j < 3; j++)
+				if (custom_faders[i].value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+					f = 3 - j;
+					break;
+				}
+
+			custom_fader_led(x, i, custom_faders[i].color, f);
+		}
 }
 
 void custom_fader_send(custom_fader* fader) {
@@ -96,7 +155,14 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 
 	u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
 	
-	custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c]; // Save final value of the line
+	custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c][0]; // Save final value of the line
+
+	if ((custom_faders[i].type == 0 && c != 7) || (custom_faders[i].type == 1 && c != 0 && c != 7)) // Retrigger small steps
+		for (u8 j = 0; j < 3; j++)
+			if (custom_fader_stops[custom_faders[i].type][c][j] == custom_faders[i].value) {
+				custom_faders[i].final = custom_fader_stops[custom_faders[i].type][c][j + 1];
+				break;
+			}
 	
 	s8 direction = 2 * (custom_faders[i].value < custom_faders[i].final) - 1; // Direction of line - {-1} = down, {1} = up
 	u16 diff = (direction > 0)? (custom_faders[i].final - custom_faders[i].value) : (custom_faders[i].value - custom_faders[i].final); // Difference between current value and new value
@@ -161,7 +227,7 @@ void custom_init() {
 				custom_faders[p].blob = &blob->blob;
 				custom_faders[p].type = blob->blob.trig & 1;
 				custom_faders[p].color = blob->blob.bg;
-				custom_faders[p].value = 127;
+				custom_faders[p].value = custom_faders[p].final = 127;
 			}
 		}
 	}
