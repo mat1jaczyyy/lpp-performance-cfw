@@ -21,7 +21,7 @@ syx_declare_len(response_buffer, 319);
 
 const syx_declare_len(novation_header, 5);
 const syx_declare_len(palette_header, 6);
-const syx_declare_len(custom_header, 7);
+const syx_declare_len(custom_header, 6);
 
 #define uploading_export 0x23
 

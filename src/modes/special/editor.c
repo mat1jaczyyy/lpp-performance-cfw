@@ -99,7 +99,7 @@ void editor_timer_event() {
 				syx_response_buffer[sizeof(syx_palette_header) + 2 + j] = palette[palette_selected][j][editor_export_counter];
 
 			syx_response_buffer[sizeof(syx_palette_header) + 5] = editor_export_counter;
-			syx_send(USBSTANDALONE, sizeof(syx_novation_header) + 6);
+			syx_send(USBSTANDALONE, sizeof(syx_palette_header) + 6);
 			
 			if (++editor_export_counter >= editor_export_max) {
 				editor_export_do = 0;
