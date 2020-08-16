@@ -182,6 +182,21 @@ void custom_fader_draw(u8 i) {
 		}
 }
 
+u16 custom_fader_times_a[12] = {
+	8062, 6450, 5374, 4607, 4031, 3583, 3224, 2932, 2688, 2481, 2303, 2150
+};
+
+u16 custom_fader_times_b[16] = {
+	2016, 1896, 1792, 1696, 1613, 1536, 1467, 1403, 1344, 1291, 1240, 1192, 1152, 1112, 1076, 1040
+};
+
+u32 custom_fader_time(u8 v) {
+	if (v < 48) return custom_fader_times_a[v >> 2];
+	if (v < 112) return custom_fader_times_b[v & 0x0F] >> ((v >> 4) - 3);
+
+	return 126;
+}
+
 void custom_fader_send(custom_fader* fader) {
 	u8 ch = fader->blob->ch <= 0xF? fader->blob->ch : 0x0;
 	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, fader->anim->value);
@@ -196,8 +211,6 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	if (!custom_faders[i].blob) return;
 
 	v = custom_fader_vel_sensitive? v : 127;
-
-	u16 time = (14110 - (110 * v)) / 7; // Time it takes to do the line
 	
 	custom_faders[i].anim->final = custom_fader_stops[custom_faders[i].type][c][0]; // Save final value of the line
 
@@ -211,11 +224,23 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	s8 direction = 2 * (custom_faders[i].anim->value < custom_faders[i].anim->final) - 1; // Direction of line - {-1} = down, {1} = up
 	u16 diff = (direction > 0)? (custom_faders[i].anim->final - custom_faders[i].anim->value) : (custom_faders[i].anim->value - custom_faders[i].anim->final); // Difference between current value and new value
 	
-	custom_faders[i].anim->elapsed = 0; // Stop current line
-	
-	if (diff == 0) custom_fader_send(custom_faders + i);
+	custom_faders[i].anim->elapsed = custom_faders[i].anim->counter = 0; // Stop current line
 
-	else if (time >= diff) { // Enough time to do line smoothly
+	if (diff == 1)
+		custom_faders[i].anim->value = custom_faders[i].anim->final;
+	
+	if (diff <= 1) {
+		custom_fader_send(custom_faders + i);
+
+		for (u8 i = 0; i < 8; i++)
+			custom_fader_draw(i);
+
+		return;
+	}
+
+	u16 time = custom_fader_time(v) * (diff - 1) / 126; // Time it takes to do the line
+
+	if (time >= diff) { // Enough time to do line smoothly
 		custom_faders[i].anim->tick = time / diff;
 		custom_faders[i].anim->counter = diff;
 		custom_faders[i].anim->change = direction;
