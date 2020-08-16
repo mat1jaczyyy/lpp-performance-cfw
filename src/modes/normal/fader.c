@@ -120,7 +120,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			s8 direction = 2 * (faders[fader_mode][y] < fader_final[fader_mode][y]) - 1; // Direction of line - {-1} = down, {1} = up
 			u16 diff = (direction > 0)? (fader_final[fader_mode][y] - faders[fader_mode][y]) : (faders[fader_mode][y] - fader_final[fader_mode][y]); // Difference between current value and new value
 			
-			fader_elapsed[fader_mode][y] = 0; // Stop current line
+			fader_counter[fader_mode][y] = 0; // Stop current line
 			
 			if (diff == 0) {
 				send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Resend fader
