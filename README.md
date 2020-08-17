@@ -69,7 +69,7 @@ To save and exit, press the Setup button.
 
 You can also use the Palette Utility as part of the [Launchpad Utility](https://fw.mat1jaczyyy.com) to upload a Retina palette into one of the palette slots on the Launchpad. Simply import your Retina palette and select the desired Palette Index. Then, click Upload.
 
-To download a palette from the Launchpad to the computer, press Up on your Launchpad to send the palette to the Palette Utility. where you can then export it into a file.
+To download a palette from the Launchpad to the computer, press the Up key on your Launchpad to send the palette to the Palette Utility, where you can then export it into a file.
 
 ### Piano mode
 
@@ -79,7 +79,7 @@ The new Piano mode is similar to the Note mode, but employs a classical piano-li
 
 The Custom modes turn the Launchpad's 8x8 grid into a highly customizable surface. Based on the custom mode framework seen on the Launchpad X, Mini MK3 and Pro MK3; this mode lets you run custom modes created in the [Novation Components app](https://components.novationmusic.com/) natively on your Launchpad Pro, even stored across sessions.
 
-To load a custom mode from the Components app, first download it as a `*.syx` file to your computer. Then, import it into the [Launchpad Utility](https://fw.mat1jaczyyy.com/modes), select a slot to upload to and click Upload. You can also use this tool to export any custom modes from your Launchpad Pro back into a `*.syx` file, which can then be reloaded into Components for further editing.
+To load a custom mode from the Components app, first download it as a `*.syx` file to your computer. Then, import it into the [Launchpad Utility](https://fw.mat1jaczyyy.com/modes), select a slot to upload to and click Upload. You can also use this tool to export any custom modes from your Launchpad Pro back into a `*.syx` file, which can then be reloaded into Components for further editing. This is done by pressing the Up key on your Launchpad while in a custom mode to send that mode to the Launchpad Utility, similarly to how it's done for custom palettes.
 
 The right hand side of the Launchpad allows for switching between 8 custom mode slots available on the firmware. If a slot lights up red, it's empty and unavailable. If it lights up green, the mode exists and is loaded properly. To delete existing modes, hold down the slot you want to delete and press the Delete key on the left hand side of the Launchpad 3 times.
 
