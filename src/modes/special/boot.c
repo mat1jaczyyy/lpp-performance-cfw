@@ -1,11 +1,11 @@
 #include "modes/special/boot.h"
 
-#define boot_note_tick 72
+#define boot_note_tick 54
 #define boot_note_length 17
 
 #define boot_rotate_180 1
 
-#define boot_fade_tick 4
+#define boot_fade_tick 3
 
 #define boot_colors_length 252
 
@@ -40,9 +40,11 @@ u8 boot_colors(u8 i, u8 c) {
 		if (i < 189) return 63;
 		if (i < 252) return 251 - i;
 	
-	} else if (c == 1) return 0;
+	} else if (c == 1) {
+        if (i < 63) return (i + 1) / 7;
+        if (i < 126) return (125 - i) / 7;
 	
-	else if (c == 2) {
+	} else if (c == 2) {
 		if (i < 63) return i + 1;
 		if (i < 126) return 63;
 		if (i < 189) return 188 - i;
