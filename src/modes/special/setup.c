@@ -44,6 +44,14 @@
 #define setup_brightness_g 7
 #define setup_brightness_b 23
 
+#define setup_custom_on_r 0
+#define setup_custom_on_g 63
+#define setup_custom_on_b 37
+
+#define setup_custom_off_r 10
+#define setup_custom_off_g 0
+#define setup_custom_off_b 0
+
 #define konami_r 63
 #define konami_g 0
 #define konami_b 0
@@ -120,6 +128,26 @@ void setup_init() {
 		}
 	}
 
+	if (mode_default == mode_custom) {
+		if (custom_surface_led) {
+			rgb_led(15, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(15, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
+		}
+
+		if (custom_midi_led) {
+			rgb_led(16, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(16, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
+		}
+		
+		if (custom_fader_vel_sensitive) {
+			rgb_led(18, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
+		} else {
+			rgb_led(18, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
+		}
+	}
+
 	if (idle_enabled) {
 		rgb_led(41, setup_idle_r, setup_idle_g, setup_idle_b); // Idle animation enabled
 	} else {
@@ -163,6 +191,7 @@ void setup_init() {
 	rgb_led(72, mode_fader_r >> 2, mode_fader_g >> 2, mode_fader_b >> 2); // Fader mode
 	rgb_led(73, mode_programmer_r >> 2, mode_programmer_g >> 2, mode_programmer_b >> 2); // Programmer mode
 	rgb_led(61, mode_piano_r >> 2, mode_piano_g >> 2, mode_piano_b >> 2); // Piano mode
+	rgb_led(62, mode_custom_r >> 2, mode_custom_g >> 2, mode_custom_b >> 2); // Custom mode
 
 	switch (mode_default) {
 		case 0:
@@ -191,6 +220,10 @@ void setup_init() {
 
 		case 6:
 			rgb_led(61, mode_piano_r, mode_piano_g, mode_piano_b); // Piano mode selected
+			break;
+
+		case 7:
+			rgb_led(62, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode selected
 			break;
 	}
 	
@@ -253,8 +286,8 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_default = p - 68;
 			mode_refresh();
 		
-		} else if (p == 61) {
-			mode_default = mode_piano;
+		} else if (61 <= p && p <= 62) {
+			mode_default = p - 55;
 			mode_refresh();
 		
 		} else if (mode_default == mode_performance) {
@@ -276,6 +309,23 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			} else if (p == 78) { // Change DR or XY layout
 				performance_xy_enabled = (performance_xy_enabled)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+			}
+		
+		} else if (mode_default == mode_custom) {
+			if (p == 15) {
+				custom_surface_led = (custom_surface_led)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+
+			} else if (p == 16) {
+				custom_midi_led = (custom_midi_led)? 0 : 1;
+				dirty = 1;
+				mode_refresh();
+
+			} else if (p == 18) {
+				custom_fader_vel_sensitive = (custom_fader_vel_sensitive)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 			}

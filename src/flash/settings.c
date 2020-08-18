@@ -8,3 +8,6 @@ u8 aftertouch_enabled = 0; // 0 = Off, 1 = Pressure, 2 = Poly
 u8 direct_enabled = 0;
 u8 idle_enabled = 1;
 u8 led_brightness = 7;
+u8 custom_surface_led = 1;
+u8 custom_midi_led = 1;
+u8 custom_fader_vel_sensitive = 0;
