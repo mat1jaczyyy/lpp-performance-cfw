@@ -99,6 +99,10 @@ u8 scale_segment = 7;
 u8 scale_selected = 25;
 u8 scale_root = 0;
 
+u8 note_channel() {
+	return mode_default == mode_note? channels[0] : 0;
+}
+
 void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
 		rgb_led(*(p + i), r, g, b);
@@ -278,7 +282,7 @@ void note_draw() {
 	}
 
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		send_midi(2 - mode_default, 0x80, i, 0);
+		send_midi(2 - mode_default, 0x80 | note_channel(), i, 0);
 	}
 
 	note_draw_navigation();
@@ -306,11 +310,11 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		note_scale_button();
 
 	} else if (x == 0 || y == 9 || (y == 0 && x < 8) || (x == 9 && y > 4)) { // Unused side buttons
-		send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0 | note_channel(), p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 
 	} else if (p == 80) { // Shift button
-		send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(2 - mode_default, 0xB0 | note_channel(), p, v);
 		note_shift = v;
 		note_scale_button();
 
@@ -359,12 +363,12 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 	} else { // Main grid
 		s8 n = note_press(x, y, v, -1);
-		if (n >= 0) send_midi(2 - mode_default, (v == 0)? 0x80 : 0x90, n, v);
+		if (n >= 0) send_midi(2 - mode_default, (v? 0x90 : 0x80) | note_channel(), n, v);
 	}
 }
 
 void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == 2 - mode_default && ch == 0x0) {
+	if (port == 2 - mode_default && ch == note_channel()) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 
@@ -390,10 +394,10 @@ void note_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void note_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD0, v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | note_channel(), v);
 }
 
 void note_poly_event(u8 p, u8 v) {
 	s8 n = note_press(p / 10, p % 10, v, -1);
-	if (n >= 0) send_midi(USBSTANDALONE, 0xA0, n, v);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | note_channel(), n, v);
 }

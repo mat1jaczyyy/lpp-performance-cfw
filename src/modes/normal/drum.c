@@ -48,7 +48,7 @@ void drum_init() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		send_midi(USBSTANDALONE, 0x81, i, 0);
+		send_midi(USBSTANDALONE, 0x80 | channels[1], i, 0);
 	}
 	
 	rgb_led(91, drum_nav_r, drum_nav_g, (drum_offset < 13)? (drum_nav_b >> (1 - drum_nav_pressed[0])) : 0); // Navigation buttons
@@ -68,7 +68,7 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 	
 	} else if (x == 0 || (x == 9 && y >= 5) || y == 0 || y == 9) { // Unused side buttons
-		send_midi(USBSTANDALONE, 0xB1, p, v);
+		send_midi(USBSTANDALONE, 0xB0 | channels[1], p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y <= 4) { // Navigation buttons
@@ -101,12 +101,12 @@ void drum_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		drum_init(); // Redraw grid
 	
 	} else { // Main grid
-		send_midi(USBSTANDALONE, (v == 0)? 0x81 : 0x91, drum_press(x, y, v, -1), v);
+		send_midi(USBSTANDALONE, (v? 0x90 : 0x80) | channels[1], drum_press(x, y, v, -1), v);
 	}
 }
 
 void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x1) {
+	if (port == USBSTANDALONE && ch == channels[1]) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
@@ -132,9 +132,9 @@ void drum_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void drum_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD1, v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | channels[1], v);
 }
 
 void drum_poly_event(u8 p, u8 v) {
-	send_midi(USBSTANDALONE, 0xA1, drum_press(p / 10, p % 10, v, -1), v);
+	send_midi(USBSTANDALONE, 0xA0 | channels[1], drum_press(p / 10, p % 10, v, -1), v);
 }

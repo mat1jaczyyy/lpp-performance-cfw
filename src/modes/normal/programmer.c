@@ -65,12 +65,12 @@ void programmer_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 	
 	} else {
-		send_midi(USBSTANDALONE, (x == 0 || x == 9 || y == 0 || y == 9)? 0xB0 : ((v == 0)? 0x80 : 0x90), p, v);
+		send_midi(USBSTANDALONE, ((x == 0 || x == 9 || y == 0 || y == 9)? 0xB0 : (v? 0x90 : 0x80)) | channels[3], p, v);
 	}
 }
 
 void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x0) { // Channel 1 REQUIRED for FL Studio support
+	if (port == USBSTANDALONE && ch == channels[3]) {
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
@@ -80,15 +80,15 @@ void programmer_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 		u8 y = p % 10;
 		
 		if ((t == 0xB && (x == 0 || x == 9 || y == 0 || y == 9)) || (t == 0x9 && 1 <= x && x <= 8 && 1 <= y && y <= 8)) {
-			programmer_led(ch, p, v, 1);
+			programmer_led(0, p, v, 1);
 		}
 	}
 }
 
 void programmer_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD0, v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | channels[3], v);
 }
 
 void programmer_poly_event(u8 p, u8 v) {
-	send_midi(USBSTANDALONE, 0xA0, p, v);
+	send_midi(USBSTANDALONE, 0xA0 | channels[3], p, v);
 }

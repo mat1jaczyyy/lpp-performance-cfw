@@ -8,7 +8,7 @@ u8 ableton_screen[100][2] = {};
 u8 ableton_layout = 0x0;
 
 void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
-	if (ch == 0x5) ch = 0x0;
+	if (ch == ableton_channel) ch = 0x0;
 	if (ch >= 3) return;
 
 	if (mode == mode_ableton) {
@@ -106,9 +106,9 @@ void ableton_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			
 			case ableton_layout_user: // User mode
 				if (x == 9) {
-					send_midi(USBMIDI, 0xB5, p, v);
+					send_midi(USBMIDI, 0xB0 | ableton_channel, p, v);
 				} else {
-					send_midi(USBMIDI, (v == 0)? 0x85 : 0x95, xy_dr[p], v);
+					send_midi(USBMIDI, (v? 0x90 : 0x80) | ableton_channel, xy_dr[p], v);
 				}
 				break;
 		}
@@ -139,7 +139,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 					ableton_led(ch, dr_xy[p], v, 1);
 					break;
 				}
-				if (ableton_layout == ableton_layout_user && (ch == 0x5 || ch == 0x1 || ch == 0x2)) {
+				if (ableton_layout == ableton_layout_user && (ch == ableton_channel || ch == 0x1 || ch == 0x2)) {
 					if (36 <= p && p <= 123) ableton_led(ch, dr_xy[p], v, 1);
 					break;
 				}
@@ -149,7 +149,7 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			
 			case 0xB:
 				if (ableton_layout == ableton_layout_user) {
-					if (ch == 0x5) ableton_led(ch, p, v, 1);
+					if (ch == ableton_channel) ableton_led(ch, p, v, 1);
 				} else {
 					if (ch == 0x0 || ch == 0x1 || ch == 0x2) ableton_led(ch, p, v, 1);
 				}
@@ -159,9 +159,9 @@ void ableton_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void ableton_aftertouch_event(u8 v) {
-	aftertouch_send(USBMIDI, (ableton_layout == ableton_layout_user)? 0xD5 : 0xD0, v);
+	aftertouch_send(USBMIDI, 0xD0 | (ableton_layout == ableton_layout_user? 0x0 : ableton_channel), v);
 }
 
 void ableton_poly_event(u8 p, u8 v) {
-	send_midi(USBMIDI, (ableton_layout == ableton_layout_user)? 0xA5 : 0xA0, p, v);
+	send_midi(USBMIDI, 0xA0 | (ableton_layout == ableton_layout_user? 0x0 : ableton_channel), p, v);
 }

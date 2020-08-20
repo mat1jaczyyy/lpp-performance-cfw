@@ -44,6 +44,14 @@
 #define setup_brightness_g 7
 #define setup_brightness_b 23
 
+#define setup_channel_deselected_r 0
+#define setup_channel_deselected_g 21
+#define setup_channel_deselected_b 21
+
+#define setup_channel_selected_r 0
+#define setup_channel_selected_g 0
+#define setup_channel_selected_b 63
+
 #define setup_custom_on_r 0
 #define setup_custom_on_g 63
 #define setup_custom_on_b 37
@@ -126,6 +134,32 @@ void setup_init() {
 		} else {
 			rgb_led(78, setup_performance_xy_r, setup_performance_xy_g, setup_performance_xy_b); // XY layout selected
 		}
+	}
+
+	if (mode_default == mode_ableton) {
+		for (u8 x = 0; x < 2; x++)
+			for (u8 y = 0; y < 3; y++) {
+				u8 set = ableton_channel == 5 + 8 * x + y;
+				rgb_led(
+					(2 - x) * 10 + 6 + y,
+					set? setup_channel_selected_r : setup_channel_deselected_r,
+					set? setup_channel_selected_g : setup_channel_deselected_g, 
+					set? setup_channel_selected_b : setup_channel_deselected_b
+				);
+			}
+	}
+
+	if (mode_note <= mode_default && mode_default <= mode_piano) {
+		for (u8 x = 0; x < 4; x++)
+			for (u8 y = 0; y < 4; y++) {
+				u8 set = channels[mode_default - mode_note] == 4 * x + y;
+				rgb_led(
+					(4 - x) * 10 + 5 + y,
+					set? setup_channel_selected_r : setup_channel_deselected_r,
+					set? setup_channel_selected_g : setup_channel_deselected_g, 
+					set? setup_channel_selected_b : setup_channel_deselected_b
+				);
+			}
 	}
 
 	if (mode_default == mode_custom) {
@@ -312,6 +346,24 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				dirty = 1;
 				mode_refresh();
 			}
+		
+		} else if (mode_default == mode_ableton) {
+			for (u8 i = 2; i >= 1; i--)
+				if (i * 10 + 6 <= p && p <= i * 10 + 8) {
+					ableton_channel = p + 15 - 18 * i;
+					dirty = 1;
+					mode_refresh();
+					break;
+				}
+		
+		} else if (mode_note <= mode_default && mode_default <= mode_piano) {
+			for (u8 i = 4; i >= 1; i--)
+				if (i * 10 + 5 <= p && p <= i * 10 + 8) {
+					channels[mode_default - mode_note] = p + 11 - 14 * i;
+					dirty = 1;
+					mode_refresh();
+					break;
+				}
 		
 		} else if (mode_default == mode_custom) {
 			if (p == 15) {

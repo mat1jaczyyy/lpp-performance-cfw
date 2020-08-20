@@ -11,3 +11,5 @@ u8 led_brightness = 7;
 u8 custom_surface_led = 1;
 u8 custom_midi_led = 1;
 u8 custom_fader_vel_sensitive = 0;
+u8 ableton_channel = 5;
+u8 channels[5] = {0, 1, 2, 0, 3};

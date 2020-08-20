@@ -35,9 +35,9 @@ const s8 piano_map[2][8] = {
 s8 piano_octave = 1;
 s8 piano_transpose = 0;
 
-void piano_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
+void piano_single(u8 p[], u8 l, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
-		rgb_led(*(p + i), r, g, b);
+		rgb_led(p[i], r, g, b);
 	}
 }
 
@@ -66,10 +66,10 @@ s8 piano_press(u8 x, u8 y, u8 v, s8 out_p) {
 		}
 		
 		if (e) { // Unused note
-			piano_single(&p[0], l, piano_color_empty_r, piano_color_empty_g, piano_color_empty_b);
+			piano_single(p, l, piano_color_empty_r, piano_color_empty_g, piano_color_empty_b);
 
 		} else if (n < 0) { // Invalid note - also affects notes larger than 127 due to overflow!
-			piano_single(&p[0], l, piano_color_invalid_r, piano_color_invalid_g, piano_color_invalid_b);
+			piano_single(p, l, piano_color_invalid_r, piano_color_invalid_g, piano_color_invalid_b);
 			
 		} else { // Valid note
 			if (v == 0) { // Note released
@@ -77,7 +77,7 @@ s8 piano_press(u8 x, u8 y, u8 v, s8 out_p) {
 				
 				switch (m) {
 					case 0: // C base note
-						piano_single(&p[0], l, piano_color_base_r, piano_color_base_g, piano_color_base_b);
+						piano_single(p, l, piano_color_base_r, piano_color_base_g, piano_color_base_b);
 						break;
 					
 					case 2:
@@ -86,19 +86,19 @@ s8 piano_press(u8 x, u8 y, u8 v, s8 out_p) {
 					case 7:
 					case 9:
 					case 11: // White note
-						piano_single(&p[0], l, piano_color_white_r, piano_color_white_g, piano_color_white_b);
+						piano_single(p, l, piano_color_white_r, piano_color_white_g, piano_color_white_b);
 						break;
 					
 					default: // Black note
-						piano_single(&p[0], l, piano_color_black_r, piano_color_black_g, piano_color_black_b);
+						piano_single(p, l, piano_color_black_r, piano_color_black_g, piano_color_black_b);
 						break;
 				}
 			
 			} else { // Note pressed
 				if (out_p < 0) {
-					piano_single(&p[0], l, piano_color_pressed_r, piano_color_pressed_g, piano_color_pressed_b);
+					piano_single(p, l, piano_color_pressed_r, piano_color_pressed_g, piano_color_pressed_b);
 				} else {
-					piano_single(&p[0], l, palette_value(palette_novation, v, 0), palette_value(palette_novation, v, 1), palette_value(palette_novation, v, 2));
+					piano_single(p, l, palette_value(palette_novation, v, 0), palette_value(palette_novation, v, 1), palette_value(palette_novation, v, 2));
 				}
 			}
 		}
@@ -115,7 +115,7 @@ void piano_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		send_midi(2 - mode_default, 0x80, i, 0);
+		send_midi(USBSTANDALONE, 0x80 | channels[4], i, 0);
 	}
 	
 	u8 o = piano_octave + 3; // Octave navigation
@@ -150,7 +150,7 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 	
 	} else if (x == 0 || y == 9 || y == 0 || (x == 9 && y > 4)) { // Unused side buttons
-		send_midi(2 - mode_default, 0xB0, p, v);
+		send_midi(USBSTANDALONE, 0xB0 | channels[4], p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y < 5) { // Navigation buttons
@@ -177,12 +177,12 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = piano_press(x, y, v, -1);
-		if (n >= 0) send_midi(USBSTANDALONE, (v == 0)? 0x83 : 0x93, n, v);
+		if (n >= 0) send_midi(USBSTANDALONE, (v? 0x90 : 0x80) | channels[4], n, v);
 	}
 }
 
 void piano_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == 0x3) {
+	if (port == USBSTANDALONE && ch == channels[4]) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
@@ -208,10 +208,10 @@ void piano_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void piano_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD3, v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | channels[4], v);
 }
 
 void piano_poly_event(u8 p, u8 v) {
 	s8 n = piano_press(p / 10, p % 10, v, -1);
-	if (n >= 0) send_midi(USBSTANDALONE, 0xA3, n, v);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | channels[4], n, v);
 }

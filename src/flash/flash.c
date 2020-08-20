@@ -4,11 +4,11 @@
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 
-#define flash_user_size (palette_custom * 3 * 32 * 3 + 11)
+#define flash_user_size (palette_custom * 3 * 32 * 3 + 17)
 
 #define flash_user_start 0x2000
 
-u8 flash[flash_user_size] = {};
+u8 flash[flash_user_size] = {}; // TODO Optimize RAM
 
 u8 dirty = 0;
 
@@ -64,6 +64,12 @@ void flash_read() {
 
 	custom_fader_vel_sensitive = flash_direct_read(fp++);
 	if (custom_fader_vel_sensitive >> 1) custom_fader_vel_sensitive = 1;
+
+	ableton_channel = flash_direct_read(fp++) & 0xF;
+	if ((ableton_channel & 0x7) < 5) ableton_channel = 5;
+
+	for (u8 i = 0; i < sizeof(channels); i++)
+		channels[i] = flash_direct_read(fp++) & 0xF;
 }
 
 void flash_write() {
@@ -95,6 +101,10 @@ void flash_write() {
 	flash[fp++] = custom_surface_led;
 	flash[fp++] = custom_midi_led;
 	flash[fp++] = custom_fader_vel_sensitive;
+	flash[fp++] = ableton_channel;
+
+	for (u8 i = 0; i < sizeof(channels); i++)
+		flash[fp++] = channels[i];
 	
 	flash_direct_write(flash_user_start, &flash[0], fp);
 	

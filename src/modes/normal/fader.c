@@ -23,6 +23,10 @@ u8 fader_counter[2][8] = {{}, {}};
 u8 fader_final[2][8] = {{}, {}};
 s8 fader_change[2][8] = {{}, {}};
 
+u8 fader_channel() {
+	return fader_mode? 0 : channels[2];
+}
+
 void fader_draw(u8 y) {
 	switch (fader_type[fader_mode][y]) {
 		case fader_linear:
@@ -93,7 +97,7 @@ void fader_timer_event() {
 					faders[fader_mode][y] = fader_final[fader_mode][y]; // Set fader to supposed final value
 				}
 				
-				send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Send fader
+				send_midi(fader_mode, 0xB0 | fader_channel(), 21 + y, faders[fader_mode][y]); // Send fader
 				fader_draw(y);
 				
 				fader_elapsed[fader_mode][y] = 0;
@@ -108,7 +112,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else {
 		if (x == 0 || x == 9 || y == 0 || y == 9) { // Unused side buttons
-			send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), p, v);
+			send_midi(fader_mode, 0xB0 | fader_channel(), p, v);
 			rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 		
 		} else if (v != 0) { // Main grid
@@ -123,7 +127,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			fader_counter[fader_mode][y] = 0; // Stop current line
 			
 			if (diff == 0) {
-				send_midi(fader_mode, 0xB0 + 2 * (1 - fader_mode), 21 + y, faders[fader_mode][y]); // Resend fader
+				send_midi(fader_mode, 0xB0 | fader_channel(), 21 + y, faders[fader_mode][y]); // Resend fader
 							
 			} else if (time >= diff) { // Enough time to do line smoothly
 				fader_tick[fader_mode][y] = time / diff;
@@ -140,7 +144,7 @@ void fader_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void fader_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == fader_mode && t == 0xB && ch == (2 * (1 - fader_mode)) && 21 <= p && p <= 28) {
+	if (port == fader_mode && t == 0xB && ch == fader_channel() && 21 <= p && p <= 28) {
 		p -= 21;
 		
 		fader_counter[fader_mode][p] = 0;
