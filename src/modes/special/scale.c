@@ -46,7 +46,9 @@ void scale_setup_init() {
 	for (u8 i = 81; i < 88; i++) {
 		rgb_led(i, scale_setup_color_segment_r / 3, scale_setup_color_segment_g / 3, scale_setup_color_segment_b / 3); // Segment length options
 	}
-	rgb_led(88 - scale_segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
+	
+	if (scale_segment < 8)
+		rgb_led(88 - scale_segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
 
 	for (u8 i = 0; i < 12; i++) {
 		rgb_led(scale_keys[i], scale_setup_color_notes_r >> 3, scale_setup_color_notes_g >> 3, scale_setup_color_notes_b >> 3); // Root note selector and scale preview
@@ -94,7 +96,8 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			scale_setup_init();
 
 		} else if (81 <= p && p <= 87) { // Select segment length
-			scale_segment = 88 - p;
+			u8 t = 88 - p;
+			scale_segment = t == scale_segment? 8 : t;
 			scale_setup_init();
 
 		} else if (1 <= x && x <= 4 && 1 <= y && y <= 8) { // Select scale

@@ -323,7 +323,7 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 						break;
 
 					case 94: // Segment up
-						if (scale_segment < 7) scale_segment++;
+						if (scale_segment < 8) scale_segment++;
 						break;
 				}
 			} else {
