@@ -53,6 +53,8 @@ Additional options will appear in the bottom-right corner if the Custom modes ar
 * External LED feedback toggles whether pads on the 8x8 grid light up when MIDI is received externally.
 * Fader Velocity toggles whether faders will ignore velocity sensitivity, even if it's turned on globally.
 
+In modes found on the stock firmware, the channel selection will appear in the bottom-right corner.
+
 ### Performance mode
 
 The new Performance mode is designed to eliminate the need for Top Lights plugins and Retina 2.1 on the host machine. Top Lights are made directly available via normal Note On messages (according to the Top Lights configuration), and the velocities received are displayed using the currently selected palette. This also allows for placing samples on the top row. 
@@ -119,8 +121,7 @@ make
 ## Issues
 
 Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
-    
-* Channel selection for all modes
+
 * Pad Lighting setting for stock Standalone modes
 
 For any other issues or new feature requests, submit an issue report.
