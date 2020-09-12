@@ -65,6 +65,7 @@ const u8* custom_data(u8 i) {
 	return (const u8*)custom_rom_start + custom_rom_size * i;
 }
 
+u8 custom_external_feedback = 0;
 u8 custom_on = 21;
 
 u8 custom_held_slot = 255;
@@ -261,6 +262,7 @@ u8 custom_load() {
 	while (*data != 0x7F)  // Skip web-editor region (name and object metadata)
 		if (*data > 0x7F || (void*)data++ >= top) return 0;
 
+	custom_external_feedback = data[2];
 	custom_on = data[3];
 
 	memset(map, 0, sizeof(map));
@@ -317,10 +319,11 @@ void custom_init() {
 		custom_valid = custom_load();
 
 	if (custom_valid) {
-		for (u8 x = 0; x < 8; x++)
-			for (u8 y = 0; y < 8; y++)
-				if (map[x][y].blob && map[x][y].blob->kind)
-					novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
+		if (!custom_external_feedback)
+			for (u8 x = 0; x < 8; x++)
+				for (u8 y = 0; y < 8; y++)
+					if (map[x][y].blob && map[x][y].blob->kind)
+						novation_led((x + 1) * 10 + y + 1, map[x][y].blob->bg);
 
 		for (u8 i = 0; i < 8; i++)
 			custom_fader_draw(i);
@@ -394,31 +397,44 @@ void custom_timer_event() {
 	}
 }
 
+void custom_led(u8 ch, u8 p, u8 v, u8 c) {
+	if (custom_external_feedback) {
+		if (ch == 0x0) novation_led(p, v);
+		else if (ch == 0x1) flash_led(p, v);
+		else if (ch == 0x2) pulse_led(p, v);
+		return;
+	}
+
+	novation_led(p, c);
+}
+
 void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	if (s && !custom_midi_led) return;
+	if (!s && custom_external_feedback) return;
 
 	u8 k;
 	if (t == 0x9) k = 0x01;
-	else if (t == 0xB && !s) k = 0x02;
+	else if (t == 0xB && (!s || custom_external_feedback)) k = 0x02;
 	else return;
 
 	u8 e = s? 1 : custom_surface_led;
 	
 	for (u8 x = 0; x < 8; x++) {
 		for (u8 y = 0; y < 8; y++) {
-			u8 map_ch = map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0;
+			u8 map_ch = custom_external_feedback? ch : (map[x][y].blob->ch <= 0xF? map[x][y].blob->ch : 0x0);
 			
 			if (map[x][y].blob->kind == k && map_ch == ch && map[x][y].blob->p == p) {
 				u8 p = (x + 1) * 10 + y + 1;
 
-				if (k == 1) {
+				if (k == 0x01) {
 					if (map[x][y].blob->trig == 0x01) {
-						if (!s) novation_led(p, v == 127? custom_on : map[x][y].blob->bg);
+						if (!s || custom_external_feedback)
+							custom_led(ch, p, v, v == 127? custom_on : map[x][y].blob->bg);
 
-					} else if (e) novation_led(p, v? custom_on : map[x][y].blob->bg);
+					} else if (e) custom_led(ch, p, v, v? custom_on : map[x][y].blob->bg);
 
 				} else if (k == 0x02 && (map[x][y].blob->trig == 0x01 || (map[x][y].blob->trig == 0x00 && e)))
-					novation_led(p, v == map[x][y].blob->v_on? custom_on : map[x][y].blob->bg);
+					custom_led(ch, p, v, v == map[x][y].blob->v_on? custom_on : map[x][y].blob->bg);
 			}
 		}
 	}
