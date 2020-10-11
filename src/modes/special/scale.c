@@ -29,7 +29,19 @@
 #define scale_setup_color_scale_selected_b 63
 
 void scale_setup_init() {
-	rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
+	switch (mode_default) {
+		case mode_ableton:
+			rgb_led(99, mode_ableton_r, mode_ableton_g, mode_ableton_b); // Note mode LED
+			break;
+
+		case mode_note:
+			rgb_led(99, mode_note_r, mode_note_g, mode_note_b); // Note mode LED
+			break;
+
+		case mode_chord:
+			rgb_led(99, mode_chord_r, mode_chord_g, mode_chord_b); // Chord mode LED
+			break;
+	}
 
 	if (scale_enabled) {
 		rgb_led(88, scale_setup_color_enabled_r, scale_setup_color_enabled_g, scale_setup_color_enabled_b); // Scale mode enabled
@@ -85,6 +97,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	} else if (p == 80) { // Shift button
 		send_midi(2 - mode_default, 0xB0, p, v);
 		note_shift = v;
+		chord_shift = v;
 
 	} else if (v != 0) {
 		if (p == 88) { // Enable or disable Scale mode

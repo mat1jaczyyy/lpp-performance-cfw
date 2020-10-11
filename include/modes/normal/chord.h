@@ -9,6 +9,8 @@
 #define mode_chord_g 0
 #define mode_chord_b 63
 
+u8 chord_shift;
+
 void chord_init();
 void chord_timer_event();
 void chord_surface_event(u8 p, u8 v, u8 x, u8 y);

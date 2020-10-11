@@ -6,6 +6,7 @@
 #include "send/send.h"
 
 #include "modes/normal/note.h"
+#include "modes/normal/chord.h"
 
 void scale_setup_init();
 void scale_setup_timer_event();
