@@ -1,5 +1,8 @@
 #include "modes/normal/piano.h"
 
+#define piano_octave_start 1
+#define piano_transpose_start 0
+
 #define piano_color_invalid_r 7
 #define piano_color_invalid_g 0
 #define piano_color_invalid_b 0
@@ -32,8 +35,10 @@ const s8 piano_map[2][8] = {
 	{-1, 1, 3, -1, 6, 8, 10, -1}
 };
 
-s8 piano_octave = 1;
-s8 piano_transpose = 0;
+s8 piano_octave = piano_octave_start;
+s8 piano_transpose = piano_transpose_start;
+
+u8 piano_nav_pressed[4] = {};
 
 void piano_single(u8 p[], u8 l, u8 r, u8 g, u8 b) {
 	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
@@ -172,8 +177,17 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 					if (piano_transpose < 7) piano_transpose++;
 					break;
 			}
-			piano_draw();
 		}
+		
+		piano_nav_pressed[p - 91] = (v)? 1 : 0;
+		
+		if (piano_nav_pressed[0] && piano_nav_pressed[1]) { // Reset offset
+			piano_octave = piano_octave_start;
+		} else if (piano_nav_pressed[2] && piano_nav_pressed[3]) { // Reset transpose
+			piano_transpose = piano_transpose_start;
+		}
+
+		piano_draw();
 	
 	} else { // Main grid
 		s8 n = piano_press(x, y, v, -1);
