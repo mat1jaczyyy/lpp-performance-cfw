@@ -1,22 +1,100 @@
 #include "modes/normal/chord.h"
 
+#define chord_color_empty_r 0
+#define chord_color_empty_g 0
+#define chord_color_empty_b 0
+
+#define chord_color_major_dominant_r 0
+#define chord_color_major_dominant_g 0
+#define chord_color_major_dominant_b 7
+
+#define chord_color_minor_r 2
+#define chord_color_minor_g 0
+#define chord_color_minor_b 7
+
+#define chord_color_diminished_r 0
+#define chord_color_diminished_g 7
+#define chord_color_diminished_b 2
+
+#define chord_color_pressed_r 63
+#define chord_color_pressed_g 63
+#define chord_color_pressed_b 63
+
 #define chord_octave_start 4
 
 const u8 chord_octave_colors[5][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}};
+const u8 chord_map[5][5] = {
+	{0, 4, 14, 11, 16},
+	{0, 4, 10, 7, 12},
+	{0, 4, 9, 6, 11},
+	{0, 4, 8, 5, 10},
+	{0, 4, 7, 3, 6}
+};
 
-u8 chord_octave = chord_octave_start;
+s8 chord_octave = chord_octave_start;
 
 u8 chord_shift = 0;
 u8 chord_nav_pressed[2] = {};
 
-void chord_single(u8 p[], u8 l, u8 r, u8 g, u8 b) {
-	for (u8 i = 0; i < l; i++) { // Used to update LEDs on buttons that trigger the same actual note
-		rgb_led(p[i], r, g, b);
-	}
+u8 chord_kind[8] = {};
+
+s8 chord_value(u8 x, u8 y) {
+	if (y != 1 && chord_value(x, 1) < 0)
+		return -1;
+
+	u8 l = scales_length(scale_selected);
+	u8 i = chord_octave * l + (x - 1) + chord_map[l > 8? 0: 9 - l][y - 1];
+	s8 n = 12 * (i / l) + scales(scale_selected, i % l) + scale_root;
+
+	return (y == 1 && (n > 108 || n < 0))? -1 : n;
 }
 
 s8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
-	return 1;
+	if (chord_kind[x - 1] == 0) {
+		rgb_led(x * 10 + y, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
+		return -1;
+	}
+
+	s8 n = chord_value(x, y);
+
+	if (n >= 0 && out_p < 0) {
+		for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
+			for (u8 _y = 1; _y < 6; _y++) {
+				chord_press(_x, _y, v, n);
+			}
+		}
+
+	} else if (n == out_p) {
+		u8 p = x * 10 + y;                  
+		if (v) {
+			rgb_led(p, chord_color_pressed_r, chord_color_pressed_g, chord_color_pressed_b);
+		} else {
+			u8 r, g, b;
+
+			switch (chord_kind[x - 1]) {
+				case 1:
+					r = chord_color_major_dominant_r; g = chord_color_major_dominant_g; b = chord_color_major_dominant_b;
+					break;
+				
+				case 2:
+					r = chord_color_minor_r; g = chord_color_minor_g; b = chord_color_minor_b;
+					break;
+				
+				default:
+					r = chord_color_diminished_r; g = chord_color_diminished_g; b = chord_color_diminished_b;
+					break;
+			}
+
+			if (x == 1 || x == scales_length(scale_selected) + 1) {
+				#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
+				brighten(r); brighten(g); brighten(b);
+			}
+
+			rgb_led(p, r, g, b);
+		}
+	}
+
+	return n;
 }
 
 void chord_draw_navigation() {
@@ -41,6 +119,21 @@ void chord_scale_button() {
 
 void chord_draw() {
 	for (u8 x = 1; x < 9; x++) { // Regular notes
+		s8 n1 = chord_value(x, 1);
+		s8 n2 = chord_value(x, 3) - 12;
+		s8 n3 = chord_value(x, 2);
+
+		if (n1 < 0) // Nothing
+			chord_kind[x - 1] = 0;
+
+		else if (n2 - n1 == 4 && n3 - n2 == 3) // Major
+			chord_kind[x - 1] = 1;
+
+		else if (n2 - n1 == 3 && n3 - n2 == 4) // Minor
+			chord_kind[x - 1] = 2;
+		
+		else chord_kind[x - 1] = 3; // Has to be Diminished
+
 		for (u8 y = 1; y < 6; y++) {
 			chord_press(x, y, 0, -1);
 		}
@@ -127,5 +220,6 @@ void chord_aftertouch_event(u8 v) {
 }
 
 void chord_poly_event(u8 p, u8 v) {
-	
+	s8 n = chord_press(p / 10, p % 10, v, -1);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | channels[5], n, v);
 }

@@ -5,6 +5,10 @@
 #include "modes/mode.h"
 #include "send/send.h"
 
+#include "aftertouch/aftertouch.h"
+
+#include "modes/special/scale.h"
+
 #define mode_chord_r 0
 #define mode_chord_g 0
 #define mode_chord_b 63

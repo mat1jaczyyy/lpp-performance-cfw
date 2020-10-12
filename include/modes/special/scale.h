@@ -8,6 +8,11 @@
 #include "modes/normal/note.h"
 #include "modes/normal/chord.h"
 
+u8 scales(u8 s, u8 i);
+u8 scales_length(u8 s);
+
+u8 scale_enabled, scale_segment, scale_selected, scale_root;
+
 void scale_setup_init();
 void scale_setup_timer_event();
 void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y);

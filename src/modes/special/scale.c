@@ -1,5 +1,56 @@
 #include "modes/special/scale.h"
 
+const u8 scale_points[33] = {0, 4, 8, 12, 19, 26, 31, 35, 42, 48, 54, 58, 64, 71, 78, 84, 88, 93, 97, 103, 109, 115, 121, 126, 137, 143, 149, 155, 161, 167, 173, 179, 186};
+const u8 scale_data[186] = {
+	1, 5, 7, 10, // In Sen
+	2, 5, 7, 9, // Yo scale
+	1, 5, 6, 10, // Iwato
+	2, 3, 5, 6, 8, 9, 11, // Whole Half
+	2, 3, 5, 7, 8, 10, 11, // BeBop Minor
+	2, 3, 4, 7, 9, // Major blues
+	2, 3, 7, 9, // Kumoi
+	2, 4, 5, 7, 8, 9, 11, // BeBop Major
+	2, 4, 6, 7, 9, 11, // Lydian
+	1, 3, 5, 6, 8, 10, // Locrian
+	2, 4, 7, 9, // Major Pentatonic
+	1, 4, 5, 7, 8, 10, // Phyrigian Dominant
+	1, 3, 4, 6, 7, 9, 10, // Half-Whole Diminished
+	2, 4, 5, 7, 9, 10, 11, // Mixolydian BeBop
+	1, 3, 4, 6, 8, 10, // Super Locrian
+	2, 3, 7, 8, // Hirajoshi
+	3, 5, 6, 7, 10, // Blues
+	3, 5, 7, 10, // Minor Pentatonic
+	2, 3, 6, 7, 8, 11, // Hungarian Minor
+	2, 3, 6, 7, 9, 10, // Ukrainian Dorian
+	1, 4, 6, 7, 9, 11, // Marva
+	1, 3, 6, 7, 8, 11, // Todi
+	2, 4, 6, 8, 10, // Whole Tone
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, // Chromatic
+	2, 3, 5, 7, 8, 10, // Minor
+	2, 4, 5, 7, 9, 11, // Major
+	2, 3, 5, 7, 9, 10, // Dorian
+	1, 3, 5, 7, 8, 10, // Phrygian
+	2, 4, 5, 7, 9, 10, // Mixolydian
+	2, 3, 5, 7, 9, 11, // Melodic Minor (ascending)
+	2, 3, 5, 7, 8, 11, // Harmonic Minor
+	2, 3, 4, 5, 7, 9, 10 // BeBop Dorian
+};
+const u8 scale_keys[12] = {51, 62, 52, 63, 53, 54, 65, 55, 66, 56, 67, 57};
+
+u8 scales(u8 s, u8 i) {
+	if (i == 0) return 0;
+	return scale_data[scale_points[s] + i - 1];
+}
+
+u8 scales_length(u8 s) {
+	return scale_points[s + 1] - scale_points[s] + 1; 
+}
+
+u8 scale_enabled = 0;
+u8 scale_segment = 7;
+u8 scale_selected = 25;
+u8 scale_root = 0;
+
 #define scale_setup_color_enabled_r 20
 #define scale_setup_color_enabled_g 63
 #define scale_setup_color_enabled_b 0
