@@ -41,16 +41,14 @@ u8 chord_shift = 0;
 u8 chord_nav_pressed[2] = {};
 
 u8 chord_kind[8] = {};
+u8 chord_triads = 8;
 
 s8 chord_value(u8 x, u8 y) {
-	if (y != 1 && chord_value(x, 1) < 0)
-		return -1;
-
 	u8 l = scales_length(scale_selected);
 	u8 i = chord_octave * l + (x - 1) + chord_map[l > 8? 0: 9 - l][y - 1];
 	s8 n = 12 * (i / l) + scales(scale_selected, i % l) + scale_root;
 
-	return (y == 1 && (n > 108 || n < 0))? -1 : n;
+	return n;
 }
 
 s8 chord_press_result[3] = {};
@@ -58,38 +56,48 @@ s8 chord_press_result[3] = {};
 u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 p = x * 10 + y;
 
-	if (chord_kind[x - 1] == 0) {
+	if (chord_kind[x - 1] == 0 || (y == 6 && x > chord_triads)) {
 		rgb_led(p, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
 		return 0;
 	}
 
+	u8 root2 = scales_length(scale_selected) + 1;
 	s8 n = 0;
 	s8 r;
 
 	if (y == 6) {
-		if ((chord_press_result[0] = chord_value(x, 1)) >= 0 && (chord_press_result[0] += 12) <= 108) {
-			r = chord_press_result[0];
-			chord_press_result[1] = chord_value(x, 3);
-			chord_press_result[2] = chord_value(x, 2) + 12;
-			n = 3;
+		u8 b = chord_value(1, 1) + 12;
 
-		} else {
-			rgb_led(p, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
-			return 0;
+		chord_press_result[0] = chord_value(x, 1) + 12;
+		chord_press_result[1] = chord_value(x, 3);
+		chord_press_result[2] = chord_value(x, 2) + 12;
+		
+		for (u8 i = 1; i < 3; i++) {
+			while (chord_press_result[i] >= b + 12)
+				chord_press_result[i] -= 12;
 		}
+		
+		for (u8 i = 0; i < 3; i++) {
+			if (chord_press_result[i] < 0) {
+				rgb_led(p, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
+				return 0;
+			}
+		}
+		
+		n = 3;
 
 	} else {
 		r = chord_value(x, y);
-		n = r >= 0;
+		n = 1;
 
-		if (r >= 0 && out_p < 0)
+		if (out_p < 0)
 			chord_press_result[0] = r;
 	}
 	
 	#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
-	#define brighten_all if (x == 1 || x == scales_length(scale_selected) + 1) { brighten(r); brighten(g); brighten(b); }
+	#define brighten_all if (x == 1 || x == root2) { brighten(r); brighten(g); brighten(b); }
 
-	if (n > 0 && out_p < 0) {
+	if (out_p < 0) {
 		for (u8 i = 0; i < n; i++)
 			for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
 				for (u8 _y = 1; _y < 6; _y++) {
@@ -159,22 +167,35 @@ void chord_scale_button() {
 }
 
 void chord_draw() {
+	chord_triads = 8;
+
 	for (u8 x = 1; x < 9; x++) { // Regular notes
-		s8 n1 = chord_value(x, 1);
-		s8 n2 = chord_value(x, 3) - 12;
-		s8 n3 = chord_value(x, 2);
+		for (u8 y = 1; y < 6; y++) {
+			s8 r = chord_value(x, y);
+			if (y < 4) chord_press_result[y - 1] = r;
 
-		if (n1 < 0) // Nothing
-			chord_kind[x - 1] = 0;
+			if (chord_triads >= 8 && (s8)(r + 12) < 0)
+				chord_triads = x - 1;
 
-		else if (n2 - n1 == 4 && n3 - n2 == 3) // Major
+			if (r < 0) {
+				chord_kind[x - 1] = 0;
+				goto next;
+			}
+		}
+
+		chord_press_result[2] -= 12;
+		s8 f = chord_press_result[2] - chord_press_result[0];
+		s8 s = chord_press_result[1] - chord_press_result[2];
+
+		if (f == 4 && s == 3) // Major
 			chord_kind[x - 1] = 1;
 
-		else if (n2 - n1 == 3 && n3 - n2 == 4) // Minor
+		else if (f == 3 && s == 4) // Minor
 			chord_kind[x - 1] = 2;
 		
 		else chord_kind[x - 1] = 3; // Has to be Diminished
 
+		next:
 		for (u8 y = 1; y < 7; y++) {
 			chord_press(x, y, 0, -1);
 		}
