@@ -16,6 +16,10 @@
 #define chord_color_diminished_g 7
 #define chord_color_diminished_b 2
 
+#define chord_color_triad_r 7
+#define chord_color_triad_g 2
+#define chord_color_triad_b 0
+
 #define chord_color_pressed_r 63
 #define chord_color_pressed_g 63
 #define chord_color_pressed_b 63
@@ -49,25 +53,65 @@ s8 chord_value(u8 x, u8 y) {
 	return (y == 1 && (n > 108 || n < 0))? -1 : n;
 }
 
-s8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
+s8 chord_press_result[3] = {};
+
+u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
+	u8 p = x * 10 + y;
+
 	if (chord_kind[x - 1] == 0) {
-		rgb_led(x * 10 + y, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
-		return -1;
+		rgb_led(p, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
+		return 0;
 	}
 
-	s8 n = chord_value(x, y);
+	s8 n = 0;
+	s8 r;
 
-	if (n >= 0 && out_p < 0) {
-		for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
-			for (u8 _y = 1; _y < 6; _y++) {
-				chord_press(_x, _y, v, n);
+	if (y == 6) {
+		if ((chord_press_result[0] = chord_value(x, 1)) >= 0 && (chord_press_result[0] += 12) <= 108) {
+			r = chord_press_result[0];
+			chord_press_result[1] = chord_value(x, 3);
+			chord_press_result[2] = chord_value(x, 2) + 12;
+			n = 3;
+
+		} else {
+			rgb_led(p, chord_color_empty_r, chord_color_empty_g, chord_color_empty_b);
+			return 0;
+		}
+
+	} else {
+		r = chord_value(x, y);
+		n = r >= 0;
+
+		if (r >= 0 && out_p < 0)
+			chord_press_result[0] = r;
+	}
+	
+	#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
+	#define brighten_all if (x == 1 || x == scales_length(scale_selected) + 1) { brighten(r); brighten(g); brighten(b); }
+
+	if (n > 0 && out_p < 0) {
+		for (u8 i = 0; i < n; i++)
+			for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
+				for (u8 _y = 1; _y < 6; _y++) {
+					chord_press(_x, _y, v, chord_press_result[i]);
+				}
+			}
+		
+		if (y == 6) {
+			if (v) rgb_led(p, chord_color_pressed_r, chord_color_pressed_g, chord_color_pressed_b);
+			else {
+				u8 r = chord_color_triad_r, g = chord_color_triad_g, b = chord_color_triad_b;
+
+				brighten_all
+
+				rgb_led(p, r, g, b);
 			}
 		}
 
-	} else if (n == out_p) {
-		u8 p = x * 10 + y;                  
+	} else if (n == 1 && r == out_p) {
 		if (v) {
 			rgb_led(p, chord_color_pressed_r, chord_color_pressed_g, chord_color_pressed_b);
+
 		} else {
 			u8 r, g, b;
 
@@ -85,10 +129,7 @@ s8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 					break;
 			}
 
-			if (x == 1 || x == scales_length(scale_selected) + 1) {
-				#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
-				brighten(r); brighten(g); brighten(b);
-			}
+			brighten_all
 
 			rgb_led(p, r, g, b);
 		}
@@ -134,7 +175,7 @@ void chord_draw() {
 		
 		else chord_kind[x - 1] = 3; // Has to be Diminished
 
-		for (u8 y = 1; y < 6; y++) {
+		for (u8 y = 1; y < 7; y++) {
 			chord_press(x, y, 0, -1);
 		}
 	}
@@ -144,6 +185,13 @@ void chord_draw() {
 	}
 
 	chord_draw_navigation();
+}
+
+void chord_send(u8 x, u8 y, u8 v, u8 t) {
+	u8 n = chord_press(x, y, v, -1);
+
+	for (u8 i = 0; i < n; i++)
+		send_midi(USBSTANDALONE, t | channels[5], chord_press_result[i], v);
 }
 
 void chord_init() {
@@ -192,9 +240,8 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 		chord_draw();
 
-	} else if (1 <= x && x <= 8 && 1 <= y && y <= 5) { // Main grid
-		s8 n = chord_press(x, y, v, -1);
-		if (n >= 0) send_midi(USBSTANDALONE, (v? 0x90 : 0x80) | channels[5], n, v);
+	} else if (1 <= x && x <= 8 && 1 <= y && y <= 6) { // Main grid
+		chord_send(x, y, v, v? 0x90 : 0x80);
 	}
 }
 
@@ -220,6 +267,5 @@ void chord_aftertouch_event(u8 v) {
 }
 
 void chord_poly_event(u8 p, u8 v) {
-	s8 n = chord_press(p / 10, p % 10, v, -1);
-	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | channels[5], n, v);
+	chord_send(p / 10, p % 10, v, 0xA0);
 }
