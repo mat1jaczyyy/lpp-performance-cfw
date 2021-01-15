@@ -13,7 +13,7 @@
 #define invalid_slot_b 0
 
 u8 custom_valid = 0;
-u8 custom_prev_active_slot = 255, custom_active_slot = 0;
+u8 custom_loaded = 0, custom_active_slot = 0;
 
 u8 custom_upload_index = 0;
 u8 custom_upload_buffer[1024] = {};
@@ -36,7 +36,7 @@ void custom_upload_end() {
 	while (custom_upload_offset < 1024)
 		custom_upload_buffer[custom_upload_offset++] = 0;
 	
-	custom_prev_active_slot = 255;
+	custom_loaded = 0;
 
 	flash_write_custom(custom_upload_index, custom_upload_buffer);
 }
@@ -61,14 +61,14 @@ const u8* custom_data(u8 i) {
 }
 
 u8 custom_external_feedback = 0;
-u8 custom_on = 21;
+u8 custom_on[8] = {};
 
 u8 custom_held_slot = 255;
 u8 custom_delete_counter = 0;
 u16 custom_delete_blink = 0;
 
-const custom_blob* map[8][8] = {};
-u64 map_state;
+const custom_blob* map[8][8][8] = {};
+u8 map_state[8][8];
 u16 outputting;
 
 const u8 custom_fader_stops[2][8][4] = {
@@ -102,17 +102,25 @@ typedef struct {
 
 typedef struct {
 	const custom_blob* blob;
-	u8 anim, type, color;
+	u8 anim_s, anim_p, type, color;
 } custom_fader;
 
-custom_fader custom_faders[8];
-custom_fader_anim custom_fader_anims[8];
+custom_fader custom_faders[8][8];
+custom_fader_anim custom_fader_anims[8][8];
 
 u8 custom_fader_orientation = 0;
 
+#define grab_fader_slot(s, i) \
+	custom_fader* fader = &custom_faders[s][i]; \
+	custom_fader_anim* anim = &custom_fader_anims[fader->anim_s][fader->anim_p];
+
+#define grab_fader(i) grab_fader_slot(custom_active_slot, i)
+
 void custom_fader_led(u8 x, u8 y, u8 v, u8 f) {
+	u8 orientation = (custom_fader_orientation << custom_active_slot) & 1;
+
 	rgb_led(
-		((custom_fader_orientation? y : x) + 1) * 10 + (custom_fader_orientation? x : y) + 1,
+		((orientation? y : x) + 1) * 10 + (orientation? x : y) + 1,
 		palette_value(palette_novation, v, 0) >> f,
 		palette_value(palette_novation, v, 1) >> f,
 		palette_value(palette_novation, v, 2) >> f
@@ -120,63 +128,62 @@ void custom_fader_led(u8 x, u8 y, u8 v, u8 f) {
 }
 
 void custom_fader_draw(u8 i) {
-	if (!custom_faders[i].blob) return;
+	grab_fader(i)
+	if (!fader->blob) return;
 
-	custom_fader_anim* anim = &custom_fader_anims[custom_faders[i].anim];
-
-	if (custom_faders[i].type) {   // Pan
-		if (anim->value < custom_fader_stops[custom_faders[i].type][3][0] + (anim->value != anim->final))
+	if (fader->type) {   // Pan
+		if (anim->value < custom_fader_stops[fader->type][3][0] + (anim->value != anim->final))
 			for (s8 x = 7; x >= 0; x--) {
 				u8 f = 0;
 
 				if (x >= 4) f = 7;
-				else if (x == 0) f = anim->value == custom_fader_stops[custom_faders[i].type][0][0]? 0 : 7;
-				else if (anim->value <= custom_fader_stops[custom_faders[i].type][x - 1][0]) f = 0;
-				else if (anim->value > custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else if (x == 0) f = anim->value == custom_fader_stops[fader->type][0][0]? 0 : 7;
+				else if (anim->value <= custom_fader_stops[fader->type][x - 1][0]) f = 0;
+				else if (anim->value > custom_fader_stops[fader->type][x][0]) f = 7;
 				else for (u8 j = 0; j < 3; j++)
-					if (anim->value > custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+					if (anim->value > custom_fader_stops[fader->type][x][j + 1]) {
 						f = 3 - j;
 						break;
 					}
 				
-				custom_fader_led(x, i, custom_faders[i].color, f);
+				custom_fader_led(x, i, fader->color, f);
 			}
 
-		else if (anim->value > custom_fader_stops[custom_faders[i].type][4][0] - (anim->value != anim->final))
+		else if (anim->value > custom_fader_stops[fader->type][4][0] - (anim->value != anim->final))
 			for (u8 x = 0; x < 8; x++) {
 				u8 f = 0;
 
 				if (x <= 3) f = 7;
-				else if (x == 7) f = anim->value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
-				else if (anim->value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
-				else if (anim->value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+				else if (x == 7) f = anim->value == custom_fader_stops[fader->type][7][0]? 0 : 7;
+				else if (anim->value >= custom_fader_stops[fader->type][x + 1][0]) f = 0;
+				else if (anim->value < custom_fader_stops[fader->type][x][0]) f = 7;
 				else for (u8 j = 0; j < 3; j++)
-					if (anim->value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+					if (anim->value < custom_fader_stops[fader->type][x][j + 1]) {
 						f = 3 - j;
 						break;
 					}
 				
-				custom_fader_led(x, i, custom_faders[i].color, f);
+				custom_fader_led(x, i, fader->color, f);
 			}
 
 		else
 			for (u8 x = 0; x < 8; x++)
-				custom_fader_led(x, i, x == 3 || x == 4? custom_faders[i].color : 0, 0);
+				custom_fader_led(x, i, x == 3 || x == 4? fader->color : 0, 0);
 
 	} else   // Linear
 		for (u8 x = 0; x < 8; x++) {
 			u8 f = 0;
 
-			if (x == 7) f = anim->value == custom_fader_stops[custom_faders[i].type][7][0]? 0 : 7;
-			else if (anim->value >= custom_fader_stops[custom_faders[i].type][x + 1][0]) f = 0;
-			else if (anim->value < custom_fader_stops[custom_faders[i].type][x][0]) f = 7;
+			if (x == 7) f = anim->value == custom_fader_stops[fader->type][7][0]? 0 : 7;
+			else if (anim->value >= custom_fader_stops[fader->type][x + 1][0]) f = 0;
+			else if (anim->value < custom_fader_stops[fader->type][x][0]) f = 7;
 			else for (u8 j = 0; j < 3; j++)
-				if (anim->value < custom_fader_stops[custom_faders[i].type][x][j + 1]) {
+				if (anim->value < custom_fader_stops[fader->type][x][j + 1]) {
 					f = 3 - j;
 					break;
 				}
 
-			custom_fader_led(x, i, custom_faders[i].color, f);
+			custom_fader_led(x, i, fader->color, f);
 		}
 }
 
@@ -197,27 +204,27 @@ u32 custom_fader_time(u8 v) {
 
 inline void custom_fader_send(custom_fader* fader) {
 	u8 ch = fader->blob->ch <= 0xF? fader->blob->ch : 0x0;
-	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, custom_fader_anims[fader->anim].value);
+	send_midi(USBSTANDALONE, 0xB0 | ch, fader->blob->p, custom_fader_anims[fader->anim_s][fader->anim_p].value);
 }
 
 void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	if (!v) return;
 
-	u8 i = custom_fader_orientation? x : y;
-	u8 c = custom_fader_orientation? y : x;
+	u8 orientation = (custom_fader_orientation << custom_active_slot) & 1;
+	u8 i = orientation? x : y;
+	u8 c = orientation? y : x;
 
-	if (!custom_faders[i].blob) return;
-
-	custom_fader_anim* anim = &custom_fader_anims[custom_faders[i].anim];
+	grab_fader(i)
+	if (!fader->blob) return;
 
 	v = custom_fader_vel_sensitive? v : 127;
 	
-	anim->final = custom_fader_stops[custom_faders[i].type][c][0]; // Save final value of the line
+	anim->final = custom_fader_stops[fader->type][c][0]; // Save final value of the line
 
-	if ((custom_faders[i].type == 0 && c != 7) || (custom_faders[i].type == 1 && c != 0 && c != 7)) // Retrigger small steps
+	if ((fader->type == 0 && c != 7) || (fader->type == 1 && c != 0 && c != 7)) // Retrigger small steps
 		for (u8 j = 0; j < 3; j++)
-			if (custom_fader_stops[custom_faders[i].type][c][j] == anim->value) {
-				anim->final = custom_fader_stops[custom_faders[i].type][c][j + 1];
+			if (custom_fader_stops[fader->type][c][j] == anim->value) {
+				anim->final = custom_fader_stops[fader->type][c][j + 1];
 				break;
 			}
 	
@@ -230,7 +237,7 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 		anim->value = anim->final;
 	
 	if (diff <= 1) {
-		custom_fader_send(custom_faders + i);
+		custom_fader_send(fader);
 
 		for (u8 i = 0; i < 8; i++)
 			custom_fader_draw(i);
@@ -252,60 +259,78 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	}
 }
 
-u8 custom_load() {
-	custom_prev_active_slot = custom_active_slot;
+void custom_load() {
+	custom_loaded = 1;
+	custom_valid = 0;
 
-	const u8* data = custom_data(custom_active_slot);
-	const void* top = custom_data(custom_active_slot + 1);
-
-	while (*data != 0x7F)  // Skip web-editor region (name and object metadata)
-		if (*data > 0x7F || (void*)data++ >= top) return 0;
-
-	custom_external_feedback = data[2];
-	custom_on = data[3];
-
+	custom_external_feedback = 0;
+	memset(custom_on, 0, sizeof(custom_on));
 	memset(map, 0, sizeof(map));
-	map_state = 0;
+	memset(map_state, 0, sizeof(map_state));
 	outputting = 0;
 	memset(custom_faders, 0, sizeof(custom_faders));
 	memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
+	custom_fader_orientation = 0;
 
-	for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
-		if (blob->xy > 0x7F || (void*)blob >= top) return 0;
+	for (u8 s = 0; s < 8; s++) {
+		const u8* data = custom_data(s);
+		const void* top = custom_data(s + 1);
 
-		if (blob->blob.kind) {   // Regular pad
-			u8 x = blob->xy / 10 - 1;
-			u8 y = blob->xy % 10 - 1;
-			map[x][y] = &blob->blob;
-		
-		} else if (blob->xy < 8) {   // Fader
-			u8 p = blob->xy;
+		while (*data != 0x7F)  // Skip web-editor region (name and object metadata)
+			if (*data > 0x7F || (void*)data++ >= top) goto next;
+
+		custom_external_feedback |= (data[2] & 1) << s;
+		custom_on[s] = data[3];
+
+		for (const custom_bin_blob* blob = (const custom_bin_blob*)(data + 4); blob->xy != 0xF7; blob++) {
+			if (blob->xy > 0x7F || (void*)blob >= top) goto next;
+
+			if (blob->blob.kind) {   // Regular pad
+				u8 x = blob->xy / 10 - 1;
+				u8 y = blob->xy % 10 - 1;
+				map[s][x][y] = &blob->blob;
 			
-			if ((custom_fader_orientation = blob->blob.trig >> 1))
-				p = 7 - p;
+			} else if (blob->xy < 8) {   // Fader
+				u8 p = blob->xy;
+				
+				u8 orientation = (blob->blob.trig >> 1) & 1;
+				custom_fader_orientation |= orientation << s;
 
-			custom_faders[p].anim = p;
-			
-			for (u8 i = 0; i < 8; i++) {
-				if (blob->blob.trig < 2)
-					map[i][p] = &blob->blob;
+				if (orientation)
+					p = 7 - p;
 
-				else map[p][i] = &blob->blob;
+				for (u8 i = 0; i < 8; i++) {
+					if (blob->blob.trig < 2)
+						map[s][i][p] = &blob->blob;
 
-				if (custom_faders[i].blob && custom_faders[i].blob->ch == blob->blob.ch && custom_faders[i].blob->p == blob->blob.p)
-					custom_faders[p].anim = custom_faders[i].anim;
+					else map[s][p][i] = &blob->blob;
+				}
+
+				custom_faders[s][p].anim_s = s;
+				custom_faders[s][p].anim_p = p;
+
+				for (u8 t = 0; t < 8; t++) {
+					for (u8 i = 0; i < 8; i++) {
+						if (custom_faders[t][i].blob && custom_faders[t][i].blob->ch == blob->blob.ch && custom_faders[t][i].blob->p == blob->blob.p) {
+							custom_faders[s][p].anim_s = custom_faders[t][i].anim_s;
+							custom_faders[s][p].anim_p = custom_faders[t][i].anim_p;
+						}
+					}
+				}
+
+				custom_faders[s][p].blob = &blob->blob;
+				custom_faders[s][p].type = blob->blob.trig & 1;
+				custom_faders[s][p].color = blob->blob.bg;
+
+				custom_fader_anim* anim = &custom_fader_anims[custom_faders[s][p].anim_s][custom_faders[s][p].anim_p];
+				anim->value = anim->final = 127;
 			}
-
-			custom_faders[p].blob = &blob->blob;
-			custom_faders[p].type = blob->blob.trig & 1;
-			custom_faders[p].color = blob->blob.bg;
-
-			custom_fader_anim* anim = &custom_fader_anims[custom_faders[p].anim];
-			anim->value = anim->final = 127;
 		}
-	}
 
-	return 1;
+		custom_valid |= 1 << s;
+
+		next:;
+	}
 }
 
 void custom_init() {
@@ -317,15 +342,17 @@ void custom_init() {
 	custom_delete_counter = 0;
 	custom_delete_blink = 0;
 
-	if (custom_prev_active_slot != custom_active_slot)
-		custom_valid = custom_load();
+	if (!custom_loaded)
+		custom_load();
 
-	if (custom_valid) {
-		if (!custom_external_feedback)
+	u8 valid = (custom_valid >> custom_active_slot) & 1;
+
+	if (valid) {
+		if (!((custom_external_feedback >> custom_active_slot) & 1))
 			for (u8 x = 0; x < 8; x++)
 				for (u8 y = 0; y < 8; y++)
-					if (map[x][y] && map[x][y]->kind)
-						novation_led((x + 1) * 10 + y + 1, map[x][y]->bg);
+					if (map[custom_active_slot][x][y] && map[custom_active_slot][x][y]->kind)
+						novation_led((x + 1) * 10 + y + 1, map[custom_active_slot][x][y]->bg);
 
 		for (u8 i = 0; i < 8; i++)
 			custom_fader_draw(i);
@@ -333,14 +360,14 @@ void custom_init() {
 	
 	for (u8 i = 0; i < 8; i++)
 		if (custom_active_slot == i) {
-			if (custom_valid) rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
+			if (valid) rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
 			else rgb_led(89 - i * 10, invalid_slot_r, invalid_slot_g, invalid_slot_b);
 
 		} else rgb_led(89 - i * 10, inactive_slot_r, inactive_slot_g, inactive_slot_b);
 }
 
 void custom_timer_event() {
-	if (!custom_valid) return;
+	if (!custom_loaded) return;
 
 	if (custom_export_slot < 8 && custom_export++ % 7 == 0) {
 		u8 p = custom_export / 7;
@@ -370,6 +397,38 @@ void custom_timer_event() {
 		if (310 * (p + 1) - 2 >= l) custom_export_slot = 255;
 	}
 
+	u8 anim_processed[8] = {};
+
+	for (u8 s = 0; s < 8; s++) {
+		if (!((custom_valid >> s) & 1)) continue;
+
+		for (u8 i = 0; i < 8; i++) {
+			grab_fader_slot(s, i)
+
+			if (!fader->blob) continue;
+
+			if (!((anim_processed[fader->anim_s] << fader->anim_p) & 1)) {
+				if (anim->counter && ++anim->elapsed >= anim->tick) {
+					anim->value += anim->change; // Update fader line
+					
+					anim->counter--;
+					if (!anim->counter)
+						anim->value = anim->final; // Set fader to supposed final value
+					
+					custom_fader_send(fader);
+					anim->elapsed = 0;
+				}
+
+				anim_processed[fader->anim_s] |= 1 << fader->anim_p;
+			}
+			
+			if (mode == mode_custom && custom_active_slot == s)
+				custom_fader_draw(i);
+		}
+	}
+
+	if (mode != mode_custom || !((custom_valid >> custom_active_slot) & 1)) return;
+
 	if (custom_held_slot < 8 && custom_delete_blink) {
 		if (++custom_delete_blink > 400) custom_delete_blink = 1;
 		
@@ -380,35 +439,10 @@ void custom_timer_event() {
 			custom_delete_blink > 200? 0 : invalid_slot_b
 		);
 	}
-
-	u8 anim_processed = 0;
-
-	for (u8 i = 0; i < 8; i++) {
-		if (!custom_faders[i].blob) continue;
-
-		if (!((anim_processed << custom_faders[i].anim) & 1)) {
-			custom_fader_anim* anim = &custom_fader_anims[custom_faders[i].anim];
-
-			if (anim->counter && ++anim->elapsed >= anim->tick) {
-				anim->value += anim->change; // Update fader line
-				
-				anim->counter--;
-				if (!anim->counter)
-					anim->value = anim->final; // Set fader to supposed final value
-				
-				custom_fader_send(custom_faders + i);
-				anim->elapsed = 0;
-			}
-
-			anim_processed |= 1 << custom_faders[i].anim;
-		}
-		
-		custom_fader_draw(i);
-	}
 }
 
 void custom_led(u8 ch, u8 p, u8 v, u8 c) {
-	if (custom_external_feedback) {
+	if ((custom_external_feedback >> custom_active_slot) & 1) {
 		if (ch == 0x0) novation_led(p, v);
 		else if (ch == 0x1) flash_led(p, v);
 		else if (ch == 0x2) pulse_led(p, v);
@@ -420,38 +454,40 @@ void custom_led(u8 ch, u8 p, u8 v, u8 c) {
 
 void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	if (s && !custom_midi_led) return;
-	if (!s && custom_external_feedback) return;
+
+	u8 ext = (custom_external_feedback >> custom_active_slot) & 1;
+	if (!s && ext) return;
 
 	u8 k;
 	if (t == 0x9) k = 0x01;
-	else if (t == 0xB && (!s || custom_external_feedback)) k = 0x02;
+	else if (t == 0xB && (!s || ext)) k = 0x02;
 	else return;
 
 	u8 e = s? 1 : custom_surface_led;
 	
 	for (u8 x = 0; x < 8; x++) {
 		for (u8 y = 0; y < 8; y++) {
-			u8 map_ch = custom_external_feedback? ch : (map[x][y]->ch <= 0xF? map[x][y]->ch : 0x0);
+			u8 map_ch = ext? ch : (map[custom_active_slot][x][y]->ch <= 0xF? map[custom_active_slot][x][y]->ch : 0x0);
 			
-			if (map[x][y]->kind == k && map_ch == ch && map[x][y]->p == p) {
+			if (map[custom_active_slot][x][y]->kind == k && map_ch == ch && map[custom_active_slot][x][y]->p == p) {
 				u8 p = (x + 1) * 10 + y + 1;
 
 				if (k == 0x01) {
-					if (map[x][y]->trig == 0x01) {
-						if (!s || custom_external_feedback)
-							custom_led(ch, p, v, v == 127? custom_on : map[x][y]->bg);
+					if (map[custom_active_slot][x][y]->trig == 0x01) {
+						if (!s || ext)
+							custom_led(ch, p, v, v == 127? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
 
-					} else if (e) custom_led(ch, p, v, v? custom_on : map[x][y]->bg);
+					} else if (e) custom_led(ch, p, v, v? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
 
-				} else if (k == 0x02 && (map[x][y]->trig == 0x01 || (map[x][y]->trig == 0x00 && e)))
-					custom_led(ch, p, v, v == map[x][y]->v_on? custom_on : map[x][y]->bg);
+				} else if (k == 0x02 && (map[custom_active_slot][x][y]->trig == 0x01 || (map[custom_active_slot][x][y]->trig == 0x00 && e)))
+					custom_led(ch, p, v, v == map[custom_active_slot][x][y]->v_on? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
 			}
 		}
 	}
 }
 
 void custom_send(u8 t, u8 ch, u8 p, u8 v) {
-	if (!custom_valid) return;
+	if (!((custom_valid >> custom_active_slot) & 1))return;
 
 	send_midi(USBSTANDALONE, (t << 4) | (ch & 0xF), p, v);
 	custom_highlight(t, ch, p, v, 0);
@@ -474,14 +510,14 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				custom_held_slot = t;
 			
 			} else if (custom_held_slot == t) {
-				if (custom_valid) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
+				if ((custom_valid >> custom_active_slot) & 1) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
 
 				custom_held_slot = 255;
 				custom_delete_counter = 0;
 				custom_delete_blink = 0;
 			}
         
-		} else if (custom_valid) {
+		} else if ((custom_valid >> custom_active_slot) & 1) {
 			if (p == 91) { // Export mode
 				if (v) {
 					custom_export = 0;
@@ -508,7 +544,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 							for (u16 i = 0; i < 1024; i++)
 								custom_upload_buffer[i] = 0xFF;
 
-							custom_prev_active_slot = 255;
+							custom_loaded = 0;
 							flash_write_custom(custom_held_slot, custom_upload_buffer);
 
 							mode_refresh();
@@ -521,45 +557,43 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				x--;
 				y--;
 
-				if (map[x][y]) {
-					if (!map[x][y]->kind) {
+				if (map[custom_active_slot][x][y]) {
+					if (!map[custom_active_slot][x][y]->kind) {
 						custom_fader_trigger(x, y, v);
 						return;
 					}
 
-					u8 ch = map[x][y]->ch <= 0xF? map[x][y]->ch : 0x0;
+					u8 ch = map[custom_active_slot][x][y]->ch <= 0xF? map[custom_active_slot][x][y]->ch : 0x0;
 					
-					switch (map[x][y]->kind) {
+					switch (map[custom_active_slot][x][y]->kind) {
 						case 0x01: // MIDI note
-							if (map[x][y]->trig == 0x01) {
+							if (map[custom_active_slot][x][y]->trig == 0x01) {
 								if (v) {
-									u8 pos = x * 8 + y;
-									map_state ^= 1ULL << pos;
-									custom_send(0x9, ch, map[x][y]->p, ((map_state >> pos) & 1)? v : 0);
+									map_state[custom_active_slot][x] ^= 1ULL << y;
+									custom_send(0x9, ch, map[custom_active_slot][x][y]->p, ((map_state[custom_active_slot][x] >> y) & 1)? v : 0);
 								}
 								
 							} else {
 								outputting ^= (((outputting >> ch) ^ (v > 0)) & 1) << ch; // set bit at ch to be v > 0
-								custom_send(0x9, ch, map[x][y]->p, v);
+								custom_send(0x9, ch, map[custom_active_slot][x][y]->p, v);
 							}
 							break;
 						
 						case 0x02: // Control Change
-							if (map[x][y]->trig == 0x01) {
+							if (map[custom_active_slot][x][y]->trig == 0x01) {
 								if (v) {
-									u8 pos = x * 8 + y;
-									map_state ^= 1ULL << pos;
-									custom_send(0xB, ch, map[x][y]->p, ((map_state >> pos) & 1)? map[x][y]->v_on : map[x][y]->v_off);
+									map_state[custom_active_slot][x] ^= 1ULL << y;
+									custom_send(0xB, ch, map[custom_active_slot][x][y]->p, ((map_state[custom_active_slot][x] >> y) & 1)? map[custom_active_slot][x][y]->v_on : map[custom_active_slot][x][y]->v_off);
 								}
 
-							} else if (map[x][y]->trig == 0x02) {
-								if (v) custom_send(0xB, ch, map[x][y]->p, map[x][y]->v_on);
+							} else if (map[custom_active_slot][x][y]->trig == 0x02) {
+								if (v) custom_send(0xB, ch, map[custom_active_slot][x][y]->p, map[custom_active_slot][x][y]->v_on);
 								
-							} else custom_send(0xB, ch, map[x][y]->p, v? map[x][y]->v_on : map[x][y]->v_off);
+							} else custom_send(0xB, ch, map[custom_active_slot][x][y]->p, v? map[custom_active_slot][x][y]->v_on : map[custom_active_slot][x][y]->v_off);
 							break;
 						
 						case 0x03: // Program Change
-							if (v) custom_send(0xC, ch, map[x][y]->p, 0);
+							if (v) custom_send(0xC, ch, map[custom_active_slot][x][y]->p, 0);
 							break;
 					}
 				}
@@ -569,7 +603,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (custom_valid && port == USBSTANDALONE) {
+	if ((custom_valid >> custom_active_slot) & 1 && port == USBSTANDALONE) {
 		if (t == 0x8) {
 			v = 0; // Note off
 			t = 0x9;
@@ -580,7 +614,7 @@ void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void custom_aftertouch_event(u8 v) {
-	if (!custom_valid) return;
+	if (!((custom_valid >> custom_active_slot) & 1)) return;
 
 	for (u8 i = 0; i < 16; i++)
 		if ((outputting << i) & 1)
@@ -588,11 +622,11 @@ void custom_aftertouch_event(u8 v) {
 }
 
 void custom_poly_event(u8 p, u8 v) {
-	if (!custom_valid) return;
+	if (!((custom_valid >> custom_active_slot) & 1)) return;
 
 	u8 x = p / 10 - 1;
 	u8 y = p % 10 - 1;
 
-	if (0 <= x && x <= 7 && 0 <= y && y <= 7 && map[x][y] && map[x][y]->kind == 0x01 && map[x][y]->trig != 0x01)
-		custom_send(0xA, map[x][y]->ch, map[x][y]->p, v);
+	if (0 <= x && x <= 7 && 0 <= y && y <= 7 && map[custom_active_slot][x][y] && map[custom_active_slot][x][y]->kind == 0x01 && map[custom_active_slot][x][y]->trig != 0x01)
+		custom_send(0xA, map[custom_active_slot][x][y]->ch, map[custom_active_slot][x][y]->p, v);
 }
