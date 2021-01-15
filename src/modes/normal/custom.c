@@ -534,8 +534,8 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 							if (map[x][y]->trig == 0x01) {
 								if (v) {
 									u8 pos = x * 8 + y;
-									map_state ^= 1 << pos;
-									custom_send(0x9, ch, map[x][y]->p, ((map_state << pos) & 1)? v : 0);
+									map_state ^= 1ULL << pos;
+									custom_send(0x9, ch, map[x][y]->p, ((map_state >> pos) & 1)? v : 0);
 								}
 								
 							} else {
@@ -548,8 +548,8 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 							if (map[x][y]->trig == 0x01) {
 								if (v) {
 									u8 pos = x * 8 + y;
-									map_state ^= 1 << pos;
-									custom_send(0xB, ch, map[x][y]->p, ((map_state << pos) & 1)? map[x][y]->v_on : map[x][y]->v_off);
+									map_state ^= 1ULL << pos;
+									custom_send(0xB, ch, map[x][y]->p, ((map_state >> pos) & 1)? map[x][y]->v_on : map[x][y]->v_off);
 								}
 
 							} else if (map[x][y]->trig == 0x02) {
