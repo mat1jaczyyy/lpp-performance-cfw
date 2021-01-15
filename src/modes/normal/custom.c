@@ -73,7 +73,7 @@ u8 custom_delete_counter = 0;
 u16 custom_delete_blink = 0;
 
 custom_map_blob map[8][8] = {};
-s8 outputting[16] = {};
+u16 outputting;
 
 const u8 custom_fader_stops[2][8][4] = {
 	{ // Linear
@@ -266,7 +266,7 @@ u8 custom_load() {
 	custom_on = data[3];
 
 	memset(map, 0, sizeof(map));
-	memset(outputting, 0, sizeof(outputting));
+	outputting = 0;
 	memset(custom_faders, 0, sizeof(custom_faders));
 	memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
 
@@ -525,9 +525,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 								if (v) custom_send(0x9, ch, map[x][y].blob->p, (map[x][y].state = !map[x][y].state)? v : 0);
 								
 							} else {
-								outputting[ch] = v? 1 : -1;
-								if (outputting[ch] < 0) outputting[ch] = 0;
-
+								outputting ^= (((outputting >> ch) ^ (v > 0)) & 1) << ch; // set bit at ch to be v > 0
 								custom_send(0x9, ch, map[x][y].blob->p, v);
 							}
 							break;
@@ -567,7 +565,7 @@ void custom_aftertouch_event(u8 v) {
 	if (!custom_valid) return;
 
 	for (u8 i = 0; i < 16; i++)
-		if (outputting[i])
+		if ((outputting << i) & 1)
 			aftertouch_send(USBSTANDALONE, 0xD0 | i, v);
 }
 
