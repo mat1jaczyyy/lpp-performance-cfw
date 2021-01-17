@@ -386,8 +386,8 @@ void custom_init() {
 		custom_load();
 		valid = (custom_valid >> custom_active_slot) & 1;
 
-		if (valid && !((custom_external_feedback >> custom_active_slot) & 1))
-			for (u8 s = 0; s < 8; s++)
+		for (u8 s = 0; s < 8; s++)
+			if ((custom_valid >> s) & 1 && !((custom_external_feedback >> s) & 1))
 				for (u8 x = 0; x < 8; x++)
 					for (u8 y = 0; y < 8; y++)
 						if (map[s][x][y] && map[s][x][y]->kind)
