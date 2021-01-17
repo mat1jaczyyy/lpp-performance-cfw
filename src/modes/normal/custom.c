@@ -67,8 +67,22 @@ u8 custom_held_slot = 255;
 u8 custom_delete_counter = 0;
 u16 custom_delete_blink = 0;
 
+u8 map_screen[8][8][8];
+
+void custom_screen_led(u8 s, u8 x, u8 y, u8 c) {
+	if (c >> 7) c = map_screen[s][x][y];
+	else map_screen[s][x][y] = c;
+
+	if (s == custom_active_slot)
+		novation_led((x + 1) * 10 + y + 1, c);
+}
+
 const custom_blob* map[8][8][8] = {};
 u8 map_state[8][8];
+
+u8* const map_state_i = &map_state[0][0];
+u16 map_state_ptr[8][8][8];
+
 u16 outputting;
 
 const u8 custom_fader_stops[2][8][4] = {
@@ -265,8 +279,10 @@ void custom_load() {
 
 	custom_external_feedback = 0;
 	memset(custom_on, 0, sizeof(custom_on));
+	memset(map_screen, 0, sizeof(map_screen));
 	memset(map, 0, sizeof(map));
 	memset(map_state, 0, sizeof(map_state));
+	memset(map_state_ptr, 0, sizeof(map_state_ptr));
 	outputting = 0;
 	memset(custom_faders, 0, sizeof(custom_faders));
 	memset(custom_fader_anims, 0, sizeof(custom_fader_anims));
@@ -289,6 +305,25 @@ void custom_load() {
 				u8 x = blob->xy / 10 - 1;
 				u8 y = blob->xy % 10 - 1;
 				map[s][x][y] = &blob->blob;
+
+				u8 map_ch = map[s][x][y]->ch <= 0xF? map[s][x][y]->ch : 0x0;
+				map_state_ptr[s][x][y] = s * 64 + x * 8 + y;
+
+				for (u8 t = 0; t <= s; t++) {
+					for (u8 x2 = 0; x2 < 8; x2++) {
+						for (u8 y2 = 0; y2 < 8; y2++) {
+							if (!map[t][x2][y2]) continue;
+
+							u8 t_ch = map[t][x2][y2]->ch <= 0xF? map[t][x2][y2]->ch : 0x0;
+
+							if (map[s][x][y]->kind == map[t][x2][y2]->kind && map_ch == t_ch && map[s][x][y]->p == map[t][x2][y2]->p) {
+								map_state_ptr[s][x][y] = t * 64 + x2 * 8 + y2;
+								goto done_map;
+							}
+						}
+					}
+				}
+				done_map:;
 			
 			} else if (blob->xy < 8) {   // Fader
 				u8 p = blob->xy;
@@ -309,15 +344,18 @@ void custom_load() {
 				custom_faders[s][p].anim_s = s;
 				custom_faders[s][p].anim_p = p;
 
-				for (u8 t = 0; t < 8; t++) {
+				for (u8 t = 0; t <= s; t++) {
 					for (u8 i = 0; i < 8; i++) {
 						if (custom_faders[t][i].blob && custom_faders[t][i].blob->ch == blob->blob.ch && custom_faders[t][i].blob->p == blob->blob.p) {
 							custom_faders[s][p].anim_s = custom_faders[t][i].anim_s;
 							custom_faders[s][p].anim_p = custom_faders[t][i].anim_p;
+
+							goto done_fader;
 						}
 					}
 				}
-
+				
+				done_fader:
 				custom_faders[s][p].blob = &blob->blob;
 				custom_faders[s][p].type = blob->blob.trig & 1;
 				custom_faders[s][p].color = blob->blob.bg;
@@ -342,21 +380,28 @@ void custom_init() {
 	custom_delete_counter = 0;
 	custom_delete_blink = 0;
 
-	if (!custom_loaded)
-		custom_load();
-
 	u8 valid = (custom_valid >> custom_active_slot) & 1;
 
-	if (valid) {
-		if (!((custom_external_feedback >> custom_active_slot) & 1))
-			for (u8 x = 0; x < 8; x++)
-				for (u8 y = 0; y < 8; y++)
-					if (map[custom_active_slot][x][y] && map[custom_active_slot][x][y]->kind)
-						novation_led((x + 1) * 10 + y + 1, map[custom_active_slot][x][y]->bg);
+	if (!custom_loaded) {
+		custom_load();
+		valid = (custom_valid >> custom_active_slot) & 1;
 
+		if (valid && !((custom_external_feedback >> custom_active_slot) & 1))
+			for (u8 s = 0; s < 8; s++)
+				for (u8 x = 0; x < 8; x++)
+					for (u8 y = 0; y < 8; y++)
+						if (map[s][x][y] && map[s][x][y]->kind)
+							custom_screen_led(s, x, y, map[s][x][y]->bg & 0x7F);
+	
+	} else if (valid) {
+		for (u8 x = 0; x < 8; x++)
+			for (u8 y = 0; y < 8; y++)
+				custom_screen_led(custom_active_slot, x, y, 255);
+	}
+
+	if (valid)
 		for (u8 i = 0; i < 8; i++)
 			custom_fader_draw(i);
-	}
 	
 	for (u8 i = 0; i < 8; i++)
 		if (custom_active_slot == i) {
@@ -441,15 +486,19 @@ void custom_timer_event() {
 	}
 }
 
-void custom_led(u8 ch, u8 p, u8 v, u8 c) {
+void custom_led(u8 ch, u8 s, u8 x, u8 y, u8 v, u8 c) {
+	u8 p = (x + 1) * 10 + y + 1;
+
 	if ((custom_external_feedback >> custom_active_slot) & 1) {
-		if (ch == 0x0) novation_led(p, v);
-		else if (ch == 0x1) flash_led(p, v);
-		else if (ch == 0x2) pulse_led(p, v);
+		if (s == custom_active_slot) {
+			if (ch == 0x0) novation_led(p, v);
+			else if (ch == 0x1) flash_led(p, v);
+			else if (ch == 0x2) pulse_led(p, v);
+		}
 		return;
 	}
 
-	novation_led(p, c);
+	custom_screen_led(s, x, y, c & 0x7F);
 }
 
 void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
@@ -465,22 +514,22 @@ void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 
 	u8 e = s? 1 : custom_surface_led;
 	
-	for (u8 x = 0; x < 8; x++) {
-		for (u8 y = 0; y < 8; y++) {
-			u8 map_ch = ext? ch : (map[custom_active_slot][x][y]->ch <= 0xF? map[custom_active_slot][x][y]->ch : 0x0);
-			
-			if (map[custom_active_slot][x][y]->kind == k && map_ch == ch && map[custom_active_slot][x][y]->p == p) {
-				u8 p = (x + 1) * 10 + y + 1;
+	for (u8 slot = 0; slot < 8; slot++) {
+		for (u8 x = 0; x < 8; x++) {
+			for (u8 y = 0; y < 8; y++) {
+				u8 map_ch = ext? ch : (map[slot][x][y]->ch <= 0xF? map[slot][x][y]->ch : 0x0);
+				
+				if (map[slot][x][y]->kind == k && map_ch == ch && map[slot][x][y]->p == p) {
+					if (k == 0x01) {
+						if (map[slot][x][y]->trig == 0x01) {
+							if (!s || ext)
+								custom_led(ch, slot, x, y, v, v == 127? custom_on[slot] : map[slot][x][y]->bg);
 
-				if (k == 0x01) {
-					if (map[custom_active_slot][x][y]->trig == 0x01) {
-						if (!s || ext)
-							custom_led(ch, p, v, v == 127? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
+						} else if (e) custom_led(ch, slot, x, y, v, v? custom_on[slot] : map[slot][x][y]->bg);
 
-					} else if (e) custom_led(ch, p, v, v? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
-
-				} else if (k == 0x02 && (map[custom_active_slot][x][y]->trig == 0x01 || (map[custom_active_slot][x][y]->trig == 0x00 && e)))
-					custom_led(ch, p, v, v == map[custom_active_slot][x][y]->v_on? custom_on[custom_active_slot] : map[custom_active_slot][x][y]->bg);
+					} else if (k == 0x02 && (map[slot][x][y]->trig == 0x01 || (map[slot][x][y]->trig == 0x00 && e)))
+						custom_led(ch, slot, x, y, v, v == map[slot][x][y]->v_on? custom_on[slot] : map[slot][x][y]->bg);
+				}
 			}
 		}
 	}
@@ -569,8 +618,11 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 						case 0x01: // MIDI note
 							if (map[custom_active_slot][x][y]->trig == 0x01) {
 								if (v) {
-									map_state[custom_active_slot][x] ^= 1ULL << y;
-									custom_send(0x9, ch, map[custom_active_slot][x][y]->p, ((map_state[custom_active_slot][x] >> y) & 1)? v : 0);
+									u8 x2 = map_state_ptr[custom_active_slot][x][y] >> 3;
+									u8 y2 = map_state_ptr[custom_active_slot][x][y] & 0x7;
+
+									map_state_i[x2] ^= 1ULL << y2;
+									custom_send(0x9, ch, map[custom_active_slot][x][y]->p, ((map_state_i[x2] >> y2) & 1)? v : 0);
 								}
 								
 							} else {
@@ -582,8 +634,11 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 						case 0x02: // Control Change
 							if (map[custom_active_slot][x][y]->trig == 0x01) {
 								if (v) {
-									map_state[custom_active_slot][x] ^= 1ULL << y;
-									custom_send(0xB, ch, map[custom_active_slot][x][y]->p, ((map_state[custom_active_slot][x] >> y) & 1)? map[custom_active_slot][x][y]->v_on : map[custom_active_slot][x][y]->v_off);
+									u8 x2 = map_state_ptr[custom_active_slot][x][y] >> 3;
+									u8 y2 = map_state_ptr[custom_active_slot][x][y] & 0x7;
+
+									map_state_i[x2] ^= 1ULL << y;
+									custom_send(0xB, ch, map[custom_active_slot][x][y]->p, ((map_state_i[x2] >> y2) & 1)? map[custom_active_slot][x][y]->v_on : map[custom_active_slot][x][y]->v_off);
 								}
 
 							} else if (map[custom_active_slot][x][y]->trig == 0x02) {
