@@ -2,7 +2,7 @@
 
 u8 editor_selected = 1;
 
-#define editor_export_speed 7
+#define editor_export_speed 4
 #define editor_export_max 0x80
 
 u8 editor_export_do = 0;
@@ -98,7 +98,7 @@ void editor_timer_event() {
 			for (u8 j = 0; j < 3; j++)
 				syx_response_buffer[sizeof(syx_palette_header) + 2 + j] = palette[palette_selected][j][editor_export_counter];
 
-			syx_response_buffer[sizeof(syx_palette_header) + 5] = editor_export_counter;
+			syx_response_buffer[sizeof(syx_palette_header) + 5] = 0xF7;
 			syx_send(USBSTANDALONE, sizeof(syx_palette_header) + 6);
 			
 			if (++editor_export_counter >= editor_export_max) {

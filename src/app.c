@@ -55,6 +55,10 @@ void app_timer_event() {
 	tempo_timer++; tempo_tick();
 
 	(*mode_timer_event[mode])();
+
+	// Hack to make Custom modes always run in the background
+	if (mode != mode_custom)
+		custom_timer_event();
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {

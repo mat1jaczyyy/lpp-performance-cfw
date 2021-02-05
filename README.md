@@ -20,14 +20,14 @@ All modes other than the new Performance mode behave much the same as they do on
 You no longer have to hold the Setup button in order to change the settings on your Launchpad. A simple button press takes you in and out of the Setup mode with ease. If you're used to the old way of holding the button while changing settings, the Launchpad will recognise it and take you back when you release the button.
 
 * Top left corner: Mode selection
-    * Red = Performance mode (Standalone Port - Channel 16)
-    * Green = Live mode (MIDI Port - User mode is locked to Channel 6)
-    * Cyan = Note mode (Standalone Port - Channel 1)
-    * Yellow = Drum mode (Standalone Port - Channel 2)
-    * Pink = Fader mode (Standalone Port - Channel 3)
-    * Orange = Programmer mode (Standalone Port - Channel 1 - this is required for FL Studio support)
-    * Violet = Piano mode (Standalone Port - Channel 4)
-    * White = Custom modes (Standalone Port - any Channel)
+    * Red = Performance mode (Standalone Port - Channel 16, use 12 for flashing and 13 for pulsing)
+    * Green = Live mode (MIDI Port)
+    * Cyan = Note mode (Standalone Port)
+    * Yellow = Drum mode (Standalone Port)
+    * Pink = Fader mode (Standalone Port)
+    * Orange = Programmer mode (Standalone Port - use Channel 1 for FL Studio support!)
+    * Violet = Piano mode (Standalone Port)
+    * White = Custom modes (Standalone Port)
 * Left side: Idle animation toggle
 * Bottom left corner: Input/Output Management
     * Cyan = Velocity sensitivity toggle
@@ -53,7 +53,7 @@ Additional options will appear in the bottom-right corner if the Custom modes ar
 * External LED feedback toggles whether pads on the 8x8 grid light up when MIDI is received externally.
 * Fader Velocity toggles whether faders will ignore velocity sensitivity, even if it's turned on globally.
 
-In modes found on the stock firmware, the channel selection will appear in the bottom-right corner.
+In modes found on the stock firmware, the channel selection will appear in the bottom-right corner. Note mode additionally supports translation (yellow key next to root note selector in Scale setup), which will light the grid in the selected root key even when not using Scale mode.
 
 ### Performance mode
 
