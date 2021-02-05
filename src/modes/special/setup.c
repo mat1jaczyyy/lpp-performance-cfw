@@ -149,7 +149,7 @@ void setup_init() {
 			}
 	}
 
-	if (mode_note <= mode_default && mode_default <= mode_piano) {
+	if (mode_note <= mode_default && mode_default <= mode_chord) {
 		for (u8 x = 0; x < 4; x++)
 			for (u8 y = 0; y < 4; y++) {
 				u8 set = channels[mode_default - mode_note] == 4 * x + y;
@@ -225,8 +225,8 @@ void setup_init() {
 	rgb_led(72, mode_fader_r >> 2, mode_fader_g >> 2, mode_fader_b >> 2); // Fader mode
 	rgb_led(73, mode_programmer_r >> 2, mode_programmer_g >> 2, mode_programmer_b >> 2); // Programmer mode
 	rgb_led(61, mode_piano_r >> 2, mode_piano_g >> 2, mode_piano_b >> 2); // Piano mode
-	rgb_led(62, mode_custom_r >> 2, mode_custom_g >> 2, mode_custom_b >> 2); // Custom mode
-	rgb_led(63, mode_chord_r >> 2, mode_chord_g >> 2, mode_chord_b >> 2); // Chord mode
+	rgb_led(62, mode_chord_r >> 2, mode_chord_g >> 2, mode_chord_b >> 2); // Chord mode
+	rgb_led(63, mode_custom_r >> 2, mode_custom_g >> 2, mode_custom_b >> 2); // Custom mode
 
 	switch (mode_default) {
 		case 0:
@@ -258,11 +258,11 @@ void setup_init() {
 			break;
 
 		case 7:
-			rgb_led(62, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode selected
+			rgb_led(62, mode_chord_r, mode_chord_g, mode_chord_b); // Chord mode selected
 			break;
 
 		case 8:
-			rgb_led(63, mode_chord_r, mode_chord_g, mode_chord_b); // Chord mode selected
+			rgb_led(63, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode selected
 			break;
 	}
 	
@@ -361,7 +361,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 					break;
 				}
 		
-		} else if (mode_note <= mode_default && mode_default <= mode_piano) {
+		} else if (mode_note <= mode_default && mode_default <= mode_chord) {
 			for (u8 i = 4; i >= 1; i--)
 				if (i * 10 + 5 <= p && p <= i * 10 + 8) {
 					channels[mode_default - mode_note] = p + 11 - 14 * i;

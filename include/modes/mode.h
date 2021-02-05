@@ -27,11 +27,11 @@
 #define mode_piano 6
 #include "modes/normal/piano.h"
 
-#define mode_custom 7
-#include "modes/normal/custom.h"
-
-#define mode_chord 8
+#define mode_chord 7
 #include "modes/normal/chord.h"
+
+#define mode_custom 8
+#include "modes/normal/custom.h"
 
 #define mode_text 9
 #include "modes/normal/text.h"

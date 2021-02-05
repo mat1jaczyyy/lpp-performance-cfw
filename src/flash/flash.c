@@ -4,7 +4,7 @@
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 
-#define flash_user_size (palette_custom * 3 * 32 * 3 + 28)
+#define flash_user_size (palette_custom * 3 * 32 * 3 + 18)
 
 #define flash_user_start 0x2400
 
@@ -70,9 +70,6 @@ void flash_read() {
 
 	for (u8 i = 0; i < sizeof(channels); i++)
 		channels[i] = flash_direct_read(fp++) & 0xF;
-
-  	// Padding reserved for additional channel settings that might appear in the future
-	fp += 16 - sizeof(channels);
 }
 
 void flash_write() {
@@ -108,9 +105,6 @@ void flash_write() {
 
 	for (u8 i = 0; i < sizeof(channels); i++)
 		flash[fp++] = channels[i];
-
-  	// Padding reserved for additional channel settings that might appear in the future
-	fp += 16 - sizeof(channels);
 	
 	flash_direct_write(flash_user_start, &flash[0], fp);
 	
