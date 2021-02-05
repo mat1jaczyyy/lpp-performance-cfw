@@ -1,5 +1,10 @@
 #include "modes/normal/chord.h"
 
+void rmemcpy(u8* dest, const u8* src, s32 n) {
+	for (n--; n >= 0; n--)
+		dest[n] = src[n];
+}
+
 #define chord_color_empty_r 0
 #define chord_color_empty_g 0
 #define chord_color_empty_b 0
@@ -24,6 +29,22 @@
 #define chord_color_pressed_g 63
 #define chord_color_pressed_b 63
 
+#define chord_color_locked_r 0
+#define chord_color_locked_g 63
+#define chord_color_locked_b 37
+
+#define chord_color_unlocked_r 15
+#define chord_color_unlocked_g 0
+#define chord_color_unlocked_b 0
+
+#define chord_color_bank_valid_r 31
+#define chord_color_bank_valid_g 31
+#define chord_color_bank_valid_b 31
+
+#define chord_color_bank_invalid_r 7
+#define chord_color_bank_invalid_g 7
+#define chord_color_bank_invalid_b 7
+
 #define chord_octave_start 4
 
 const u8 chord_octave_colors[5][3] = {{63, 0, 63}, {20, 0, 63}, {0, 0, 63}, {0, 0, 31}, {0, 0, 7}};
@@ -43,6 +64,60 @@ u8 chord_nav_pressed[2] = {};
 u8 chord_kind[8] = {};
 u8 chord_triads = 8;
 
+u8 chord_lock = 1;
+u8 chord_edit = 255;
+u8 chord_edit_data[9];
+
+u16 chord_bank_valid;
+u16 chord_bank_pressed;
+u8 chord_notes_pressed[16];
+
+inline const u8* chord_bank(u8 i) {
+	return chord_banks + i * 9;
+}
+
+void chord_edit_flip(const u8 p) {
+	if (p > 0x7F) return;
+
+	u8 f = chord_edit_data[7] > 0x7F;
+
+	for (u8 i = 0; i < 8; i++) {
+		if (chord_edit_data[i] == p) { // Clear position
+			memcpy(chord_edit_data + i, chord_edit_data + i + 1, 8 - i - 1);
+			chord_edit_data[7] = 0xFF;
+			return;
+
+		} else if (f && chord_edit_data[i] > p) { // Set position
+			rmemcpy(chord_edit_data + i + 1, chord_edit_data + i, 8 - i - 1);
+			chord_edit_data[i] = p;
+			return;
+		}
+	}
+}
+
+void chord_note_register(const u8 p, const u8 v) {
+	if (p > 0x7F) return;
+
+	u8 f = chord_notes_pressed[15] > 0x7F;
+
+	for (u8 i = 0; i < 16; i++) {
+		if (chord_notes_pressed[i] == p) { // Clear position
+			if (!v) {
+				memcpy(chord_notes_pressed + i, chord_notes_pressed + i + 1, 16 - i - 1);
+				chord_notes_pressed[15] = 0xFF;
+			}
+			return;
+
+		} else if (f && chord_notes_pressed[i] > p) { // Set position
+			if (v) {
+				rmemcpy(chord_notes_pressed + i + 1, chord_notes_pressed + i, 16 - i - 1);
+				chord_notes_pressed[i] = p;
+			}
+			return;
+		}
+	}
+}
+
 s8 chord_value(u8 x, u8 y) {
 	u8 l = scales_length(scale_selected);
 	u8 i = chord_octave * l + (x - 1) + chord_map[l > 8? 0: 9 - l][y - 1];
@@ -51,7 +126,7 @@ s8 chord_value(u8 x, u8 y) {
 	return n;
 }
 
-s8 chord_press_result[3] = {};
+s8 chord_press_result[8] = {};
 
 u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 	u8 p = x * 10 + y;
@@ -63,9 +138,19 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 
 	u8 root2 = scales_length(scale_selected) + 1;
 	s8 n = 0;
-	s8 r;
+	s8 r = -1;
 
-	if (y == 6) {
+	if (y == 7 || y == 8) { // Bank
+		u8 bank = (x - 2) * 2 + y - 7;
+		
+		if ((chord_bank_valid >> bank) & 1) {
+			for (; n < 8; n++) {
+				if (chord_bank(bank)[n] > 0x7F) break;
+				chord_press_result[n] = chord_bank(bank)[n];
+			}
+		}
+
+	} else if (y == 6) { // Triad
 		u8 b = chord_value(1, 1) + 12;
 
 		chord_press_result[0] = chord_value(x, 1) + 12;
@@ -86,24 +171,31 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 		
 		n = 3;
 
-	} else {
+	} else { // Chord
 		r = chord_value(x, y);
 		n = 1;
 
 		if (out_p < 0)
 			chord_press_result[0] = r;
 	}
-	
+
+	if (n == 0) return 0;
 	#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
 	#define brighten_all if (x == 1 || x == root2) { brighten(r); brighten(g); brighten(b); }
 
 	if (out_p < 0) {
-		for (u8 i = 0; i < n; i++)
+		for (u8 i = 0; i < n; i++) {
+			if (v && chord_edit < 14)
+				chord_edit_flip(chord_press_result[i]);
+
+			chord_note_register(chord_press_result[i], v);
+
 			for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
 				for (u8 _y = 1; _y < 6; _y++) {
 					chord_press(_x, _y, v, chord_press_result[i]);
 				}
 			}
+		}
 		
 		if (y == 6) {
 			if (v) rgb_led(p, chord_color_pressed_r, chord_color_pressed_g, chord_color_pressed_b);
@@ -144,6 +236,44 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 	}
 
 	return n;
+}
+
+void chord_draw_lock() {
+	if (chord_lock) {
+		rgb_led(18, chord_color_locked_r, chord_color_locked_g, chord_color_locked_b);
+
+	} else {
+		rgb_led(18, chord_color_unlocked_r, chord_color_unlocked_g, chord_color_unlocked_b);
+	}
+}
+
+void chord_draw_banks() {
+	for (u8 i = 0; i < 14; i++) {
+		u8 p = ((i >> 1) + 2) * 10 + (i & 1) + 7;
+
+		if ((chord_bank_pressed >> i) & 1) {
+			rgb_led(p, i != chord_edit? 0 : 63, i != chord_edit? 63 : 0, 0);
+		} else if ((chord_bank_valid >> i) & 1) {
+			rgb_led(p, chord_color_bank_valid_r, chord_color_bank_valid_g, chord_color_bank_valid_b);
+		} else {
+			rgb_led(p, chord_color_bank_invalid_r, chord_color_bank_invalid_g, chord_color_bank_invalid_b);
+		}
+
+		if (i == chord_edit) {
+			for (u8 i = 0; i < 8; i++) {
+				if (chord_edit_data[i] > 0x7F) break;
+
+				for (u8 x = 1; x < 9; x++) {
+					for (u8 y = 1; y < 6; y++) {
+						u8 r = chord_value(x, y);
+
+						if (r == chord_edit_data[i])
+							rgb_led(x * 10 + y, 63, 0, 0);
+					}
+				}
+			}
+		}
+	}
 }
 
 void chord_draw_navigation() {
@@ -206,6 +336,8 @@ void chord_draw() {
 	}
 
 	chord_draw_navigation();
+	chord_draw_lock();
+	chord_draw_banks();
 }
 
 void chord_send(u8 x, u8 y, u8 v, u8 t) {
@@ -215,7 +347,57 @@ void chord_send(u8 x, u8 y, u8 v, u8 t) {
 		send_midi(USBSTANDALONE, t | channels[5], chord_press_result[i], v);
 }
 
+u8 chord_bank_checksum(const u8* bank) {
+	u8 sum = 0;
+
+	for (u8 j = 0; j < 8; j++)
+		sum += bank[j] ^ 0b10101010;
+	
+	return sum;
+}
+
+void chord_bank_save(const u8 next) {
+	if (chord_edit < 14) {
+		u8 checksum = chord_bank_checksum(chord_edit_data);
+		chord_edit_data[8] = (chord_edit_data[0] == 0xFF)? 0x00 : checksum;
+
+		u8 valid = checksum == chord_edit_data[8];
+		u8 should_save = valid != ((chord_bank_valid >> chord_edit) & 1);
+
+		if (!should_save && valid) {
+			for (u8 i = 0; i < 8; i++) {
+				if (chord_edit_data[i] != chord_bank(chord_edit)[i]) {
+					should_save = 1;
+					break;
+				}
+			}
+		}
+
+		if (should_save) {
+			flash_write_chord_bank(chord_edit, chord_edit_data);
+
+			u16 mask = 1 << chord_edit;
+			chord_bank_valid &= ~mask;
+
+			if (valid) chord_bank_valid |= mask;
+		}
+	}
+	
+	chord_edit = next;
+	memset(chord_edit_data, 0xFF, sizeof(chord_edit_data));
+}
+
 void chord_init() {
+	chord_bank_pressed = 0;
+	chord_bank_valid = 0;
+	memset(chord_notes_pressed, 0xFF, sizeof(chord_notes_pressed));
+
+	// Validate chord banks
+	for (u8 i = 0; i < 14; i++) {
+		if (chord_bank_checksum(chord_bank(i)) == chord_bank(i)[8])
+			chord_bank_valid |= 1 << i;
+	}
+
 	chord_draw();
 	chord_scale_button();
 	if (mode == mode_chord) rgb_led(99, mode_chord_r, mode_chord_g, mode_chord_b); // Chord mode LED
@@ -263,6 +445,41 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 	} else if (1 <= x && x <= 8 && 1 <= y && y <= 6) { // Main grid
 		chord_send(x, y, v, v? 0x90 : 0x80);
+
+		if (chord_edit < 14)
+			chord_draw_banks();
+	
+	} else if (p == 18) { // Lock
+		if (v) {
+			chord_lock = 1 - chord_lock;
+
+			chord_bank_save(255);
+			
+			chord_draw_lock();
+			chord_draw_banks();
+		}
+	
+	} else if (2 <= x && x <= 8 && 7 <= y && y <= 8) { // Chord banks
+		u8 bank = (x - 2) * 2 + y - 7;
+
+		if (!chord_lock && (v || chord_edit == bank)) {
+			chord_bank_save((!v && chord_edit == bank)? 255 : bank);
+
+			if (chord_edit < 14) {
+				for (u8 i = 0; i < 16; i++) {
+					if (chord_notes_pressed[i] > 0x7F) break;
+
+					chord_edit_flip(chord_notes_pressed[i]);
+				}
+			}
+		}
+
+		chord_send(x, y, v, v? 0x90 : 0x80);
+
+		if (v) chord_bank_pressed |= 1 << bank;
+		else chord_bank_pressed &= ~(1 << bank);
+
+		chord_draw_banks();
 	}
 }
 
@@ -288,5 +505,9 @@ void chord_aftertouch_event(u8 v) {
 }
 
 void chord_poly_event(u8 p, u8 v) {
-	chord_send(p / 10, p % 10, v, 0xA0);
+	u8 x = p / 10;
+	u8 y = p % 10;
+	
+	if (1 <= x && x <= 8 && 1 <= y && y <= 8 && p != 17 && p != 18)
+		chord_send(p / 10, p % 10, v, 0xA0);
 }

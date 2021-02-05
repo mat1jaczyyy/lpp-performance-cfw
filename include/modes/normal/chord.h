@@ -3,6 +3,7 @@
 
 #include "app.h"
 #include "modes/mode.h"
+#include "flash/flash.h"
 #include "send/send.h"
 
 #include "aftertouch/aftertouch.h"

@@ -4,9 +4,9 @@
 #define flash_indicator_g 0
 #define flash_indicator_b 0
 
-#define flash_user_size (palette_custom * 3 * 32 * 3 + 17)
+#define flash_user_size (palette_custom * 3 * 32 * 3 + 28)
 
-#define flash_user_start 0x2000
+#define flash_user_start 0x2400
 
 u8 flash[flash_user_size] = {}; // TODO Optimize RAM
 
@@ -70,6 +70,9 @@ void flash_read() {
 
 	for (u8 i = 0; i < sizeof(channels); i++)
 		channels[i] = flash_direct_read(fp++) & 0xF;
+
+  	// Padding reserved for additional channel settings that might appear in the future
+	fp += 16 - sizeof(channels);
 }
 
 void flash_write() {
@@ -105,6 +108,9 @@ void flash_write() {
 
 	for (u8 i = 0; i < sizeof(channels); i++)
 		flash[fp++] = channels[i];
+
+  	// Padding reserved for additional channel settings that might appear in the future
+	fp += 16 - sizeof(channels);
 	
 	flash_direct_write(flash_user_start, &flash[0], fp);
 	
@@ -115,7 +121,15 @@ void flash_write() {
 void flash_write_custom(u8 index, const u8* buffer) {
 	rgb_led(99, flash_indicator_r, flash_indicator_g, flash_indicator_b);
 
-	flash_direct_write(0x400 * index, buffer, 1024);
+	flash_direct_write(0x400 + 0x400 * index, buffer, 1024);
 	
 	rgb_led(99, 0, 0, 0);
+}
+
+const u8* chord_banks = (const u8*)0x0801D400;
+
+void flash_write_chord_bank(u8 index, const u8* buffer) {
+	memcpy(flash, chord_banks, 14 * 9);
+	memcpy(flash + 9 * index, buffer, 9);
+	flash_direct_write(0x0, flash, 14 * 9);
 }
