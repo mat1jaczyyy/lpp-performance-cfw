@@ -76,8 +76,8 @@ inline const u8* chord_bank(u8 i) {
 	return chord_banks + i * 9;
 }
 
-void chord_edit_flip(const u8 p) {
-	if (p > 0x7F) return;
+u8 chord_edit_flip(const u8 p) {
+	if (p > 0x7F) return 0;
 
 	u8 f = chord_edit_data[7] > 0x7F;
 
@@ -85,14 +85,16 @@ void chord_edit_flip(const u8 p) {
 		if (chord_edit_data[i] == p) { // Clear position
 			memcpy(chord_edit_data + i, chord_edit_data + i + 1, 8 - i - 1);
 			chord_edit_data[7] = 0xFF;
-			return;
+			return 1;
 
 		} else if (f && chord_edit_data[i] > p) { // Set position
 			rmemcpy(chord_edit_data + i + 1, chord_edit_data + i, 8 - i - 1);
 			chord_edit_data[i] = p;
-			return;
+			return 1;
 		}
 	}
+
+	return 0;
 }
 
 void chord_note_register(const u8 p, const u8 v) {
@@ -185,16 +187,18 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 
 	if (out_p < 0) {
 		for (u8 i = 0; i < n; i++) {
-			if (v && chord_edit < 14)
-				chord_edit_flip(chord_press_result[i]);
-
 			chord_note_register(chord_press_result[i], v);
 
-			for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
-				for (u8 _y = 1; _y < 6; _y++) {
-					chord_press(_x, _y, v, chord_press_result[i]);
+			u8 skip = 0;
+			if (v && chord_edit < 14)
+				skip = chord_edit_flip(chord_press_result[i]);
+				
+			if (!skip)
+				for (u8 _x = 1; _x < 9; _x++) { // I'm lazy
+					for (u8 _y = 1; _y < 6; _y++) {
+						chord_press(_x, _y, v, chord_press_result[i]);
+					}
 				}
-			}
 		}
 		
 		if (y == 6) {
