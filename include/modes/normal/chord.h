@@ -11,7 +11,7 @@
 #include "modes/special/scale.h"
 
 #define mode_chord_r 0
-#define mode_chord_g 0
+#define mode_chord_g 1
 #define mode_chord_b 63
 
 u8 chord_shift;

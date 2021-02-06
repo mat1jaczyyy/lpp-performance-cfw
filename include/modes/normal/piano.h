@@ -7,7 +7,7 @@
 
 #include "aftertouch/aftertouch.h"
 
-#define mode_piano_r 7
+#define mode_piano_r 12
 #define mode_piano_g 0
 #define mode_piano_b 63
 
