@@ -7,6 +7,8 @@
 
 #include "aftertouch/aftertouch.h"
 
+#include "modes/special/scale.h"
+
 #define mode_note_r 0
 #define mode_note_g 63
 #define mode_note_b 63
@@ -17,7 +19,7 @@ u8 scales(u8 s, u8 i);
 u8 scales_length(u8 s);
 
 s8 note_octave;
-u8 note_shift, scale_enabled, translate_enabled, scale_segment, scale_selected, scale_root;
+u8 note_shift, translate_enabled;
 
 void note_init();
 void note_timer_event();

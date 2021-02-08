@@ -1,5 +1,8 @@
 #include "led/palettes.h"
 
+// TODO: This doesn't need to be loaded in RAM the whole time... Can be read from ROM.
+// 		But then the ROM can't be compressed like it is now, that should be expanded and everyone's palettes cleared.
+// 		Only one palette slot needs to be reserved in RAM for the palette editor
 u8 palette[palette_custom][3][128] = {
 	{ // User-defined flash-backed palette 1
 		{0},
