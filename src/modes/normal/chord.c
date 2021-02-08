@@ -1,5 +1,7 @@
 #include "modes/normal/chord.h"
 
+// Thanks to EmilyLP for colors and testing!
+
 #define chord_color_empty_r 0
 #define chord_color_empty_g 0
 #define chord_color_empty_b 0
