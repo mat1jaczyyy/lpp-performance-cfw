@@ -8,18 +8,18 @@
 
 #define chord_color_major_dominant_r 0
 #define chord_color_major_dominant_g 0
-#define chord_color_major_dominant_b 7
+#define chord_color_major_dominant_b 63
 
-#define chord_color_minor_r 2
-#define chord_color_minor_g 1
-#define chord_color_minor_b 7
+#define chord_color_minor_r 15
+#define chord_color_minor_g 7
+#define chord_color_minor_b 63
 
 #define chord_color_diminished_r 0
-#define chord_color_diminished_g 7
-#define chord_color_diminished_b 2
+#define chord_color_diminished_g 63
+#define chord_color_diminished_b 15
 
-#define chord_color_triad_r 7
-#define chord_color_triad_g 2
+#define chord_color_triad_r 63
+#define chord_color_triad_g 15
 #define chord_color_triad_b 0
 
 #define chord_color_pressed_r 63
@@ -34,17 +34,17 @@
 #define chord_color_unlocked_g 0
 #define chord_color_unlocked_b 0
 
-#define chord_color_bank_valid_r 31
-#define chord_color_bank_valid_g 31
-#define chord_color_bank_valid_b 31
+#define chord_color_bank_valid_r 63
+#define chord_color_bank_valid_g 63
+#define chord_color_bank_valid_b 63
 
-#define chord_color_bank_invalid_r 7
-#define chord_color_bank_invalid_g 7
-#define chord_color_bank_invalid_b 7
+#define chord_color_bank_invalid_r 15
+#define chord_color_bank_invalid_g 15
+#define chord_color_bank_invalid_b 15
 
-#define chord_color_sustain_r 31
-#define chord_color_sustain_g 7
-#define chord_color_sustain_b 15
+#define chord_color_sustain_r 63
+#define chord_color_sustain_g 15
+#define chord_color_sustain_b 31
 
 #define chord_color_delete_pressed_r 63
 #define chord_color_delete_pressed_g 0
@@ -205,7 +205,7 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 	if (n == 0) return 0;
 	if (out_p == -10) return n; // Aftertouch
 
-	#define brighten(x) x = 7 - ((7 - x) * 3 / 4)
+	#define brighten(x) x = ((3 * (x) + 63) >> 2)
 	#define brighten_all if (x == 1 || x == root2) { brighten(r); brighten(g); brighten(b); }
 
 	if (out_p < 0) {
