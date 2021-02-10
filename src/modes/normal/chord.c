@@ -325,9 +325,7 @@ void chord_draw_navigation() {
 }
 
 void chord_draw_delete_button() {
-	if (chord_lock) {
-		rgb_led(50, 0, 0, 0);
-	} else if (chord_delete_pressed) {
+	if (chord_delete_pressed) {
 		rgb_led(50, chord_color_delete_pressed_r, chord_color_delete_pressed_g, chord_color_delete_pressed_b);
 	} else {
 		rgb_led(50, chord_color_delete_released_r, chord_color_delete_released_g, chord_color_delete_released_b);
@@ -476,11 +474,6 @@ void chord_sustain_toggle(u8 v) {
 	} else memcpy(chord_sustain_holding, chord_notes_pressed, sizeof(chord_sustain_holding));
 }
 
-void chord_delete_toggle(u8 v) {
-	chord_delete_pressed = v;
-	chord_draw_delete_button();
-}
-
 void chord_init() {
 	chord_bank_pressed = 0;
 	chord_bank_valid = 0;
@@ -552,8 +545,6 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 			if (!chord_lock && chord_sustain)
 				chord_sustain_toggle(0);
-				
-			chord_delete_toggle(0);
 
 			chord_bank_save(255);
 			
@@ -564,20 +555,18 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	} else if (2 <= x && x <= 8 && 7 <= y && y <= 8) { // Chord banks
 		u8 bank = (x - 2) * 2 + y - 7;
 
-		if (!chord_lock) {
-			if (v && chord_delete_pressed) {
-				chord_bank_save(bank);  // Save previously loaded bank if any, and load empty bank for deleting
-				chord_bank_save(bank);  // Save empty bank to selected bank, and continue editing it
-				
-			} else if (v || chord_edit == bank) {
-				chord_bank_save((!v && chord_edit == bank)? 255 : bank);
+		if (v && chord_delete_pressed) {
+			chord_bank_save(bank);  // Save previously loaded bank if any, and load empty bank for deleting
+			chord_bank_save(bank);  // Save empty bank to selected bank, and continue editing it
 
-				if (chord_edit < 14) {
-					for (u8 i = 0; i < sizeof(chord_notes_pressed); i++) {
-						if (chord_notes_pressed[i] > 0x7F) break;
+		} else if (!chord_lock && (v || chord_edit == bank)) {
+			chord_bank_save((!v && chord_edit == bank)? 255 : bank);
 
-						chord_edit_flip(chord_notes_pressed[i]);
-					}
+			if (chord_edit < 14) {
+				for (u8 i = 0; i < sizeof(chord_notes_pressed); i++) {
+					if (chord_notes_pressed[i] > 0x7F) break;
+
+					chord_edit_flip(chord_notes_pressed[i]);
 				}
 			}
 		}
@@ -594,8 +583,8 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			chord_sustain_toggle(v);
 	
 	} else if (p == 50) { // Delete bank
-		if (!chord_lock)
-			chord_delete_toggle(v);
+		chord_delete_pressed = v;
+		chord_draw_delete_button();
 	}
 }
 
