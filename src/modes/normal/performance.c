@@ -72,33 +72,31 @@ void performance_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void performance_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch >= 0xA) {
-		switch (t) {
-			case 0x8: // Note off
-				v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
+	if(t != 0x9 && t != 0x8) return; // Checks for Note
+	
+	if (port == USBSTANDALONE && ch >= 0xA)  // Deleted the Switch and replaced it
+	{
+		if(t == 0x8) v = 0; // We cannot assume a note off will come with velocity 0. Note, there is no break statement here!
 			
-			case 0x9: // Note on
-				if (performance_xy_enabled) { // XY layout
-					performance_led(ch, p, v, 1);
+		if (performance_xy_enabled) { // XY layout
+			performance_led(ch, p, v, 1);
 
-				} else { // Drum Rack layout
-					if (top_lights_config != 0) {
-						if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
-							p += -80;
-						}
-						
-						if (top_lights_config > 1) { // Display additional LEDs
-							if (100 <= p && p <= 107) {
-								performance_led(ch, dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v, 1);
-							} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
-								performance_led(ch, dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v, 1);
-							}
-						}
-					}
-					
-					performance_led(ch, dr_xy[p], v, 1);
+		} else { // Drum Rack layout
+			if (top_lights_config != 0) {
+				if (108 <= p && p <= 115) { // Conversion of MK2 Top Lights
+					p += -80;
 				}
-				break;
+						
+				if (top_lights_config > 1) { // Display additional LEDs
+					if (100 <= p && p <= 107) {
+						performance_led(ch, dr_xy[(top_lights_config == 2)? (215 - p) : (16 + p)], v, 1);
+					} else if (28 <= p && p <= 35) { // p has been changed from the earlier if statement, so we must check for [28, 35] now!
+						performance_led(ch, dr_xy[(top_lights_config == 2)? (151 - p) : (80 + p)], v, 1);
+					}
+				}
+			}
+					
+			performance_led(ch, dr_xy[p], v, 1);
 		}
 	}
 }
