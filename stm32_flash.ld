@@ -46,7 +46,12 @@ SECTIONS
     _etext = .;        /* define a global symbols at end of code */
   } >FLASH
 
+  /* apparently this is unwinding (cpp exceptions) and debugging info */
+  /* we don't need this data, and for some reason it's 4kB of all zeroes anyway(?) so remove it */
+  /* source: https://answers.launchpad.net/gcc-arm-embedded/+question/271294 */
+  /* didn't research this all too much */
 
+/*
    .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
     .ARM : {
     __exidx_start = .;
@@ -55,6 +60,7 @@ SECTIONS
     } >FLASH
 
   .ARM.attributes : { *(.ARM.attributes) } > FLASH
+*/
 
   .preinit_array     :
   {
