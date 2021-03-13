@@ -6,7 +6,7 @@ const syx_declare(device_inquiry_response) = {0x7E,
                                               0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,  // Constant
                                               0x00, 0x63, 0x66, 0x79};                               // Firmware rev. (4 bytes) - CFY (CFW++++)
 
-syx_declare_len(response_buffer, 319) = {0xF0};
+syx_declare_len(response_buffer, 319) = {};
 
 const syx_declare_len(novation_header, 5) = {0x00, 0x20, 0x29, 0x02, 0x10};
 const syx_declare_len(palette_header, 6) = {0x52, 0x45, 0x54, 0x49, 0x4E, 0x41};
