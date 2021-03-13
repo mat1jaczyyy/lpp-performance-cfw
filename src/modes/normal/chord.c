@@ -500,8 +500,15 @@ void chord_timer_event() {}
 void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(mode_setup);
+		return;
+	}
+
+	if (x == 0 || (x == 9 && y >= 3) || y == 0 || y == 9) { // Unused side buttons
+		send_midi(USBSTANDALONE, 0xB0 | channels[5], p, v);
+		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
+	}
 	
-	} else if (p == 96 && chord_shift && v != 0) { // Shift+Note button
+	if (p == 96 && chord_shift && v != 0) { // Shift+Note button
 		mode_update(mode_scale_setup); // Enter Setup for Scale mode
 		rgb_led(p, 63, 63, 63);
 

@@ -546,27 +546,32 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(mode_setup);
 	
-	} else {
-		if (y == 9 && 1 <= x && x <= 8) {
-			u8 t = 8 - x;
+	} else if (y == 9 && 1 <= x && x <= 8) {
+		u8 t = 8 - x;
 
-			if (v) {
-				if (custom_active_slot != t) {
-					custom_active_slot = t;
-					mode_refresh();
-				}
-
-				custom_held_slot = t;
-			
-			} else if (custom_held_slot == t) {
-				if ((custom_valid >> custom_active_slot) & 1) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
-
-				custom_held_slot = 255;
-				custom_delete_counter = 0;
-				custom_delete_blink = 0;
+		if (v) {
+			if (custom_active_slot != t) {
+				custom_active_slot = t;
+				mode_refresh();
 			}
-        
-		} else if ((custom_valid >> custom_active_slot) & 1) {
+
+			custom_held_slot = t;
+		
+		} else if (custom_held_slot == t) {
+			if ((custom_valid >> custom_active_slot) & 1) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
+
+			custom_held_slot = 255;
+			custom_delete_counter = 0;
+			custom_delete_blink = 0;
+		}
+	
+	} else {
+		if (x == 0 || x == 9 || y == 0) { // Unused side buttons
+			send_midi(USBSTANDALONE, 0xB0, p, v);  // TODO: Define channel somehow?
+			rgb_led(p, 0, (v == 0)? 0 : 63, 0);
+		}
+
+		if ((custom_valid >> custom_active_slot) & 1) {
 			if (p == 91) { // Export mode
 				if (v) {
 					custom_export = 0;
