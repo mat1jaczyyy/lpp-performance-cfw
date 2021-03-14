@@ -50,7 +50,7 @@ u8 note_nav_pressed[4] = {};
 u8 translate_enabled = 1;
 
 u8 note_channel() {
-	return mode_default == mode_note? channels[0] : 0;
+	return mode_default == mode_note? settings.mode[mode_note].channel : 0;
 }
 
 void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {

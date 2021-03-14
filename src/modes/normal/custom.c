@@ -44,9 +44,6 @@ void custom_upload_end() {
 u8 custom_export = 0;
 u8 custom_export_slot = 255;
 
-#define custom_rom_start 0x0801D800
-#define custom_rom_size 0x400
-
 typedef struct {
 	u8 ch, kind, p, trig, v_on, v_off, bg;
 } custom_blob;
@@ -57,7 +54,7 @@ typedef struct {
 } custom_bin_blob;
 
 const u8* custom_data(u8 i) {
-	return (const u8*)custom_rom_start + custom_rom_size * i;
+	return (const u8*)FLASH_ADDR(FLASH_PAGE_CUSTOM_MODES + i);
 }
 
 u8 custom_external_feedback = 0;
@@ -231,7 +228,7 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	grab_fader(i)
 	if (!fader->blob) return;
 
-	v = custom_fader_vel_sensitive? v : 127;
+	v = settings.custom_fader_vel_sensitive? v : 127;
 	
 	anim->final = custom_fader_stops[fader->type][c][0]; // Save final value of the line
 
@@ -502,7 +499,7 @@ void custom_led(u8 ch, u8 s, u8 x, u8 y, u8 v, u8 c) {
 }
 
 void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
-	if (s && !custom_midi_led) return;
+	if (s && !settings.custom_midi_led) return;
 
 	u8 ext = (custom_external_feedback >> custom_active_slot) & 1;
 	if (!s && ext) return;
@@ -512,7 +509,7 @@ void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	else if (t == 0xB && (!s || ext)) k = 0x02;
 	else return;
 
-	u8 e = s? 1 : custom_surface_led;
+	u8 e = s? 1 : settings.custom_surface_led;
 	
 	for (u8 slot = 0; slot < 8; slot++) {
 		for (u8 x = 0; x < 8; x++) {
@@ -595,8 +592,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 							custom_delete_blink = 1;
 
 						if (custom_delete_counter >= 3) {
-							for (u16 i = 0; i < 1024; i++)
-								custom_upload_buffer[i] = 0xFF;
+							memset(custom_upload_buffer, 0xFF, sizeof(custom_upload_buffer));
 
 							custom_loaded = 0;
 							flash_write_custom(custom_held_slot, custom_upload_buffer);

@@ -3,13 +3,15 @@
 
 #include "app_defs.h"
 
-#define palette_count 6
-#define palette_custom 3
-#define palette_novation 3
+#include "flash/write.h"
 
-u8 palette[palette_custom][3][128];
-//const u8 palette_preset[palette_count - palette_custom][3][128];
+#define palette_count 7
+#define palette_custom 4
+#define palette_novation 4
 
+#define palette_rom_size 0x200
+
+const u8* const palette_get(u8 i);
 u8 palette_value(u8 i, u8 v, u8 c);
 
 #endif

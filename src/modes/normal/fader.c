@@ -24,7 +24,7 @@ u8 fader_final[2][8] = {{}, {}};
 s8 fader_change[2][8] = {{}, {}};
 
 u8 fader_channel() {
-	return fader_mode? 0 : channels[2];
+	return fader_mode? 0 : settings.mode[mode_fader].channel;
 }
 
 void fader_draw(u8 y) {

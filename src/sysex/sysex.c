@@ -310,18 +310,20 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 
 				// Write
 				if (d[0] == uploading_write) {
-					if (d[1] >= 3) return;
-
-					for (u16 i = 2; i <= (s16)l - 5 && i <= 306; i += 4) {
+					for (u16 i = 1; i <= (s16)l - 5 && i <= 305; i += 4) {
 						dirty = 1;
 
 						for (u8 k = 0; k < 3; k++)
-							palette[d[1]][k][d[i] & 0x7F] = d[i + k + 1] & 0x3F;
+							editor_palette[k][d[i] & 0x7F] = d[i + k + 1] & 0x3F;
 					}
 				
 				// End
 				} else if (d[0] == uploading_end) {
 					palette_modifying = 0;
+
+					if (d[1] <= 3)
+						dirty_palette = d[1];
+
 					mode_update(mode_default);
 				}
 			}
