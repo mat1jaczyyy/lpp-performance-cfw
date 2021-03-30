@@ -11,8 +11,8 @@ inline void flash_program(const u32 addr, const u16 data) {
 }
 
 inline void flash_u32(const u32 addr, const u32 data) {
-	flash_write(addr, data & 0xFFFF);
-	flash_write(addr + 2, data >> 16);
+	flash_program(addr, data & 0xFFFF);
+	flash_program(addr + 2, data >> 16);
 }
 
 inline void flash_program_buffer(const u32 addr, const u16* const data, const u16 length) {
