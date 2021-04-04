@@ -46,11 +46,6 @@ u8 scales_length(u8 s) {
 	return scale_points[s + 1] - scale_points[s] + 1; 
 }
 
-u8 scale_enabled = 0;
-u8 scale_segment = 7;
-u8 scale_selected = 25;
-u8 scale_root = 0;
-
 #define scale_setup_color_enabled_r 20
 #define scale_setup_color_enabled_g 63
 #define scale_setup_color_enabled_b 0
@@ -75,9 +70,9 @@ u8 scale_root = 0;
 #define scale_setup_color_scale_g 0
 #define scale_setup_color_scale_b 63
 
-#define scale_setup_color_scale_selected_r 20
-#define scale_setup_color_scale_selected_g 0
-#define scale_setup_color_scale_selected_b 63
+#define scale_setup_color_selected_r 20
+#define scale_setup_color_selected_g 0
+#define scale_setup_color_selected_b 63
 
 void scale_setup_init() {
 	switch (mode_default) {
@@ -94,13 +89,13 @@ void scale_setup_init() {
 			break;
 	}
 
-	if (scale_enabled) {
+	if (settings.scale.enabled) {
 		rgb_led(88, scale_setup_color_enabled_r, scale_setup_color_enabled_g, scale_setup_color_enabled_b); // Scale mode enabled
 	} else {
 		rgb_led(88, scale_setup_color_enabled_r / 5, scale_setup_color_enabled_g / 5, scale_setup_color_enabled_b / 5); // Scale mode disabled
 	}
 
-	if (translate_enabled) {
+	if (settings.scale.note_translate) {
 		rgb_led(58, scale_setup_color_translate_r, scale_setup_color_translate_g, scale_setup_color_translate_b); // Translate mode enabled
 	} else {
 		rgb_led(58, scale_setup_color_translate_r / 5, scale_setup_color_translate_g / 5, scale_setup_color_translate_b / 5); // Translate mode disabled
@@ -110,23 +105,23 @@ void scale_setup_init() {
 		rgb_led(i, scale_setup_color_segment_r / 3, scale_setup_color_segment_g / 3, scale_setup_color_segment_b / 3); // Segment length options
 	}
 	
-	if (scale_segment < 8)
-		rgb_led(88 - scale_segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
+	if (settings.scale.segment < 8)
+		rgb_led(88 - settings.scale.segment, scale_setup_color_segment_r, scale_setup_color_segment_g, scale_setup_color_segment_b); // Selected segment
 
 	for (u8 i = 0; i < 12; i++) {
 		rgb_led(scale_keys[i], scale_setup_color_notes_r >> 3, scale_setup_color_notes_g >> 3, scale_setup_color_notes_b >> 3); // Root note selector and scale preview
 	}
-	for (u8 i = 1; i < scales_length(scale_selected); i++) {
-		rgb_led(scale_keys[modulo(scales(scale_selected, i) + scale_root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
+	for (u8 i = 1; i < scales_length(settings.scale.selected); i++) {
+		rgb_led(scale_keys[modulo(scales(settings.scale.selected, i) + settings.scale.root, 12)], scale_setup_color_notes_r, scale_setup_color_notes_g, scale_setup_color_notes_b); // Notes in current scale
 	}
-	rgb_led(scale_keys[scale_root], scale_setup_color_root_r, scale_setup_color_root_g, scale_setup_color_root_b); // Scale root note
+	rgb_led(scale_keys[settings.scale.root], scale_setup_color_root_r, scale_setup_color_root_g, scale_setup_color_root_b); // Scale root note
 
 	for (u8 x = 1; x < 5; x++) {
 		for (u8 y = 1; y < 9; y++) {
 			rgb_led(x * 10 + y, scale_setup_color_scale_r, scale_setup_color_scale_g, scale_setup_color_scale_b); // Select scale
 		}
 	}
-	rgb_led(((scale_selected >> 3) + 1) * 10 + (scale_selected % 8) + 1, scale_setup_color_scale_selected_r, scale_setup_color_scale_selected_g, scale_setup_color_scale_selected_b); // Selected scale
+	rgb_led(((settings.scale.selected >> 3) + 1) * 10 + (settings.scale.selected % 8) + 1, scale_setup_color_selected_r, scale_setup_color_selected_g, scale_setup_color_selected_b); // Selected scale
 }
 
 void scale_setup_timer_event() {}
@@ -152,20 +147,20 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 	} else if (v != 0) {
 		if (p == 88) { // Enable or disable Scale mode
-			scale_enabled = 1 - scale_enabled;
+			settings.scale.enabled = 1 - settings.scale.enabled;
 			scale_setup_init();
 
 		} else if (p == 58) { // Enable or disable translate mode
-			translate_enabled = 1 - translate_enabled;
+			settings.scale.note_translate = 1 - settings.scale.note_translate;
 			scale_setup_init();
 
 		} else if (81 <= p && p <= 87) { // Select segment length
 			u8 t = 88 - p;
-			scale_segment = t == scale_segment? 8 : t;
+			settings.scale.segment = t == settings.scale.segment? 8 : t;
 			scale_setup_init();
 
 		} else if (1 <= x && x <= 4 && 1 <= y && y <= 8) { // Select scale
-			scale_selected = (x - 1) * 8 + (y - 1);
+			settings.scale.selected = (x - 1) * 8 + (y - 1);
 			scale_setup_init();
 
 		} else {
@@ -175,11 +170,11 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			} while (++i < 12);
 
 			if (i < 12) {
-				if (i != scale_root) {
+				if (i != settings.scale.root) {
 					note_octave = 3;
 				}
 
-				scale_root = i;
+				settings.scale.root = i;
 				scale_setup_init();
 			}
 		}

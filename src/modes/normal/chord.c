@@ -142,9 +142,9 @@ void chord_note_register(const u8 p, const u8 v, u8 sustain) {
 }
 
 s8 chord_value(u8 x, u8 y) {
-	u8 l = scales_length(scale_selected);
+	u8 l = scales_length(settings.scale.selected);
 	u8 i = chord_octave * l + (x - 1) + chord_map[l > 8? 0: 9 - l][y - 1];
-	s8 n = 12 * (i / l) + scales(scale_selected, i % l) + scale_root;
+	s8 n = 12 * (i / l) + scales(settings.scale.selected, i % l) + settings.scale.root;
 
 	return n;
 }
@@ -159,7 +159,7 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 		return 0;
 	}
 
-	u8 root2 = scales_length(scale_selected) + 1;
+	u8 root2 = scales_length(settings.scale.selected) + 1;
 	s8 n = 0;
 	s8 r = -1;
 

@@ -47,8 +47,6 @@ s8 note_transpose = note_transpose_start;
 u8 note_shift = 0;
 u8 note_nav_pressed[4] = {};
 
-u8 translate_enabled = 1;
-
 u8 note_channel() {
 	return mode_default == mode_note? settings.mode[mode_note].channel : 0;
 }
@@ -60,17 +58,17 @@ void note_single(u8 *p, u8 l, u8 r, u8 g, u8 b) {
 }
 
 s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
-	u8 length = (scale_enabled)? scales_length(scale_selected) : note_length;
-	u8 segment = (scale_enabled)? scale_segment : note_segment;
+	u8 length = (settings.scale.enabled)? scales_length(settings.scale.selected) : note_length;
+	u8 segment = (settings.scale.enabled)? settings.scale.segment : note_segment;
 
 	u8 offset = (x - 1) * segment + (y - 1); // Note pressed in relation to lowest
 	u8 up = offset / length; // Octaves above lowest
 
 	offset %= length; // Note pressed in relation to its octave
-	if (scale_enabled) offset = scales(scale_selected, offset); // Translate for Scale mode
+	if (settings.scale.enabled) offset = scales(settings.scale.selected, offset); // Translate for Scale mode
 
 	s8 c = (note_octave + up) * 12 + offset; // Note in relation to C
-	s8 n = c + note_transpose + ((scale_enabled)? scale_root : 0); // Actual note (transposition applied)
+	s8 n = c + note_transpose + ((settings.scale.enabled)? settings.scale.root : 0); // Actual note (transposition applied)
 
 	if (n == out_p || out_p < 0) {
 		u8 p[8] = {x * 10 + y}; // Pitches to update on the Launchpad
@@ -105,7 +103,7 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 			if (v == 0) { // Note released
 				u8 m = modulo(c, 12); // Note without octave
 
-				if (scale_enabled) {
+				if (settings.scale.enabled) {
 					if (m == 0) {
 						note_single(&p[0], l, note_color_scale_base_r, note_color_scale_base_g, note_color_scale_base_b);
 					} else {
@@ -114,15 +112,15 @@ s8 note_press(u8 x, u8 y, u8 v, s8 out_p) {
 
 				} else {
 
-					if (translate_enabled) {
+					if (settings.scale.note_translate) {
 						// Color notes in relation to SCALE, not absolute!
-						u8 local_m = modulo(12 + m - scale_root, 12); // Move relative to root note
+						u8 local_m = modulo(12 + m - settings.scale.root, 12); // Move relative to root note
 						if (local_m == 0) {
 							note_single(&p[0], l, note_color_base_r, note_color_base_g, note_color_base_b);
 						} else {
 							u8 out_of_scale = 1;
-							for (u8 i = 0; i < scales_length(scale_selected); i++) {
-								u8 s = scales(scale_selected, i);
+							for (u8 i = 0; i < scales_length(settings.scale.selected); i++) {
+								u8 s = scales(settings.scale.selected, i);
 
 								if (local_m == s) {
 									// White note
@@ -189,7 +187,7 @@ void note_draw_navigation() {
 		rgb_led(92, note_octave_colors[4][0], note_octave_colors[4][1], note_octave_colors[4][2]);
 	}
 
-	if (scale_enabled && note_shift) {
+	if (settings.scale.enabled && note_shift) {
 		rgb_led(93, 7 + 56 * note_nav_pressed[2], 7 + 56 * note_nav_pressed[2], 7 + 56 * note_nav_pressed[2]);
 		rgb_led(94, 7 + 56 * note_nav_pressed[3], 7 + 56 * note_nav_pressed[3], 7 + 56 * note_nav_pressed[3]);
 
@@ -219,7 +217,7 @@ void note_scale_button() {
 		}
 	}
 
-	if (scale_enabled) {
+	if (settings.scale.enabled) {
 		note_draw_navigation();
 	}
 }
@@ -270,14 +268,14 @@ void note_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 	} else if (x == 9 && y < 5) { // Navigation buttons
 		if (v != 0) {
-			if (scale_enabled && note_shift) {
+			if (settings.scale.enabled && note_shift) {
 				switch (p) {
 					case 93: // Segment down
-						if (scale_segment > 1) scale_segment--;
+						if (settings.scale.segment > 1) settings.scale.segment--;
 						break;
 
 					case 94: // Segment up
-						if (scale_segment < 8) scale_segment++;
+						if (settings.scale.segment < 8) settings.scale.segment++;
 						break;
 				}
 			} else {

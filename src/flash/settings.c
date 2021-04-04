@@ -15,16 +15,24 @@ const settings_t settings_default = {
         {0, 0, 1, 0},  // custom
     },
 
-    1, // idle_enabled
-    7, // led_brightness
+    {   // scale settings
+        0,   // enabled
+        1,   // note_translate
+        25,  // selected
+        0,   // root
+        7,   // segment
+    },
+
+    1,                // idle_enabled
+    7,                // led_brightness
 
     palette_novation, // palette_selected
-    0, // top_lights_config
-    0, // performance_xy_enabled
+    0,                // top_lights_config
+    0,                // performance_xy_enabled
 
-    1, // custom_surface_led
-    1, // custom_midi_led
-    0  // custom_fader_vel_sensitive
+    1,                // custom_surface_led
+    1,                // custom_midi_led
+    0                 // custom_fader_vel_sensitive
 };
 
 settings_t settings;
@@ -39,6 +47,9 @@ void settings_validate() {
     for (u8 i = 0; i < 32; i++) {
         validate(mode[i].aftertouch_enabled, > 2);
     }
+
+    validate(scale.selected, >> 5);
+    validate(scale.root, >= 12);
 
     validate(mode[mode_ableton].channel, % 8 < 5);
 
