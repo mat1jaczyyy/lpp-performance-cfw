@@ -51,6 +51,6 @@ settings_t settings;
 
 void settings_init();
 void settings_validate();
-u32 settings_crc();
+u32 settings_crc(const void* x, const u32 len);
 
 #endif

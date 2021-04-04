@@ -65,7 +65,7 @@ void settings_validate() {
     validate(custom_fader_vel_sensitive, >> 1);
 }
 
-u32 settings_crc(settings_t* x) {
+u32 settings_crc(const void* x, const u32 len) {
 	CRC_ResetDR();
-    return CRC_CalcBlockCRC((u32*)x, sizeof(*x) / sizeof(u32));
+    return CRC_CalcBlockCRC((u32*)x, len / sizeof(u32));
 }

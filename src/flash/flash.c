@@ -9,9 +9,9 @@ void flash_read() {
 	const u32* const addr = (const u32*)FLASH_ADDR(FLASH_PAGE_SETTINGS);
 
 	if (addr[0] != settings_header) return;
-	if (addr[1] != settings_crc(addr + 2)) return;
+	if (addr[2] != settings_crc(addr + 3, addr[1])) return;
 
-	memcpy(&settings, addr + 2, sizeof(settings));
+	memcpy(&settings, addr + 3, sizeof(settings));
 
 	settings_validate();
 }
