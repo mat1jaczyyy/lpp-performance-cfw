@@ -135,9 +135,6 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			novation_led(96, 39);
 		} else {
 			mode_update(mode_default); // Enter Note/Live mode
-			if (mode_default == mode_note) {
-				rgb_led(96, 0, 63, 0);
-			}
 		}
 
 	} else if (p == 80) { // Shift button
@@ -148,19 +145,23 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	} else if (v != 0) {
 		if (p == 88) { // Enable or disable Scale mode
 			settings.scale.enabled = 1 - settings.scale.enabled;
-			scale_setup_init();
+			dirty = 1;
+			scale_setup_init();  // instead of mode_refresh skips clear LED, not necessary here (top note key)
 
 		} else if (p == 58) { // Enable or disable translate mode
 			settings.scale.note_translate = 1 - settings.scale.note_translate;
+			dirty = 1;
 			scale_setup_init();
 
 		} else if (81 <= p && p <= 87) { // Select segment length
 			u8 t = 88 - p;
 			settings.scale.segment = t == settings.scale.segment? 8 : t;
+			dirty = 1;
 			scale_setup_init();
 
 		} else if (1 <= x && x <= 4 && 1 <= y && y <= 8) { // Select scale
 			settings.scale.selected = (x - 1) * 8 + (y - 1);
+			dirty = 1;
 			scale_setup_init();
 
 		} else {
@@ -175,6 +176,7 @@ void scale_setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				}
 
 				settings.scale.root = i;
+				dirty = 1;
 				scale_setup_init();
 			}
 		}
