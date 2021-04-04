@@ -108,12 +108,12 @@ void setup_init() {
 			rgb_led(i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
 		}
 
-		for (u8 i = 26; i < 29; i++) {
+		for (u8 i = 25; i < 29; i++) {
 			rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
 		}
 
 		if (settings.palette_selected < palette_custom) {
-			rgb_led(settings.palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
+			rgb_led(settings.palette_selected + 25, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
 		} else {
 			rgb_led(settings.palette_selected + 16 - palette_custom, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
 		}
@@ -276,7 +276,7 @@ void setup_timer_event() {
 		setup_mode_counter++; setup_mode_counter %= setup_rainbow_length;
 		
 		if (mode_default == mode_performance && settings.palette_selected < palette_custom) {
-			rgb_led(25, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2));  // Enter palette editor button animation
+			rgb_led(15, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2));  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= setup_rainbow_length;
 		}
 		
@@ -330,13 +330,18 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_refresh();
 		
 		} else if (mode_default == mode_performance) {
-			if (1 <= x && x <= 2 && 6 <= y && y <= 8) { // Palette switch
-				settings.palette_selected = (2 - x) * 3 + y - 6;
+			if (x == 2 && 5 <= y && y <= 8) { // Custom palette switch
+				settings.palette_selected = y - 5;
 				dirty = 1;
 				mode_refresh();
 		
-			} else if (p == 25) {
-				if (settings.palette_selected < 3) { // Enter Palette editor mode
+			} else if (x == 1 && 6 <= y && y <= 8) { // Preset palette switch
+				settings.palette_selected = y - 6 + palette_custom;
+				dirty = 1;
+				mode_refresh();
+		
+			} else if (p == 15) {
+				if (settings.palette_selected < mode_custom) { // Enter Palette editor mode
 					mode_update(mode_editor);
 					setup_jump = 0;
 				}

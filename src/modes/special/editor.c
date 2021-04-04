@@ -23,9 +23,9 @@ void editor_refresh() {
 	
 	display_u8(editor_selected, 0, 9, 63, 63, 63);
 	
-	display_u6(palette_value(settings.palette_selected, editor_selected, 0), 1, 0, 63, 0, 0);
-	display_u6(palette_value(settings.palette_selected, editor_selected, 1), 0, 0, 0, 63, 0);
-	display_u6(palette_value(settings.palette_selected, editor_selected, 2), 1, 9, 0, 0, 63);
+	display_u6(editor_palette[0][editor_selected], 1, 0, 63, 0, 0);
+	display_u6(editor_palette[1][editor_selected], 0, 0, 0, 63, 0);
+	display_u6(editor_palette[2][editor_selected], 1, 9, 0, 0, 63);
 }
 
 void editor_draw() {
@@ -85,8 +85,14 @@ void editor_export() {
 	editor_export_counter = 0;
 }
 
+inline void editor_force_6bit(u8* buf, const u16 size) {
+	for (u16 i = 0; i < size; i++) buf[i] &= 0x3F;
+}
+
 void editor_init() {
 	memcpy(editor_palette, palette_get(settings.palette_selected), sizeof(editor_palette));
+	editor_force_6bit((u8*)editor_palette, sizeof(editor_palette));
+
 	editor_selected = 1;
 	editor_draw();
 }

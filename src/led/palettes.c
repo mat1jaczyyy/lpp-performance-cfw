@@ -21,7 +21,7 @@ const u8* const palette_get(u8 i) {
 }
 
 u8 palette_value(u8 i, u8 v, u8 c) {
-	if (i < palette_custom) return palette[i * palette_rom_size + c * 128 + v];
+	if (i < palette_custom) return palette[i * palette_rom_size + c * 128 + v] & 0x3F;
 
 	if (i == 6) { // Launchpad S Palette
 		if (c == 0) return v % 4 * 21;
