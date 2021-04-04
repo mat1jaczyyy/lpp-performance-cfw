@@ -50,6 +50,7 @@ void settings_validate() {
 
     validate(scale.selected, >> 5);
     validate(scale.root, >= 12);
+    validate(scale.segment, - 1 > 7);
 
     validate(mode[mode_ableton].channel, % 8 < 5);
 

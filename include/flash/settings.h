@@ -26,7 +26,7 @@ typedef struct {
     u8 note_translate:1;             // 1 bit
     u8 selected;                     // 5 bit, but reserve in case new scales
     u8 root:4;                       // < 12
-    u8 segment:3;                    // 3 bit
+    u8 segment:4;                    // [1, 8]
     u8 reserved;                     // reserved for future settings
 } scale_settings_t;
 
