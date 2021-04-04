@@ -1,6 +1,6 @@
 #include "flash/settings.h"
 
-const u32 settings_header = (const u32)"CFW";
+const u32 settings_header = 0x00574643;  // {'C', 'F', 'W', '\0'} there is no nice way to init this
 
 const settings_t settings_default = {
     {   // mode settings

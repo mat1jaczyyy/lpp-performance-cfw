@@ -46,8 +46,8 @@ void flash_direct_settings_write() {
 	const u32 addr = FLASH_ADDR(FLASH_PAGE_SETTINGS);
 	flash_erase(addr);
 
-	flash_u32(addr, *(const u32*)settings_header);
 	flash_u32(addr + sizeof(settings_header), settings_crc());
+	flash_u32(addr, settings_header);
 
 	flash_program_buffer(addr + sizeof(settings_header) + sizeof(u32), (const u16*)&settings, sizeof(settings));
 
