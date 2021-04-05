@@ -131,7 +131,7 @@ u8 custom_fader_orientation = 0;
 #define grab_fader(i) grab_fader_slot(custom_active_slot, i)
 
 void custom_fader_led(u8 x, u8 y, u8 v, u8 f) {
-	u8 orientation = (custom_fader_orientation << custom_active_slot) & 1;
+	u8 orientation = (custom_fader_orientation >> custom_active_slot) & 1;
 
 	rgb_led(
 		((orientation? y : x) + 1) * 10 + (orientation? x : y) + 1,
@@ -224,7 +224,7 @@ inline void custom_fader_send(custom_fader* fader) {
 void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	if (!v) return;
 
-	u8 orientation = (custom_fader_orientation << custom_active_slot) & 1;
+	u8 orientation = (custom_fader_orientation >> custom_active_slot) & 1;
 	u8 i = orientation? x : y;
 	u8 c = orientation? y : x;
 
