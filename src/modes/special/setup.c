@@ -108,14 +108,14 @@ void setup_init() {
 			rgb_led(i, setup_custom_r >> 2, setup_custom_g >> 2, setup_custom_b >> 2); // Select preset palette
 		}
 
-		for (u8 i = 26; i < 29; i++) {
+		for (u8 i = 25; i < 29; i++) {
 			rgb_led(i, setup_preset_r >> 2, setup_preset_g >> 2, setup_preset_b >> 2); // Select flash (custom) palette
 		}
 
-		if (palette_selected < palette_custom) {
-			rgb_led(palette_selected + 26, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
+		if (settings.palette_selected < palette_custom) {
+			rgb_led(settings.palette_selected + 25, setup_custom_r, setup_custom_g, setup_custom_b); // Flash palette selected
 		} else {
-			rgb_led(palette_selected + 16 - palette_custom, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
+			rgb_led(settings.palette_selected + 16 - palette_custom, setup_preset_r, setup_preset_g, setup_preset_b); // Preset palette selected
 		}
 
 		rgb_led(85, setup_top_pro_r >> 2, setup_top_pro_g >> 2, setup_top_pro_b >> 2); // PRO Top Lights
@@ -123,13 +123,13 @@ void setup_init() {
 			rgb_led(i, setup_top_mk2_r >> 2, setup_top_mk2_g >> 2, setup_top_mk2_b >> 2); // MK2 Top Lights
 		}
 	
-		if (!top_lights_config) {
+		if (!settings.top_lights_config) {
 			rgb_led(85, setup_top_pro_r, setup_top_pro_g, setup_top_pro_b); // PRO Top Lights selected
 		} else {
-			rgb_led(top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
+			rgb_led(settings.top_lights_config + 85, setup_top_mk2_r, setup_top_mk2_g, setup_top_mk2_b); // MK2 Top Lights selected
 		}
 
-		if (!performance_xy_enabled) {
+		if (!settings.performance_xy_enabled) {
 			rgb_led(78, setup_performance_xy_r >> 2, setup_performance_xy_g >> 2, setup_performance_xy_b >> 2); // Drum Rack layout selected
 		} else {
 			rgb_led(78, setup_performance_xy_r, setup_performance_xy_g, setup_performance_xy_b); // XY layout selected
@@ -139,7 +139,7 @@ void setup_init() {
 	if (mode_default == mode_ableton) {
 		for (u8 x = 0; x < 2; x++)
 			for (u8 y = 0; y < 3; y++) {
-				u8 set = ableton_channel == 5 + 8 * x + y;
+				u8 set = settings.mode[mode_ableton].channel == 5 + 8 * x + y;
 				rgb_led(
 					(2 - x) * 10 + 6 + y,
 					set? setup_channel_selected_r : setup_channel_deselected_r,
@@ -152,7 +152,7 @@ void setup_init() {
 	if (mode_note <= mode_default && mode_default <= mode_chord) {
 		for (u8 x = 0; x < 4; x++)
 			for (u8 y = 0; y < 4; y++) {
-				u8 set = channels[mode_default - mode_note] == 4 * x + y;
+				u8 set = settings.mode[mode_default].channel == 4 * x + y;
 				rgb_led(
 					(4 - x) * 10 + 5 + y,
 					set? setup_channel_selected_r : setup_channel_deselected_r,
@@ -163,32 +163,32 @@ void setup_init() {
 	}
 
 	if (mode_default == mode_custom) {
-		if (custom_surface_led) {
+		if (settings.custom_surface_led) {
 			rgb_led(15, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
 		} else {
 			rgb_led(15, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
 		}
 
-		if (custom_midi_led) {
+		if (settings.custom_midi_led) {
 			rgb_led(16, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
 		} else {
 			rgb_led(16, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
 		}
 		
-		if (custom_fader_vel_sensitive) {
+		if (settings.custom_fader_vel_sensitive) {
 			rgb_led(18, setup_custom_on_r, setup_custom_on_g, setup_custom_on_b);
 		} else {
 			rgb_led(18, setup_custom_off_r, setup_custom_off_g, setup_custom_off_b);
 		}
 	}
 
-	if (idle_enabled) {
+	if (settings.idle_enabled) {
 		rgb_led(41, setup_idle_r, setup_idle_g, setup_idle_b); // Idle animation enabled
 	} else {
 		rgb_led(41, setup_idle_r >> 2, setup_idle_g >> 2, setup_idle_b >> 2); // Idle animation disabled
 	}
 
-	if (vel_sensitive) {
+	if (settings.mode[mode_default].vel_sensitive) {
 		rgb_led(21, setup_velocity_r, setup_velocity_g, setup_velocity_b); // Velocity sensitivity enabled
 	} else {
 		rgb_led(21, setup_velocity_r >> 2, setup_velocity_g >> 2, setup_velocity_b >> 2); // Velocity sensitivity disabled
@@ -199,11 +199,11 @@ void setup_init() {
 			rgb_led(i, setup_aftertouch_r >> 2, setup_aftertouch_g >> 2, setup_aftertouch_b >> 2); // Aftertouch
 		}
 
-		rgb_led(aftertouch_enabled + 11, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch selected
+		rgb_led(settings.mode[mode_default].aftertouch_enabled + 11, setup_aftertouch_r, setup_aftertouch_g, setup_aftertouch_b); // Aftertouch selected
 	}
 
 	if (mode_default != mode_ableton) {
-		if (direct_enabled) {
+		if (settings.mode[mode_default].direct_enabled) {
 			rgb_led(22, setup_direct_r, setup_direct_g, setup_direct_b); // Direct MIDI enabled
 		} else {
 			rgb_led(22, setup_direct_r >> 2, setup_direct_g >> 2, setup_direct_b >> 2); // Direct MIDI disabled
@@ -211,7 +211,7 @@ void setup_init() {
 	}
 
 	for (int i = 0; i < 8; i++) { 
-		if (led_brightness == i) { 
+		if (settings.led_brightness == i) { 
 			rgb_led(10 * i + 19, setup_brightness_selected_r, setup_brightness_selected_g, setup_brightness_selected_b); // Selected LED brightness
 		} else {
 			rgb_led(10 * i + 19, setup_brightness_r, setup_brightness_g, setup_brightness_b); // LED Brightness slider
@@ -275,8 +275,8 @@ void setup_timer_event() {
 		rgb_led(99, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2)); // Mode LED indicator animation
 		setup_mode_counter++; setup_mode_counter %= setup_rainbow_length;
 		
-		if (mode_default == mode_performance && palette_selected < palette_custom) {
-			rgb_led(25, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2));  // Enter palette editor button animation
+		if (mode_default == mode_performance && settings.palette_selected < palette_custom) {
+			rgb_led(15, setup_rainbow(setup_mode_counter, 0), setup_rainbow(setup_mode_counter, 1), setup_rainbow(setup_mode_counter, 2));  // Enter palette editor button animation
 			setup_editor_counter++; setup_editor_counter %= setup_rainbow_length;
 		}
 		
@@ -293,27 +293,27 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			setup_jump = 0;
 		
 		} else if (p == 41) { // Toggle idle animation
-			idle_enabled = (idle_enabled)? 0 : 1;
+			settings.idle_enabled = (settings.idle_enabled)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 		
 		} else if (p == 21) { // Toggle velocity sensitivity
-			vel_sensitive = (vel_sensitive)? 0 : 1;
+			settings.mode[mode_default].vel_sensitive = (settings.mode[mode_default].vel_sensitive)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 
 		} else if (mode_default != mode_fader && 11 <= p && p <= 13) { // Toggle aftertouch
-			aftertouch_enabled = p - 11;
+			settings.mode[mode_default].aftertouch_enabled = p - 11;
 			dirty = 1;
 			mode_refresh();
 
 		} else if (mode_default != mode_ableton && p == 22) { // Toggle direct MIDI
-			direct_enabled = (direct_enabled)? 0 : 1;
+			settings.mode[mode_default].direct_enabled = (settings.mode[mode_default].direct_enabled)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
 
 		} else if (1 <= x && x <= 8 && y == 9) { // LED brightness adjust
-			led_brightness = x - 1;
+			settings.led_brightness = x - 1;
 			dirty = 1;
 			mode_refresh();
 
@@ -330,24 +330,29 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			mode_refresh();
 		
 		} else if (mode_default == mode_performance) {
-			if (1 <= x && x <= 2 && 6 <= y && y <= 8) { // Palette switch
-				palette_selected = (2 - x) * 3 + y - 6;
+			if (x == 2 && 5 <= y && y <= 8) { // Custom palette switch
+				settings.palette_selected = y - 5;
 				dirty = 1;
 				mode_refresh();
 		
-			} else if (p == 25) {
-				if (palette_selected < 3) { // Enter Palette editor mode
+			} else if (x == 1 && 6 <= y && y <= 8) { // Preset palette switch
+				settings.palette_selected = y - 6 + palette_custom;
+				dirty = 1;
+				mode_refresh();
+		
+			} else if (p == 15) {
+				if (settings.palette_selected < mode_custom) { // Enter Palette editor mode
 					mode_update(mode_editor);
 					setup_jump = 0;
 				}
 		
 			} else if (85 <= p && p <= 88) { // Change Top Lights configuration
-				top_lights_config = p - 85;
+				settings.top_lights_config = p - 85;
 				dirty = 1;
 				mode_refresh();
 			
 			} else if (p == 78) { // Change DR or XY layout
-				performance_xy_enabled = (performance_xy_enabled)? 0 : 1;
+				settings.performance_xy_enabled = (settings.performance_xy_enabled)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 			}
@@ -355,7 +360,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (mode_default == mode_ableton) {
 			for (u8 i = 2; i >= 1; i--)
 				if (i * 10 + 6 <= p && p <= i * 10 + 8) {
-					ableton_channel = p + 15 - 18 * i;
+					settings.mode[mode_ableton].channel = p + 15 - 18 * i;
 					dirty = 1;
 					mode_refresh();
 					break;
@@ -364,7 +369,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		} else if (mode_note <= mode_default && mode_default <= mode_chord) {
 			for (u8 i = 4; i >= 1; i--)
 				if (i * 10 + 5 <= p && p <= i * 10 + 8) {
-					channels[mode_default - mode_note] = p + 11 - 14 * i;
+					settings.mode[mode_default].channel = p + 11 - 14 * i;
 					dirty = 1;
 					mode_refresh();
 					break;
@@ -372,17 +377,17 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		
 		} else if (mode_default == mode_custom) {
 			if (p == 15) {
-				custom_surface_led = (custom_surface_led)? 0 : 1;
+				settings.custom_surface_led = (settings.custom_surface_led)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 
 			} else if (p == 16) {
-				custom_midi_led = (custom_midi_led)? 0 : 1;
+				settings.custom_midi_led = (settings.custom_midi_led)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 
 			} else if (p == 18) {
-				custom_fader_vel_sensitive = (custom_fader_vel_sensitive)? 0 : 1;
+				settings.custom_fader_vel_sensitive = (settings.custom_fader_vel_sensitive)? 0 : 1;
 				dirty = 1;
 				mode_refresh();
 			}

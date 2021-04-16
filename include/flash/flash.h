@@ -7,8 +7,8 @@
 #include "flash/write.h"
 #include "led/led.h"
 
-u8 dirty;
-const u8* chord_banks;
+u8 dirty, dirty_palette;
+const u8* const chord_banks;
 
 void flash_read();
 void flash_write();

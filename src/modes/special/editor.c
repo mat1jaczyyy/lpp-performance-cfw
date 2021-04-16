@@ -1,5 +1,7 @@
 #include "modes/special/editor.h"
 
+u8 editor_palette[3][128];
+
 u8 editor_selected = 1;
 
 #define editor_export_speed 4
@@ -17,13 +19,13 @@ u8 editor_v_xy(u8 v) {
 }
 
 void editor_refresh() {
-	palette_led(editor_v_xy(editor_selected), editor_selected);
+	rgb_led(editor_v_xy(editor_selected), editor_palette[0][editor_selected], editor_palette[1][editor_selected], editor_palette[2][editor_selected]);
 	
 	display_u8(editor_selected, 0, 9, 63, 63, 63);
 	
-	display_u6(palette_value(palette_selected, editor_selected, 0), 1, 0, 63, 0, 0);
-	display_u6(palette_value(palette_selected, editor_selected, 1), 0, 0, 0, 63, 0);
-	display_u6(palette_value(palette_selected, editor_selected, 2), 1, 9, 0, 0, 63);
+	display_u6(editor_palette[0][editor_selected], 1, 0, 63, 0, 0);
+	display_u6(editor_palette[1][editor_selected], 0, 0, 0, 63, 0);
+	display_u6(editor_palette[2][editor_selected], 1, 9, 0, 0, 63);
 }
 
 void editor_draw() {
@@ -41,9 +43,9 @@ void editor_select_xy(u8 xy) {
 		editor_selected = editor_xy_v(xy);
 		editor_refresh();
 	} else {
-		palette[palette_selected][0][0] = 0;
-		palette[palette_selected][1][0] = 0;
-		palette[palette_selected][2][0] = 0;
+		editor_palette[0][0] = 0;
+		editor_palette[1][0] = 0;
+		editor_palette[2][0] = 0;
 		editor_draw();
 	}
 }
@@ -53,9 +55,9 @@ void editor_select_v(u8 v) {
 		editor_selected = v;
 		editor_refresh();
 	} else {
-		palette[palette_selected][0][0] = 0;
-		palette[palette_selected][1][0] = 0;
-		palette[palette_selected][2][0] = 0;
+		editor_palette[0][0] = 0;
+		editor_palette[1][0] = 0;
+		editor_palette[2][0] = 0;
 		editor_draw();
 	}
 }
@@ -71,9 +73,9 @@ void editor_select_flip(u8 i) {
 			editor_refresh();
 		}
 	} else {
-		palette[palette_selected][0][0] = 0;
-		palette[palette_selected][1][0] = 0;
-		palette[palette_selected][2][0] = 0;
+		editor_palette[0][0] = 0;
+		editor_palette[1][0] = 0;
+		editor_palette[2][0] = 0;
 		editor_draw();
 	}
 }
@@ -83,7 +85,14 @@ void editor_export() {
 	editor_export_counter = 0;
 }
 
+inline void editor_force_6bit(u8* buf, const u16 size) {
+	for (u16 i = 0; i < size; i++) buf[i] &= 0x3F;
+}
+
 void editor_init() {
+	memcpy(editor_palette, palette_get(settings.palette_selected), sizeof(editor_palette));
+	editor_force_6bit((u8*)editor_palette, sizeof(editor_palette));
+
 	editor_selected = 1;
 	editor_draw();
 }
@@ -96,7 +105,7 @@ void editor_timer_event() {
 			syx_response_buffer[sizeof(syx_palette_header) + 1] = editor_export_counter;
 
 			for (u8 j = 0; j < 3; j++)
-				syx_response_buffer[sizeof(syx_palette_header) + 2 + j] = palette[palette_selected][j][editor_export_counter];
+				syx_response_buffer[sizeof(syx_palette_header) + 2 + j] = editor_palette[j][editor_export_counter];
 
 			syx_response_buffer[sizeof(syx_palette_header) + 5] = 0xF7;
 			syx_send(USBSTANDALONE, sizeof(syx_palette_header) + 6);
@@ -116,19 +125,19 @@ void editor_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				mode_update(mode_setup);
 			
 			} else if (2 <= x && x <= 7 && y == 0) { // Modify red bit
-				palette[palette_selected][0][editor_selected] ^= 1 << (x - 2);
+				editor_palette[0][editor_selected] ^= 1 << (x - 2);
 				editor_refresh();
-				dirty = 1;
+				dirty_palette = settings.palette_selected;
 			
 			} else if (2 <= p && p <= 7) { // Modify green bit
-				palette[palette_selected][1][editor_selected] ^= 1 << (7 - p);
+				editor_palette[1][editor_selected] ^= 1 << (7 - p);
 				editor_refresh();
-				dirty = 1;
+				dirty_palette = settings.palette_selected;
 			
 			} else if (2 <= x && x <= 7 && y == 9) { // Modify blue bit
-				palette[palette_selected][2][editor_selected] ^= 1 << (x - 2);
+				editor_palette[2][editor_selected] ^= 1 << (x - 2);
 				editor_refresh();
-				dirty = 1;
+				dirty_palette = settings.palette_selected;
 			
 			} else if (92 <= p && p <= 98) { // Modify velocity bit
 				editor_select_flip(98 - p);

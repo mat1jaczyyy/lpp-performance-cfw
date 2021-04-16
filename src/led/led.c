@@ -6,7 +6,7 @@ u8 pulse_screen[100][3] = {};
 double apply_led_brightness(u8 c) {
 	if (c == 0) return 0;
 
-	u32 x = (u32)led_brightness;
+	u32 x = (u32)settings.led_brightness;
 	return ((c - 1) * (63 * (x + 5) * (x + 5) - 144) / (62 * 144)) + 1;
 }
 
@@ -32,7 +32,7 @@ void clear_led() {
 }
 
 void palette_led(u8 p, u8 v) {
-	rgb_led(p, palette_value(palette_selected, v, 0), palette_value(palette_selected, v, 1), palette_value(palette_selected, v, 2));
+	rgb_led(p, palette_value(settings.palette_selected, v, 0), palette_value(settings.palette_selected, v, 1), palette_value(settings.palette_selected, v, 2));
 }
 
 void novation_led(u8 p, u8 v) {
@@ -43,7 +43,7 @@ void flash_led(u8 p, u8 v) {
 	if (!v) {
 		rgb_led(p, 0, 0, 0);
 	} else {
-		u8 palette_using = (mode == mode_performance)? palette_selected : palette_novation;
+		u8 palette_using = (mode == mode_performance)? settings.palette_selected : palette_novation;
 
 		for (int i = 0; i < 3; i++) {
 			flash_screen[p][i] = palette_value(palette_using, v, i);
@@ -73,7 +73,7 @@ void pulse_led(u8 p, u8 v) {
 	if (!v) {
 		rgb_led(p, 0, 0, 0);
 	} else {
-		u8 palette_using = (mode == mode_performance)? palette_selected : palette_novation;
+		u8 palette_using = (mode == mode_performance)? settings.palette_selected : palette_novation;
 
 		for (int i = 0; i < 3; i++) {
 			pulse_screen[p][i] = palette_value(palette_using, v, i);

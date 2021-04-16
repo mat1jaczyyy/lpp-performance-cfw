@@ -25,7 +25,7 @@ BUILDDIR = build
 TOOLS = tools
 
 SOURCES += src/aftertouch/aftertouch.c
-SOURCES += src/flash/write.c src/flash/flash.c src/flash/settings.c
+SOURCES += src/flash/stm32f10x_imports.c src/flash/write.c src/flash/flash.c src/flash/settings.c
 SOURCES += src/led/led.c src/led/palettes.c
 SOURCES += src/send/send.c
 SOURCES += src/sysex/sysex.c

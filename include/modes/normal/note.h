@@ -19,7 +19,7 @@ u8 scales(u8 s, u8 i);
 u8 scales_length(u8 s);
 
 s8 note_octave;
-u8 note_shift, translate_enabled;
+u8 note_shift;
 
 void note_init();
 void note_timer_event();

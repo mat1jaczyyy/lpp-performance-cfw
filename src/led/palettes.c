@@ -1,25 +1,6 @@
 #include "led/palettes.h"
 
-// TODO: This doesn't need to be loaded in RAM the whole time... Can be read from ROM.
-// 		But then the ROM can't be compressed like it is now, that should be expanded and everyone's palettes cleared.
-// 		Only one palette slot needs to be reserved in RAM for the palette editor
-u8 palette[palette_custom][3][128] = {
-	{ // User-defined flash-backed palette 1
-		{0},
-		{0},
-		{0}
-	},
-	{ // User-defined flash-backed palette 2
-		{0},
-		{0},
-		{0}
-	},
-	{ // User-defined flash-backed palette 3
-		{0},
-		{0},
-		{0}
-	}
-};
+const u8* const palette = (const u8*)FLASH_ADDR(FLASH_PAGE_PALETTE);
 
 const u8 palette_preset[palette_count - palette_custom - 1][3][128] = {
 	{ // Novation's default palette
@@ -35,10 +16,14 @@ const u8 palette_preset[palette_count - palette_custom - 1][3][128] = {
 	// Launchpad S legacy palette is calculated
 };
 
-u8 palette_value(u8 i, u8 v, u8 c) {
-	if (i < palette_custom) return palette[i][c][v];
+const u8* const palette_get(u8 i) {
+	return palette + palette_rom_size * i;
+}
 
-	if (i == 5) { // Launchpad S Palette
+u8 palette_value(u8 i, u8 v, u8 c) {
+	if (i < palette_custom) return palette[i * palette_rom_size + c * 128 + v] & 0x3F;
+
+	if (i == 6) { // Launchpad S Palette
 		if (c == 0) return v % 4 * 21;
 		if (c == 1) return (v / 16) % 4 * 21;
 		return 0;

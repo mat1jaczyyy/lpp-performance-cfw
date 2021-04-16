@@ -142,9 +142,9 @@ void chord_note_register(const u8 p, const u8 v, u8 sustain) {
 }
 
 s8 chord_value(u8 x, u8 y) {
-	u8 l = scales_length(scale_selected);
+	u8 l = scales_length(settings.scale.selected);
 	u8 i = chord_octave * l + (x - 1) + chord_map[l > 8? 0: 9 - l][y - 1];
-	s8 n = 12 * (i / l) + scales(scale_selected, i % l) + scale_root;
+	s8 n = 12 * (i / l) + scales(settings.scale.selected, i % l) + settings.scale.root;
 
 	return n;
 }
@@ -159,7 +159,7 @@ u8 chord_press(u8 x, u8 y, u8 v, s8 out_p) {
 		return 0;
 	}
 
-	u8 root2 = scales_length(scale_selected) + 1;
+	u8 root2 = scales_length(settings.scale.selected) + 1;
 	s8 n = 0;
 	s8 r = -1;
 
@@ -379,7 +379,7 @@ void chord_draw() {
 	}
 
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		send_midi(USBSTANDALONE, 0x80 | channels[5], i, 0);
+		send_midi(USBSTANDALONE, 0x80 | settings.mode[mode_chord].channel, i, 0);
 	}
 
 	chord_draw_navigation();
@@ -397,7 +397,7 @@ void chord_send(u8 x, u8 y, u8 v, u8 t) {
 
 	if (out_p != -20)
 		for (u8 i = 0; i < n; i++)
-			send_midi(USBSTANDALONE, t | channels[5], chord_press_result[i], v);
+			send_midi(USBSTANDALONE, t | settings.mode[mode_chord].channel, chord_press_result[i], v);
 }
 
 u8 chord_bank_checksum(const u8* bank) {
@@ -465,7 +465,7 @@ void chord_sustain_toggle(u8 v) {
 						chord_press(x, y, v, chord_sustain_holding[i]);
 					}
 				}
-				send_midi(USBSTANDALONE, 0x80 | channels[5], chord_sustain_holding[i], v);
+				send_midi(USBSTANDALONE, 0x80 | settings.mode[mode_chord].channel, chord_sustain_holding[i], v);
 			}
 		}
 
@@ -504,7 +504,7 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	}
 
 	if (x == 0 || (x == 9 && y >= 3) || y == 0 || y == 9) { // Unused side buttons
-		send_midi(USBSTANDALONE, 0xB0 | channels[5], p, v);
+		send_midi(USBSTANDALONE, 0xB0 | settings.mode[mode_chord].channel, p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	}
 	
@@ -596,7 +596,7 @@ void chord_surface_event(u8 p, u8 v, u8 x, u8 y) {
 }
 
 void chord_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == channels[5]) {
+	if (port == USBSTANDALONE && ch == settings.mode[mode_chord].channel) {
 		switch (t) {
 			case 0x8:
 				v = 0;
@@ -615,7 +615,7 @@ void chord_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void chord_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD0 | channels[5], v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | settings.mode[mode_chord].channel, v);
 }
 
 void chord_poly_event(u8 p, u8 v) {
@@ -623,5 +623,5 @@ void chord_poly_event(u8 p, u8 v) {
 	u8 y = p % 10;
 	
 	if (1 <= x && x <= 8 && 1 <= y && y <= 8 && p != 17 && p != 18)
-		chord_send(p / 10, p % 10, v, 0xA0 | channels[5]);
+		chord_send(p / 10, p % 10, v, 0xA0 | settings.mode[mode_chord].channel);
 }

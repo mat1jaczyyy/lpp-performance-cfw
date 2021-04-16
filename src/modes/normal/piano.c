@@ -120,7 +120,7 @@ void piano_draw() {
 	}
 	
 	for (u8 i = 0; i < 128; i++) { // Turn off all notes
-		send_midi(USBSTANDALONE, 0x80 | channels[4], i, 0);
+		send_midi(USBSTANDALONE, 0x80 | settings.mode[mode_piano].channel, i, 0);
 	}
 	
 	u8 o = piano_octave + 3; // Octave navigation
@@ -155,7 +155,7 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		if (v != 0) mode_update(mode_setup);
 	
 	} else if (x == 0 || y == 9 || y == 0 || (x == 9 && y > 4)) { // Unused side buttons
-		send_midi(USBSTANDALONE, 0xB0 | channels[4], p, v);
+		send_midi(USBSTANDALONE, 0xB0 | settings.mode[mode_piano].channel, p, v);
 		rgb_led(p, 0, (v == 0)? 0 : 63, 0);
 	
 	} else if (x == 9 && y < 5) { // Navigation buttons
@@ -191,12 +191,12 @@ void piano_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	
 	} else { // Main grid
 		s8 n = piano_press(x, y, v, -1);
-		if (n >= 0) send_midi(USBSTANDALONE, (v? 0x90 : 0x80) | channels[4], n, v);
+		if (n >= 0) send_midi(USBSTANDALONE, (v? 0x90 : 0x80) | settings.mode[mode_piano].channel, n, v);
 	}
 }
 
 void piano_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
-	if (port == USBSTANDALONE && ch == channels[4]) {
+	if (port == USBSTANDALONE && ch == settings.mode[mode_piano].channel) {
 		u8 x = p / 10;
 		u8 y = p % 10;
 		
@@ -222,10 +222,10 @@ void piano_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 }
 
 void piano_aftertouch_event(u8 v) {
-	aftertouch_send(USBSTANDALONE, 0xD0 | channels[4], v);
+	aftertouch_send(USBSTANDALONE, 0xD0 | settings.mode[mode_piano].channel, v);
 }
 
 void piano_poly_event(u8 p, u8 v) {
 	s8 n = piano_press(p / 10, p % 10, v, -1);
-	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | channels[4], n, v);
+	if (n >= 0) send_midi(USBSTANDALONE, 0xA0 | settings.mode[mode_piano].channel, n, v);
 }

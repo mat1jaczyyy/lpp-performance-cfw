@@ -47,7 +47,7 @@ void idle_exit() {
 void app_timer_event() {
 	global_timer++;
 
-	if (idle_enabled && mode < mode_normal - 1 && idle_time <= global_timer) {
+	if (settings.idle_enabled && mode < mode_normal - 1 && idle_time <= global_timer) {
 		idle_return = mode;
 		mode_update(mode_idle);
 	}
@@ -64,7 +64,7 @@ void app_timer_event() {
 void app_surface_event(u8 t, u8 p, u8 v) {
 	idle_exit();
 
-	if (!vel_sensitive) {
+	if (!settings.mode[mode_default].vel_sensitive) {
 		v = (v == 0)? 0 : 127;
 	}
 
@@ -107,10 +107,10 @@ void app_aftertouch_event(u8 p, u8 v) {
 
 	s8 result = aftertouch_update(p, v);
 
-	if (result >= 0 && aftertouch_enabled == 1)
+	if (result >= 0 && settings.mode[mode_default].aftertouch_enabled == 1)
 		(*mode_aftertouch_event[mode])((u8)result);
 	
-	if (aftertouch_enabled == 2)
+	if (settings.mode[mode_default].aftertouch_enabled == 2)
 		(*mode_poly_event[mode])(p, v);
 }
 
@@ -125,10 +125,10 @@ void app_sysex_event(u8 port, u8 *d, u16 l) {
 }
 
 void app_init(const u16 *adc_raw) {
-	flash_read();
-
 	// Initialize SysEx out buffer (first byte is never touched again)
 	syx_response_buffer[0] = 0xF0;
+
+	flash_read();
 
 	mode_update(mode_boot);
 }
