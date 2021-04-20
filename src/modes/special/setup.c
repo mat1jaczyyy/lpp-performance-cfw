@@ -341,7 +341,7 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 				mode_refresh();
 		
 			} else if (p == 15) {
-				if (settings.palette_selected < mode_custom) { // Enter Palette editor mode
+				if (settings.palette_selected < palette_custom) { // Enter Palette editor mode
 					mode_update(mode_editor);
 					setup_jump = 0;
 				}
