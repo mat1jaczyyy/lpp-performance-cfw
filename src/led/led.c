@@ -1,5 +1,6 @@
 #include "led/led.h"
 
+u8 led_screen[100][3] = {};
 u8 flash_screen[100][3] = {};
 u8 pulse_screen[100][3] = {};
 
@@ -20,6 +21,10 @@ void direct_led(u8 p, u8 r, u8 g, u8 b) {
 
 void rgb_led(u8 p, u8 r, u8 g, u8 b) {
 	direct_led(p, r, g, b);
+
+	led_screen[p][0] = r;
+	led_screen[p][1] = g;
+	led_screen[p][2] = b;
 
 	for (int i = 0; i < 3; i++) {
 		flash_screen[p][i] = 0;

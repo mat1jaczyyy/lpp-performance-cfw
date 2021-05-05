@@ -7,7 +7,7 @@
 #include "led/palettes.h"
 #include "flash/settings.h"
 
-u8 flash_screen[100][3], pulse_screen[100][3];
+u8 led_screen[100][3], flash_screen[100][3], pulse_screen[100][3];
 
 void direct_led(u8 p, u8 r, u8 g, u8 b);
 void rgb_led(u8 p, u8 r, u8 g, u8 b);
