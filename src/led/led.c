@@ -27,13 +27,13 @@ void rgb_led(u8 p, u8 r, u8 g, u8 b) {
 	led_screen[p][2] = b;
 
 	for (int i = 0; i < 3; i++) {
-		flash_screen[p][i] = 0;
+		flash_screen[p][i] = -1;
 		pulse_screen[p][i] = 0;
 	}
 }
 
 void clear_led() {
-	for (u8 i = 1; i < 100; i++) rgb_led(i, 0, 0, 0);
+	for (u8 i = 0; i < 100; i++) rgb_led(i, 0, 0, 0);
 }
 
 void palette_led(u8 p, u8 v) {
@@ -45,29 +45,18 @@ void novation_led(u8 p, u8 v) {
 }
 
 void flash_led(u8 p, u8 v) {
-	if (!v) {
-		rgb_led(p, 0, 0, 0);
-	} else {
-		u8 palette_using = (mode == mode_performance)? settings.palette_selected : palette_novation;
-
-		for (int i = 0; i < 3; i++) {
-			flash_screen[p][i] = palette_value(palette_using, v, i);
-		}
-	}
+	u8 palette_using = (mode == mode_performance)? settings.palette_selected : palette_novation;
 
 	for (int i = 0; i < 3; i++) {
+		flash_screen[p][i] = palette_value(palette_using, v, i);
 		pulse_screen[p][i] = 0;
 	}
 }
 
 void flash_rgb_led(u8 p, u8 r, u8 g, u8 b) {
-	if (!r && !g && !b) {
-		rgb_led(p, 0, 0, 0);
-	} else {
-		flash_screen[p][0] = r;
-		flash_screen[p][1] = g;
-		flash_screen[p][2] = b;
-	}
+	flash_screen[p][0] = r;
+	flash_screen[p][1] = g;
+	flash_screen[p][2] = b;
 
 	for (int i = 0; i < 3; i++) {
 		pulse_screen[p][i] = 0;
@@ -85,7 +74,7 @@ void pulse_led(u8 p, u8 v) {
 		}
 	}
 	for (int i = 0; i < 3; i++) {
-		flash_screen[p][i] = 0;
+		flash_screen[p][i] = -1;
 	}
 }
 
@@ -99,7 +88,8 @@ void pulse_rgb_led(u8 p, u8 r, u8 g, u8 b) {
 	}
 
 	for (int i = 0; i < 3; i++) {
-		flash_screen[p][i] = 0;
+		led_screen[p][i] = 0;
+		flash_screen[p][i] = -1;
 	}
 }
 
