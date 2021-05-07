@@ -41,8 +41,22 @@ void tempo_tick() {
 	// Draw Flashing LEDs
 	u8 flash_state = (tempo_counter % (tempo_bar >> 2)) < (tempo_bar >> 3);
 	for (u8 i = 1; i < 100; i++) {
-		if (flash_screen[i][0] || flash_screen[i][1] || flash_screen[i][2]) {
-			direct_led(i, flash_screen[i][0] * flash_state, flash_screen[i][1] * flash_state, flash_screen[i][2] * flash_state);
+		if (!(flash_screen[i][0] >> 6 || flash_screen[i][1] >> 6 || flash_screen[i][2] >> 6)) {
+			if (flash_state) {
+				direct_led(
+					i,
+					flash_screen[i][0],
+					flash_screen[i][1],
+					flash_screen[i][2]
+				);
+			} else {
+				direct_led(
+					i,
+					led_screen[i][0],
+					led_screen[i][1],
+					led_screen[i][2]
+				);
+			}
 		}
 	}
 
