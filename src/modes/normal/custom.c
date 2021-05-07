@@ -35,7 +35,7 @@ void custom_upload_end() {
 
 	while (custom_upload_offset < 1024)
 		custom_upload_buffer[custom_upload_offset++] = 0;
-	
+
 	custom_loaded = 0;
 
 	flash_write_custom(custom_upload_index, custom_upload_buffer);
@@ -156,7 +156,7 @@ void custom_fader_draw(u8 i) {
 						f = 3 - j;
 						break;
 					}
-				
+
 				custom_fader_led(x, i, fader->color, f);
 			}
 
@@ -173,7 +173,7 @@ void custom_fader_draw(u8 i) {
 						f = 3 - j;
 						break;
 					}
-				
+
 				custom_fader_led(x, i, fader->color, f);
 			}
 
@@ -229,7 +229,7 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 	if (!fader->blob) return;
 
 	v = settings.custom_fader_vel_sensitive? v : 127;
-	
+
 	anim->final = custom_fader_stops[fader->type][c][0]; // Save final value of the line
 
 	if ((fader->type == 0 && c != 7) || (fader->type == 1 && c != 0 && c != 7)) // Retrigger small steps
@@ -238,15 +238,15 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 				anim->final = custom_fader_stops[fader->type][c][j + 1];
 				break;
 			}
-	
+
 	s8 direction = 2 * (anim->value < anim->final) - 1; // Direction of line - {-1} = down, {1} = up
 	u16 diff = (direction > 0)? (anim->final - anim->value) : (anim->value - anim->final); // Difference between current value and new value
-	
+
 	anim->elapsed = anim->counter = 0; // Stop current line
 
 	if (diff == 1)
 		anim->value = anim->final;
-	
+
 	if (diff <= 1) {
 		custom_fader_send(fader);
 
@@ -262,7 +262,7 @@ void custom_fader_trigger(u8 x, u8 y, u8 v) {
 		anim->tick = time / diff;
 		anim->counter = diff;
 		anim->change = direction;
-		
+
 	} else { // Not enough time - compensate with smaller steps
 		anim->tick = 1;
 		anim->counter = time;
@@ -321,10 +321,10 @@ void custom_load() {
 					}
 				}
 				done_map:;
-			
+
 			} else if (blob->xy < 8) {   // Fader
 				u8 p = blob->xy;
-				
+
 				u8 orientation = (blob->blob.trig >> 1) & 1;
 				custom_fader_orientation |= orientation << s;
 
@@ -351,7 +351,7 @@ void custom_load() {
 						}
 					}
 				}
-				
+
 				done_fader:
 				custom_faders[s][p].blob = &blob->blob;
 				custom_faders[s][p].type = blob->blob.trig & 1;
@@ -389,7 +389,7 @@ void custom_init() {
 					for (u8 y = 0; y < 8; y++)
 						if (map[s][x][y] && map[s][x][y]->kind)
 							custom_screen_led(s, x, y, map[s][x][y]->bg & 0x7F);
-	
+
 	} else if (valid) {
 		for (u8 x = 0; x < 8; x++)
 			for (u8 y = 0; y < 8; y++)
@@ -399,7 +399,7 @@ void custom_init() {
 	if (valid)
 		for (u8 i = 0; i < 8; i++)
 			custom_fader_draw(i);
-	
+
 	for (u8 i = 0; i < 8; i++)
 		if (custom_active_slot == i) {
 			if (valid) rgb_led(89 - i * 10, active_slot_r, active_slot_g, active_slot_b);
@@ -413,7 +413,7 @@ void custom_timer_event() {
 
 	if (custom_export_slot < 8 && custom_export++ % 7 == 0) {
 		u8 p = custom_export / 7;
-		
+
 		const u8* c = custom_data(custom_export_slot);
 
 		u16 l = 0;
@@ -432,7 +432,7 @@ void custom_timer_event() {
 
 		for (u16 j = p == 0? 0 : 310 * p - 2; i < sizeof(syx_response_buffer) - 1 && c[j] != 0xF7; j++)
 			syx_response_buffer[i++] = c[j];
-		
+
 		syx_response_buffer[i++] = 0xF7;
 		syx_send(USBSTANDALONE, i);
 
@@ -452,18 +452,18 @@ void custom_timer_event() {
 			if (!((anim_processed[fader->anim_s] << fader->anim_p) & 1)) {
 				if (anim->counter && ++anim->elapsed >= anim->tick) {
 					anim->value += anim->change; // Update fader line
-					
+
 					anim->counter--;
 					if (!anim->counter)
 						anim->value = anim->final; // Set fader to supposed final value
-					
+
 					custom_fader_send(fader);
 					anim->elapsed = 0;
 				}
 
 				anim_processed[fader->anim_s] |= 1 << fader->anim_p;
 			}
-			
+
 			if (mode == mode_custom && custom_active_slot == s)
 				custom_fader_draw(i);
 		}
@@ -473,7 +473,7 @@ void custom_timer_event() {
 
 	if (custom_held_slot < 8 && custom_delete_blink) {
 		if (++custom_delete_blink > 400) custom_delete_blink = 1;
-		
+
 		rgb_led(
 			89 - custom_held_slot * 10,
 			custom_delete_blink > 200? 0 : invalid_slot_r,
@@ -507,25 +507,29 @@ void custom_highlight(u8 t, u8 ch, u8 p, u8 v, u8 s) {
 	u8 k;
 	if (t == 0x9) k = 0x01;
 	else if (t == 0xB && (!s || ext)) k = 0x02;
+	else if (t == 0xC && (!s || ext)) k = 0x03;
 	else return;
 
 	u8 e = s? 1 : settings.custom_surface_led;
-	
+
 	for (u8 slot = 0; slot < 8; slot++) {
 		for (u8 x = 0; x < 8; x++) {
 			for (u8 y = 0; y < 8; y++) {
 				u8 map_ch = ext? ch : (map[slot][x][y]->ch <= 0xF? map[slot][x][y]->ch : 0x0);
-				
-				if (map[slot][x][y]->kind == k && map_ch == ch && map[slot][x][y]->p == p) {
-					if (k == 0x01) {
-						if (map[slot][x][y]->trig == 0x01) {
-							if (!s || ext)
-								custom_led(ch, slot, x, y, v, v == 127? custom_on[slot] : map[slot][x][y]->bg);
 
-						} else if (e) custom_led(ch, slot, x, y, v, v? custom_on[slot] : map[slot][x][y]->bg);
-
-					} else if (k == 0x02 && (map[slot][x][y]->trig == 0x01 || (map[slot][x][y]->trig == 0x00 && e)))
-						custom_led(ch, slot, x, y, v, v == map[slot][x][y]->v_on? custom_on[slot] : map[slot][x][y]->bg);
+				if (map[slot][x][y]->kind == k && map_ch == ch) {
+					if (map[slot][x][y]->p == p) {
+						if (k == 0x01) {
+							if (map[slot][x][y]->trig == 0x01) {
+								if (!s || ext)
+									custom_led(ch, slot, x, y, v, v == 127? custom_on[slot] : map[slot][x][y]->bg);
+							} else if (e) custom_led(ch, slot, x, y, v, v? custom_on[slot] : map[slot][x][y]->bg);
+						} else if (k == 0x02 && (map[slot][x][y]->trig == 0x01 || (map[slot][x][y]->trig == 0x00 && e)))
+							custom_led(ch, slot, x, y, v, v == map[slot][x][y]->v_on? custom_on[slot] : map[slot][x][y]->bg);
+					}
+					if (k == 0x03) {
+						custom_led(ch, slot, x, y, v, map[slot][x][y]->p == p ? custom_on[slot] : map[slot][x][y]->bg);
+					}
 				}
 			}
 		}
@@ -542,7 +546,7 @@ void custom_send(u8 t, u8 ch, u8 p, u8 v) {
 void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 	if (p == 0) { // Enter Setup mode
 		if (v != 0) mode_update(mode_setup);
-	
+
 	} else if (y == 9 && 1 <= x && x <= 8) {
 		u8 t = 8 - x;
 
@@ -553,7 +557,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			}
 
 			custom_held_slot = t;
-		
+
 		} else if (custom_held_slot == t) {
 			if ((custom_valid >> custom_active_slot) & 1) rgb_led(89 - custom_held_slot * 10, active_slot_r, active_slot_g, active_slot_b);
 
@@ -561,7 +565,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			custom_delete_counter = 0;
 			custom_delete_blink = 0;
 		}
-	
+
 	} else {
 		if (x == 0 || x == 9 || y == 0) { // Unused side buttons
 			send_midi(USBSTANDALONE, 0xB0, p, v);  // TODO: Define channel somehow?
@@ -587,7 +591,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 								(active_slot_g + invalid_slot_g) / 2,
 								(active_slot_b + invalid_slot_b) / 2
 							);
-						
+
 						else if (custom_delete_counter == 2)
 							custom_delete_blink = 1;
 
@@ -614,7 +618,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 					}
 
 					u8 ch = map[custom_active_slot][x][y]->ch <= 0xF? map[custom_active_slot][x][y]->ch : 0x0;
-					
+
 					switch (map[custom_active_slot][x][y]->kind) {
 						case 0x01: // MIDI note
 							if (map[custom_active_slot][x][y]->trig == 0x01) {
@@ -625,13 +629,13 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 									map_state_i[x2] ^= 1ULL << y2;
 									custom_send(0x9, ch, map[custom_active_slot][x][y]->p, ((map_state_i[x2] >> y2) & 1)? v : 0);
 								}
-								
+
 							} else {
 								outputting ^= (((outputting >> ch) ^ (v > 0)) & 1) << ch; // set bit at ch to be v > 0
 								custom_send(0x9, ch, map[custom_active_slot][x][y]->p, v);
 							}
 							break;
-						
+
 						case 0x02: // Control Change
 							if (map[custom_active_slot][x][y]->trig == 0x01) {
 								if (v) {
@@ -644,10 +648,10 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 
 							} else if (map[custom_active_slot][x][y]->trig == 0x02) {
 								if (v) custom_send(0xB, ch, map[custom_active_slot][x][y]->p, map[custom_active_slot][x][y]->v_on);
-								
+
 							} else custom_send(0xB, ch, map[custom_active_slot][x][y]->p, v? map[custom_active_slot][x][y]->v_on : map[custom_active_slot][x][y]->v_off);
 							break;
-						
+
 						case 0x03: // Program Change
 							if (v) custom_send(0xC, ch, map[custom_active_slot][x][y]->p, 0);
 							break;
@@ -664,7 +668,7 @@ void custom_midi_event(u8 port, u8 t, u8 ch, u8 p, u8 v) {
 			v = 0; // Note off
 			t = 0x9;
 		}
-		
+
 		custom_highlight(t, ch, p, v, 1);
 	}
 }
