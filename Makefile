@@ -56,7 +56,7 @@ LD = arm-none-eabi-gcc
 OBJCOPY = arm-none-eabi-objcopy
 
 CFLAGS  = -O2 -Wall -I.\
--D_STM32F103RBT6_  -D_STM3x_  -D_STM32x_ -mthumb -mcpu=cortex-m3 \
+-D_STM32F103RBT6_  -D_STM3x_  -D_STM32x_ -mthumb -mcpu=cortex-m3 -fcommon \
 -fsigned-char  -DSTM32F10X_MD -DUSE_STDPERIPH_DRIVER -DHSE_VALUE=6000000UL \
 -DCMSIS -DUSE_GLOBAL_CONFIG -ffunction-sections -std=c99  -mlittle-endian \
 $(INCLUDES) -o
