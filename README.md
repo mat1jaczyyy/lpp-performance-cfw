@@ -118,6 +118,48 @@ Then, to directly compile the code:
 make
 ```
 
+### Linux
+
+Install the GCC ARM toolchain through your package manager.
+You'll also need a container runtime such as `podman` or `docker` to build part of the tooling.
+
+Compile with:
+
+```
+make
+```
+
+#### Flashing
+
+The MIDI SysEx utility, `amidi`, comes preinstalled on most Linux distributions
+as a part of ALSA. You can use this to flash your Launchpad.
+
+Start your Launchpad in bootloader mode, and in a terminal, enter `amidi -l`. 
+Pay attention to the device column. These are the ports of your MIDI devices.
+
+```
+% amidi -l
+Dir Device    Name
+IO  hw:2,0,0  ...
+IO  hw:3,0,0  ...
+IO  hw:4,0,0  Launchpad Pro Launchpad Pro
+IO  hw:5,0,0  ...
+```
+
+You should see your Launchpad listed. In my case the port number is `hw:4,0,0`.
+Send the firmware to your Launchpad with `amidi -p [port] -s build/cfw.syx`.
+
+```
+amidi -p hw:4,0,0 -s build/cfw.syx
+```
+
+If you run into issues with the flashing being interrupted, 
+try adding a few milliseconds of interval to `amidi` with the `-i ms` option.
+
+```
+amidi -p hw:4,0,0 -s build/cfw.syx -i 2
+```
+
 ## Issues
 
 Some Setup parameters found on the stock firmware are not implemented in order to simplify the firmware, including:
