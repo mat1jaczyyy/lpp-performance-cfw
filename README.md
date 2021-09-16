@@ -10,6 +10,7 @@ To install the firmware offline, simply send ("flash") the generated SysEx messa
 
 * macOS only: [SysEx Librarian](https://www.snoize.com/SysExLibrarian/)
 * Windows only: [MIDI-OX](http://www.midiox.com/moxdown.htm)
+* Linux only: [amidi](https://man.archlinux.org/man/amidi.1)
 
 ## Usage
 
@@ -127,37 +128,6 @@ Compile with:
 
 ```
 make
-```
-
-#### Flashing
-
-The MIDI SysEx utility, `amidi`, comes preinstalled on most Linux distributions
-as a part of ALSA. You can use this to flash your Launchpad.
-
-Start your Launchpad in bootloader mode, and in a terminal, enter `amidi -l`. 
-Pay attention to the device column. These are the ports of your MIDI devices.
-
-```
-% amidi -l
-Dir Device    Name
-IO  hw:2,0,0  ...
-IO  hw:3,0,0  ...
-IO  hw:4,0,0  Launchpad Pro Launchpad Pro
-IO  hw:5,0,0  ...
-```
-
-You should see your Launchpad listed. In my case the port number is `hw:4,0,0`.
-Send the firmware to your Launchpad with `amidi -p [port] -s build/cfw.syx`.
-
-```
-amidi -p hw:4,0,0 -s build/cfw.syx
-```
-
-If you run into issues with the flashing being interrupted, 
-try adding a few milliseconds of interval to `amidi` with the `-i ms` option.
-
-```
-amidi -p hw:4,0,0 -s build/cfw.syx -i 2
 ```
 
 ## Issues
