@@ -8,6 +8,7 @@ u8 ableton_screen[100][2] = {};
 u8 ableton_layout = 0x0;
 
 void ableton_led(u8 ch, u8 p, u8 v, u8 s) {
+	if (p > 99) return;
 	if (ch == settings.mode[mode_ableton].channel) ch = 0x0;
 	if (ch >= 3) return;
 

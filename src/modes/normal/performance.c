@@ -3,6 +3,8 @@
 u8 performance_screen[100][4] = {};
 
 void performance_led(u8 ch, u8 p, u8 v, u8 s) {
+	if (p > 99) return;
+	
 	switch (ch) {
 		case 0xB:
 			flash_led(p, v);
