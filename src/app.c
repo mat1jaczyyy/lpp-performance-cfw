@@ -38,6 +38,7 @@
 
 u32 global_timer = 0;
 u32 idle_time = idle_timeout;
+u8 idle_manual_ignore = 0;
 
 void idle_exit() {
 	if (mode == mode_idle) mode_update(idle_return);
@@ -62,7 +63,12 @@ void app_timer_event() {
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {
-	idle_exit();
+	if (p == 40 && v == 0 && idle_manual_ignore) {
+        idle_manual_ignore = 0;
+        return;
+    }
+    
+    idle_exit();
 
 	if (!settings.mode[mode_default].vel_sensitive) {
 		v = (v == 0)? 0 : 127;

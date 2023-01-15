@@ -66,6 +66,7 @@
 
 #define setup_tick 33
 #define setup_rainbow_length 48
+#define setup_enter_idle_timeout 1000
 #define konami_length 8
 
 u8 setup_rainbow(u8 i, u8 c) {
@@ -100,6 +101,7 @@ u8 setup_elapsed = setup_tick;
 u8 setup_mode_counter = 0;
 u8 setup_editor_counter = 0;
 u8 setup_jump = 0;
+s16 setup_enter_idle = -1;
 u8 konami_counter = 0;
 
 void setup_init() {
@@ -282,6 +284,19 @@ void setup_timer_event() {
 		
 		setup_elapsed = 0;
 	}
+
+    if (setup_enter_idle >= 0) {
+        if (++setup_enter_idle >= setup_enter_idle_timeout) {
+            setup_enter_idle = -1;
+            idle_return = mode_default;
+            idle_manual_ignore = 1;
+            mode_update(mode_idle);
+			setup_jump = 0;
+
+        } else {
+            rgb_led(40, (u32)setup_idle_r * setup_enter_idle / setup_enter_idle_timeout, (u32)setup_idle_g * setup_enter_idle / setup_enter_idle_timeout, (u32)setup_idle_b * setup_enter_idle / setup_enter_idle_timeout);
+        }
+    }
 }
 
 void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
@@ -297,7 +312,10 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 			dirty = 1;
 			mode_refresh();
 		
-		} else if (p == 21) { // Toggle velocity sensitivity
+        } else if (p == 40) { // Hold to enter idle animation
+            setup_enter_idle = 0;
+
+        } else if (p == 21) { // Toggle velocity sensitivity
 			settings.mode[mode_default].vel_sensitive = (settings.mode[mode_default].vel_sensitive)? 0 : 1;
 			dirty = 1;
 			mode_refresh();
@@ -411,7 +429,11 @@ void setup_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		
 		} else if (91 <= p && p <= 94) {
 			rgb_led(p, 0, 0, 0);
-		}
+		
+        } else if (p == 40) {
+            rgb_led(40, 0, 0, 0);
+            setup_enter_idle = -1;
+        }
 	}
 }
 

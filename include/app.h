@@ -47,6 +47,8 @@
 u32 global_timer;
 u8 active_port;
 
+u8 idle_manual_ignore;
+
 void hal_plot_led(u8 type, u8 index, u8 red, u8 green, u8 blue);
 void hal_send_midi(u8 port, u8 status, u8 data1, u8 data2);
 void hal_send_sysex(u8 port, const u8* data, u16 length);
