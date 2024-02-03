@@ -4,7 +4,7 @@
 #include "app.h"
 #include "modes/mode.h"
 
-#include "string.h"
+#include <string.h>
 
 void puyo_init();
 void puyo_timer_event();

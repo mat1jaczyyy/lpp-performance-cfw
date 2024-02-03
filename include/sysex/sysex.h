@@ -4,7 +4,7 @@
 #include "app.h"
 
 #include "modes/mode.h"
-#include "string.h"
+#include <string.h>
 
 #define __syx_declare(x, l) u8 syx_ ## x[l]
 #define syx_declare(x) __syx_declare(x,)

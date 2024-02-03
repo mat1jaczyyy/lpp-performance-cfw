@@ -1,4 +1,4 @@
-#include "modes/special/puyo.h"
+#include "modes/special/idle.h"
 
 u16 idle_rng_state;
 
