@@ -205,14 +205,38 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		} else if (d[0] == 0x2C) {
 			if (mode_default == mode_ableton) return; // If not in Ableton mode
 
+            // 0 => Note mode
+            // 1 => Drum mode
+            // 2 => Fader mode
+            // 3 => Programmer mode
+            // 4 => Performance mode
+            // 5 => Piano mode
+            // 6 => Chord mode
+            // 7-9 => Reserved
+            // 10-17 => Custom modes
+            // 18-127 => Reserved
+            u8 target;
+            if (d[1] <= 3)
+                target = d[1] + mode_note;
+            else if (d[1] == 4)
+                target = mode_performance;
+            else if (d[1] <= 6)
+                target = d[1] - 5 + mode_piano;
+            else if (10 <= d[1] && d[1] <= 17)
+                target = mode_custom;
+            else return;
+
 			syx_resp_cpy(novation_header);
 			syx_response_buffer[sizeof(syx_novation_header) + 1] = 0x2F;
 			syx_response_buffer[sizeof(syx_novation_header) + 2] = d[1];
 			syx_response_buffer[sizeof(syx_novation_header) + 3] = 0xF7;
 			syx_send(port, sizeof(syx_novation_header) + 4);
 
-			mode_default_update(d[1] < 4? d[1] + mode_note : mode_performance); // 4 for Performance mode (unavailable on stock)
-
+            if (target == mode_custom) {
+                custom_slot_change(d[1] - 10);
+            }
+			mode_default_update(target);
+            
 		// Create fader control
 		} else if (d[0] == 0x2B) {
 			if ((mode == mode_fader && port == USBSTANDALONE) || (

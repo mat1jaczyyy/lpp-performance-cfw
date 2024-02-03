@@ -368,6 +368,15 @@ void custom_load() {
 	}
 }
 
+void custom_slot_change(u8 t) {
+    if (custom_active_slot != t) {
+        custom_active_slot = t;
+
+        if (mode == mode_custom)
+            mode_refresh();
+    }
+}
+
 void custom_init() {
 	rgb_led(99, mode_custom_r, mode_custom_g, mode_custom_b); // Custom mode LED
 
@@ -547,11 +556,7 @@ void custom_surface_event(u8 p, u8 v, u8 x, u8 y) {
 		u8 t = 8 - x;
 
 		if (v) {
-			if (custom_active_slot != t) {
-				custom_active_slot = t;
-				mode_refresh();
-			}
-
+            custom_slot_change(t);
 			custom_held_slot = t;
 		
 		} else if (custom_held_slot == t) {

@@ -16,6 +16,8 @@ void custom_upload_start(u8 i);
 void custom_upload_push(const u8* d);
 void custom_upload_end();
 
+void custom_slot_change(u8 t);
+
 void custom_init();
 void custom_timer_event();
 void custom_surface_event(u8 p, u8 v, u8 x, u8 y);
