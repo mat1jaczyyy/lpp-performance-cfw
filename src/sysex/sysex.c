@@ -117,21 +117,21 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		if (active_port != port || mode >= mode_normal) return;
 
 		for (u8* i = d + 1; i < end; i += 4)
-			fast_led(i[0] & 0x3F, i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
+			fast_led(i[0], i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
 
 	// Flash LED using SysEx (RGB mode) - custom fast message
 	} else if (d[0] == 0x6B) {
 		if (active_port != port || mode >= mode_normal) return;
 
 		for (u8* i = d + 1; i < end; i += 4)
-			fast_flash(i[0] & 0x3F, i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
+			fast_flash(i[0], i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
 
 	// Pulse LED using SysEx (RGB mode) - custom fast message
 	} else if (d[0] == 0x6C) {
 		if (active_port != port || mode >= mode_normal) return;
 
 		for (u8* i = d + 1; i < end; i += 4)
-			fast_pulse(i[0] & 0x3F, i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
+			fast_pulse(i[0], i[1] & 0x3F, i[2] & 0x3F, i[3] & 0x3F);
 
 	// Device Inquiry - Read information about the connected device
 	} else if (syx_match(device_inquiry)) {
