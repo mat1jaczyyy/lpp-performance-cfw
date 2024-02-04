@@ -28,5 +28,5 @@ s8 aftertouch_update(u8 p, u8 v) {
 void aftertouch_send(u8 port, u8 t, u8 v) {
     u8 data[2] = {t, v};
 
-	send_sysex(port, &data[0], 2);
+    send_sysex(port, &data[0], 2);
 }

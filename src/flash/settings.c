@@ -67,6 +67,6 @@ void settings_validate() {
 }
 
 u32 settings_crc(const void* x, const u32 len) {
-	CRC_ResetDR();
+    CRC_ResetDR();
     return CRC_CalcBlockCRC((u32*)x, len / sizeof(u32));
 }

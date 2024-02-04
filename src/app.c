@@ -41,100 +41,100 @@ u32 idle_time = idle_timeout;
 u8 idle_manual_ignore = 0;
 
 void idle_exit() {
-	if (mode == mode_idle) mode_update(idle_return);
-	idle_time = global_timer + idle_timeout;
+    if (mode == mode_idle) mode_update(idle_return);
+    idle_time = global_timer + idle_timeout;
 }
 
 void app_timer_event() {
-	global_timer++;
+    global_timer++;
 
-	if (settings.idle_enabled && mode < mode_normal - 1 && idle_time <= global_timer) {
-		idle_return = mode;
-		mode_update(mode_idle);
-	}
+    if (settings.idle_enabled && mode < mode_normal - 1 && idle_time <= global_timer) {
+        idle_return = mode;
+        mode_update(mode_idle);
+    }
 
-	tempo_timer++; tempo_tick();
+    tempo_timer++; tempo_tick();
 
-	(*mode_timer_event[mode])();
+    (*mode_timer_event[mode])();
 
-	// Hack to make Custom modes always run in the background
-	if (mode != mode_custom)
-		custom_timer_event();
+    // Hack to make Custom modes always run in the background
+    if (mode != mode_custom)
+        custom_timer_event();
 }
 
 void app_surface_event(u8 t, u8 p, u8 v) {
-	if (p == 40 && v == 0 && idle_manual_ignore) {
+    if (p == 40 && v == 0 && idle_manual_ignore) {
         idle_manual_ignore = 0;
         return;
     }
     
     idle_exit();
 
-	if (!settings.mode[mode_default].vel_sensitive) {
-		v = (v == 0)? 0 : 127;
-	}
+    if (!settings.mode[mode_default].vel_sensitive) {
+        v = (v == 0)? 0 : 127;
+    }
 
-	(*mode_surface_event[mode])(p, v, p / 10, p % 10);
+    (*mode_surface_event[mode])(p, v, p / 10, p % 10);
 }
 
 void app_midi_event(u8 port, u8 t, u8 p, u8 v) {
-	idle_exit();
+    idle_exit();
 
-	u8 ch;
+    u8 ch;
 
-	switch (t) {
-		case 0xFA:
-			tempo_start();
-			break;
+    switch (t) {
+        case 0xFA:
+            tempo_start();
+            break;
 
-		case 0xF8:
-			tempo_midi();
-			break;
-		
-		case 0xFC:
-			tempo_stop();
-			break;
-		
-		default:
-			ch = t % 16;
-			t >>= 4;
+        case 0xF8:
+            tempo_midi();
+            break;
+        
+        case 0xFC:
+            tempo_stop();
+            break;
+        
+        default:
+            ch = t % 16;
+            t >>= 4;
 
-			if (mode != mode_ableton && mode_default == mode_ableton) {
-				(*mode_midi_event[mode_default])(port, t, ch, p, v);
-			}
+            if (mode != mode_ableton && mode_default == mode_ableton) {
+                (*mode_midi_event[mode_default])(port, t, ch, p, v);
+            }
 
-			(*mode_midi_event[mode])(port, t, ch, p, v);
-			break;
-	}
+            (*mode_midi_event[mode])(port, t, ch, p, v);
+            break;
+    }
 }
 
 void app_aftertouch_event(u8 p, u8 v) {
-	idle_exit();
+    idle_exit();
 
-	s8 result = aftertouch_update(p, v);
+    s8 result = aftertouch_update(p, v);
 
-	if (result >= 0 && settings.mode[mode_default].aftertouch_enabled == 1)
-		(*mode_aftertouch_event[mode])((u8)result);
-	
-	if (settings.mode[mode_default].aftertouch_enabled == 2)
-		(*mode_poly_event[mode])(p, v);
+    if (result >= 0 && settings.mode[mode_default].aftertouch_enabled == 1)
+        (*mode_aftertouch_event[mode])((u8)result);
+    
+    if (settings.mode[mode_default].aftertouch_enabled == 2)
+        (*mode_poly_event[mode])(p, v);
 }
 
 void app_cable_event(u8 t, u8 v) {
-	idle_exit();
+    idle_exit();
 }
 
 void app_sysex_event(u8 port, u8 *d, u16 l) {
-	idle_exit();
+    idle_exit();
 
-	handle_sysex(port, d, l);
+    handle_sysex(port, d, l);
 }
 
 void app_init(const u16 *adc_raw) {
-	// Initialize SysEx out buffer (first byte is never touched again)
-	syx_response_buffer[0] = 0xF0;
+    // Initialize SysEx out buffer (first byte is never touched again)
+    syx_response_buffer[0] = 0xF0;
 
-	flash_read();
+    flash_read();
 
-	mode_update(mode_boot);
+    mode_update(mode_boot);
 }
