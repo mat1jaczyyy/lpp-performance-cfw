@@ -6,6 +6,12 @@ const syx_declare(device_inquiry_response) = {0x7E,
                                               0x06, 0x02, 0x00, 0x20, 0x29, 0x51, 0x00, 0x00, 0x00,  // Constant
                                               0x00, 0x63, 0x66, 0x79};                               // Firmware rev. (4 bytes) - CFY (CFW++++)
 
+const syx_declare(version_inquiry) = {0x00, 0x20, 0x29, 0x00, 0x70, 0xF7};
+const syx_declare(version_inquiry_response) = {0x00, 0x20, 0x29, 0x00, 0x70,
+                                               0x00, 0x00, 0x00, 0x00, 0x00,
+                                               0x00, 0x00, 0x63, 0x66, 0x79,
+                                               0x19, 0x01};
+
 syx_declare_len(response_buffer, 319) = {};
 
 const syx_declare_len(novation_header, 5) = {0x00, 0x20, 0x29, 0x02, 0x10};
@@ -138,6 +144,17 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 		syx_resp_cpy(device_inquiry_response);
 		syx_response_buffer[sizeof(syx_device_inquiry_response) + 1] = 0xF7;
 		syx_send(port, sizeof(syx_device_inquiry_response) + 2);
+
+    } else if (syx_match(version_inquiry)) {
+        // Fill in bootloader version
+        u16 bl_ver = *(u16*)0x08000100;
+
+        syx_resp_cpy(version_inquiry_response);
+        syx_response_buffer[8] = (bl_ver >> 8) & 0xF;
+        syx_response_buffer[9] = (bl_ver >> 4) & 0xF;
+        syx_response_buffer[10] = bl_ver & 0xF;
+        syx_response_buffer[sizeof(syx_version_inquiry_response) + 1] = 0xF7;
+        syx_send(port, sizeof(syx_version_inquiry_response) + 2);
 
 	// Novation stock SysEx messages
 	} else if (syx_match(novation_header)) {
