@@ -7,7 +7,7 @@
 #include "modes/mode.h"
 
 u8 text_port, text_color, text_loop, text_bytes[322];
-u16 text_size;
+u16 text_end;
 
 void text_init();
 void text_timer_event();

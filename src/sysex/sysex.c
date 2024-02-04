@@ -327,18 +327,18 @@ void handle_sysex(u8 port, u8* d, u16 l) {
 					text_color = d[1] & 0x7F;
 					text_loop = d[2] != 0;
 
-					u16 bp = 0;
+					u16 bp = 1;
+
+					memset(text_bytes, 0, sizeof(text_bytes));
 
 					for (u16 i = 3; i < l - 1; i++)
 						if ((1 <= d[i] && d[i] <= 7) || (32 <= d[i] && d[i] <= 127))
 							text_bytes[bp++] = d[i];
 
-					text_size = bp; // Stop reading bytes at this offset
+					text_end = bp; // Stop reading bytes at this offset
 
-					for (; bp < sizeof(text_bytes); bp++)
-						text_bytes[bp] = 0; // Clear rest of array
-
-					mode_update(mode_text);
+					if (text_end > 1)
+					    mode_update(mode_text);
 				}
 			}
 		}

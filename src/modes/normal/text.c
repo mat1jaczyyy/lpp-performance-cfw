@@ -120,7 +120,7 @@ u8 text_port = 0;
 u8 text_color = 127;
 u8 text_loop = 0;
 u8 text_bytes[322] = {};
-u16 text_size = 0;
+u16 text_end = 0;
 
 u8 text_speed = 3; // Default speed gets overwritten after changed
 u8 text_elapsed = 80;
@@ -155,7 +155,7 @@ void text_timer_event() {
 				while (b < 8) {
 					text_speed = b - 1;
 					
-					if (++text_counter == text_size) {
+					if (++text_counter >= text_end) {
 						text_counter = 0;
 						break;
 					}
@@ -177,7 +177,7 @@ void text_timer_event() {
 				
 				if (text_subcounter == l + 2) { // Increment counters
 					text_subcounter = 0;
-					if (++text_counter == text_size) {
+					if (++text_counter >= text_end) {
 						text_counter = 0;
 					}
 				}
