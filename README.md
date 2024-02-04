@@ -85,6 +85,10 @@ To load a custom mode from the Components app, first download it as a `*.syx` fi
 
 The right hand side of the Launchpad allows for switching between 8 custom mode slots available on the firmware. If a slot lights up red, it's empty and unavailable. If it lights up green, the mode exists and is loaded properly. To delete existing modes, hold down the slot you want to delete and press the Delete key on the left hand side of the Launchpad 3 times.
 
+### For developers: SysEx messages
+
+The full list of SysEx messages used to communicate with the custom firmware is documented in the [SysEx message list](/sysex.md).
+
 ## Building
 
 The Launchpad Pro uses SysEx messages embedded into `.syx` files in order to update its firmware. In case you are lazy to build the firmware yourself, you can find the latest firmware build in this repository at `build/cfw.syx`. I also regularly post those builds of the firmware in the `#dev` channel on [my Discord server](https://discord.gg/5p3Bwnv).
