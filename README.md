@@ -10,6 +10,7 @@ To install the firmware offline, simply send ("flash") the generated SysEx messa
 
 * macOS only: [SysEx Librarian](https://www.snoize.com/SysExLibrarian/)
 * Windows only: [MIDI-OX](http://www.midiox.com/moxdown.htm)
+* Linux only: [amidi](https://man.archlinux.org/man/amidi.1)
 
 ## Usage
 
@@ -117,6 +118,17 @@ brew install gcc-arm-none-eabi
 ```
 
 Then, to directly compile the code:
+
+```
+make
+```
+
+### Linux
+
+Install the GCC ARM toolchain through your package manager.
+You'll also need a container runtime such as `podman` or `docker` to build part of the tooling.
+
+Compile with:
 
 ```
 make
