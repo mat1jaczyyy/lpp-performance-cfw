@@ -16,24 +16,24 @@ Please don't do this unless you actually know what you're doing!
 
 Disassemble the Launchpad Pro, only detaching the power management module. Make sure not to lose the tiny power button! With the CPU exposed, connect the following points to the ST-LINK. You'll likely have to hold the connection to `SWDIO` yourself, rather than having it keep itself plugged in:
 
-![ST-LINK Connection Diagram](https://cdn.discordapp.com/attachments/636554539096473600/826556448116310106/stlink.png)
+![ST-LINK Connection Diagram](https://github.com/mat1jaczyyy/lpp-performance-cfw/assets/13300194/a72f6719-66b2-4c07-9317-ac7fe0d79ba5)
 
 ## Reflash the memory
 
 Run the ST-LINK Utility. Make sure your ST-LINK's firmware is updated:
 
-![ST-LINK Firmware Update](https://cdn.discordapp.com/attachments/636554539096473600/826559020504186961/unknown.png)
+![ST-LINK Firmware Update](https://github.com/mat1jaczyyy/lpp-performance-cfw/assets/13300194/b7d47c42-89dd-40d1-bca6-261277197773)
 
 Connect to the bricked Launchpad Pro:
 
-![A trashed bootloader](https://cdn.discordapp.com/attachments/636554539096473600/826557447958823012/unknown.png)
+![A trashed bootloader](https://github.com/mat1jaczyyy/lpp-performance-cfw/assets/13300194/936f0f44-ede6-49e7-b641-64357cc80149)
 
 Program & Verify the memory backup file:
 
-![Fixing it...](https://media.discordapp.net/attachments/636554539096473600/826558543309570078/unknown.png)
+![Fixing it...](https://github.com/mat1jaczyyy/lpp-performance-cfw/assets/13300194/9f1df675-5c1d-4a8e-a341-aa32ec8b3361)
 
 After you're done flashing, disconnect the ST-LINK and the Launchpad should boot to Vegas mode straight away.
 
-![Fixed!](https://media.discordapp.net/attachments/636554539096473600/826558594379415552/unknown.png)
+![Fixed!](https://github.com/mat1jaczyyy/lpp-performance-cfw/assets/13300194/3207efd6-65c6-4664-ac38-dc843748d49c)
 
 Have fun reassembling it :)
