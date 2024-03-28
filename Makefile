@@ -1,3 +1,5 @@
+.PHONY: all clean
+
 ifeq ($(OS),Windows_NT)
 
 define rmdir
@@ -17,6 +19,9 @@ endef
 define mkdir
 	mkdir -p "$(1)"
 endef
+
+UNAME := $(shell uname)
+OCIRUNTIME = docker
 
 endif
 
@@ -67,9 +72,19 @@ LDFLAGS += -T$(LDSCRIPT) -u _start -u _Minimum_Stack_Size  -mcpu=cortex-m3 -mthu
 
 all: $(SYX)
 
+ifeq ($(UNAME), Linux)
+$(SYX): $(BIN)
+	$(OCIRUNTIME) build -t bintosyxbuilder .
+	$(OCIRUNTIME) run --rm -it \
+		-v $(shell pwd)/$(BUILDDIR):/tmp/utils/$(BUILDDIR) \
+		bintosyxbuilder \
+		./tools/out/bintosyx /pro 000 $(BIN) $(SYX)
+else
+
 # build the final sysex file from the ELF - run the simulator first
 $(SYX): $(BIN)
 	./$(BINTOSYX) /pro 000 $(BIN) $(SYX)
+endif
 
 $(BIN): $(ELF)
 	$(OBJCOPY) -O binary $< $@
